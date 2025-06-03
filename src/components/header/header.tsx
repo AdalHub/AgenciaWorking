@@ -1,25 +1,32 @@
-
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Wrapper, Nav, Logo, MenuItem } from './styles';
-import logo from "../../assets/header_logo.jpg"
+import { Wrapper, Nav, MenuItem, Logo } from './styles';
+import logo from '../../assets/header_logo.jpg';
+
+const navLinks = [
+  { label: 'Home',     to: '/' },
+  { label: 'Contact',  to: '/contact' },
+  { label: 'Careers',  to: '/careers' },
+  { label: 'About Us', to: '/about-us' },
+  { label: 'More',     to: '/more' },
+];
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 64);
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
+    const handle = () => setScrolled(window.scrollY > 64);
+    window.addEventListener('scroll', handle);
+    return () => window.removeEventListener('scroll', handle);
   }, []);
 
   return (
     <Wrapper scrolled={scrolled}>
       <Logo src={logo} alt="Working Agencia" />
+
       <Nav>
-        {['Home', 'Contact', 'Careers', 'About Us', 'More'].map((item) => (
-          <MenuItem as={Link} key={item} to={`/${item.toLowerCase().replace(' ', '-')}`}>
-            {item}
+        {navLinks.map(({ label, to }) => (
+          <MenuItem key={label} to={to} scrolled={scrolled}>
+            {label}
           </MenuItem>
         ))}
       </Nav>
