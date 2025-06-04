@@ -9,6 +9,8 @@ export const Wrapper = styled(Section)`
 
   /* add top padding so the floating card doesn't overlap content above */
   padding-top: 4rem;
+
+  
 `;
 
 export const Note = styled.p`

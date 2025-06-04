@@ -28,6 +28,9 @@ export const Wrapper = styled(Section)<WrapperProps>`
   display: flex;
   align-items: center;
   gap: 2.5rem;
+  
+
+
 `;
 
 export const Headline = styled.h1`

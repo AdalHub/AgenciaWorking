@@ -1,6 +1,6 @@
 import { Section, TwoCol } from '../container/styles';
 import { Title, Copy, Image } from './styles';
-import plant from '../../assets/plant.jpg';
+import plant from '../../assets/customer_pic.jpg';
 
 export default function SuccessStories() {
   return (
