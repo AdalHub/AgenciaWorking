@@ -11,8 +11,9 @@ export default function Home() {
   return (
     <>
       <Header />
+      <Hero />
       <main>
-        <Hero />
+        
         <WhyChoose />
         <SuccessStories />
         <ServicesGrid />

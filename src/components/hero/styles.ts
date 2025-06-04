@@ -1,40 +1,38 @@
-// src/components/Hero/styles.ts
 import styled from 'styled-components';
+import { Section } from '../container/styles';  // the 1200-px grid
 
+/* ———————————————————————————————
+   OUTER full-width banner
+   ——————————————————————————————— */
+export const Banner = styled.section<{ $bg: string }>`
+  /* full-bleed trick */
+  position: relative;
+  left: 50%;
+  right: 50%;
+  width: 100vw;
+  margin-left: -50vw;
+  margin-right: -50vw;
 
-
-export const Section = styled.section`
-  width: 100%;
-  max-width: 100vw;      /* 🔑 never wider than the viewport */
-  overflow-x: hidden;    /* hides any rogue child that still insists */
-  padding: 2rem 1rem;
-
-  @media (min-width: ${({ theme }) => theme.breakpoints.md}) {
-    padding: 3rem 2rem;
-  }
+  /* hero look */
+  min-height: 60vh;
+  background: url(${({ $bg }) => $bg}) center / cover no-repeat;
+  display: flex;            /* centres the inner grid */
+  align-items: center;
+  overflow: hidden;         /* keep children inside banner height */
 `;
 
-interface WrapperProps {
-  /** full URL produced by Vite’s import */
-  $bg: string;
-}
-export const Wrapper = styled(Section)<WrapperProps>`
-  max-width: 100vw;                      /* belt -and- braces */
-  min-height: 60vh;
-
-  background: 
-              url(${({ $bg }) => $bg}) center / cover no-repeat;
-
+/* ———————————————————————————————
+   INNER grid – stays max-width 1200 px
+   ——————————————————————————————— */
+export const Inner = styled(Section)`
   display: flex;
   align-items: center;
   gap: 2.5rem;
-  
-
-
 `;
 
+/* headline & CTA unchanged */
 export const Headline = styled.h1`
-  background: ${({ theme }) => theme.colors.primary};   /* blue rectangle */
+  background: ${({ theme }) => theme.colors.primary};
   color: ${({ theme }) => theme.colors.textLight};
   font-family: ${({ theme }) => theme.fonts.heading};
   font-size: clamp(2rem, 5vw, 4rem);

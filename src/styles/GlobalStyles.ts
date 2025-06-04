@@ -2,20 +2,11 @@
 import { createGlobalStyle } from 'styled-components';
 
 export const GlobalStyles = createGlobalStyle`
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
-
-  body {
+  html, body {
     margin: 0;
-    overflow-x: hidden;        /* ← stops sideways scroll */
-    font-family: ${({ theme }) => theme.fonts.body};
-    color: ${({ theme }) => theme.colors.textDark};
+    padding: 0;
+    overflow-x: hidden;   /* stop any stray 1-pixel jiggle */
+    margin: 0; overflow-x: hidden; 
   }
 
-  img, video {
-    max-width: 100%;
-    height: auto;
-    display: block;
-  }
 `;

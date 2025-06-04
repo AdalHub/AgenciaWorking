@@ -6,19 +6,19 @@ import styled from 'styled-components';
  *  • Keeps inner content on the normal 1200-px grid
  */
 export const FullWidth = styled.section`
-  /* full-bleed shell — the trick */
   position: relative;
   left: 50%;
-  right: 50%;
   width: 100vw;
-  margin-left: -50vw;
+  margin-left: -50vw;   /* pull back exactly half the viewport */
+
+  /* 👇 these two must be deleted or commented out
+  right: 50%;
   margin-right: -50vw;
+  */
 
-  /* centre its children just like <Section> does */
   display: flex;
-  justify-content: center;     /* horizontal */
+  justify-content: center;
   padding-block: 4rem;
-
-  /* make sure we don’t cause sideways scroll */
   overflow-x: hidden;
 `;
+
