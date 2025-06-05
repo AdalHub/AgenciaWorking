@@ -1,5 +1,5 @@
 import { Banner, Inner, Headline, CTA } from './styles';
-import heroBg from '../../assets/bg.jpg';
+import heroBg from '../../assets/training.jpg';
 
 export default function Hero() {
   return (

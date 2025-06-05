@@ -12,9 +12,10 @@ export const Wrapper = styled.section`
 /* headings */
 export const Heading = styled.h2`
   font-family: ${({ theme }) => theme.fonts.heading};
-  font-size: clamp(1.8rem, 4vw, 2.4rem);
-  margin: 0 0 0.75rem;
-`;
+  color: ${({ theme }) => theme.colors.primary};
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  
+`;  
 
 export const SubHeading = styled.p`
   max-width: 38rem;

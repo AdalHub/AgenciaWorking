@@ -65,3 +65,10 @@ export const Card = styled.article<{ img: string }>`
     color: ${({ theme }) => theme.colors.accent};
   }
 `;
+
+export const Title = styled.h2`
+  font-family: ${({ theme }) => theme.fonts.heading};
+  color: ${({ theme }) => theme.colors.primary};
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  
+`;  

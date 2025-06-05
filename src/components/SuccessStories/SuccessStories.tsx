@@ -6,10 +6,16 @@ export default function SuccessStories() {
   return (
     <Section style={{ background: 'var(--lavender)' }}>
       <TwoCol>
-        <Image src={plant} alt="Customer smiling next to plants" />
-        <div>
+        {/* ← animated, circular image */}
+        <Image
+          src={plant}
+          alt="Customer smiling next to plants"
+          initial={{ x: -120, opacity: 0 }}
+          whileInView={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+        />
 
-          {/* White text box containing the testimonial */}
+        <div>
           <TextBox>
             <Title>Success Stories</Title>
             <Copy>

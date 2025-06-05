@@ -1,11 +1,11 @@
 import { Section } from '../container/styles';
-import { Grid, Card } from './styles';
+import { Grid, Card, Title } from './styles';
 import services from './data';
 
 export default function ServicesGrid() {
   return (
     <Section style={{ background: '#F7FBFF' }}>
-      <h2 style={{ textAlign: 'center' }}>Services</h2>
+      <Title><h2 style={{ textAlign: 'center' }}>Services</h2></Title>
 
       <Grid>
         {services.map((s) => (
