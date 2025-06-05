@@ -28,7 +28,7 @@ const services: Service[] = [
   {
     title: 'Labor Surveys and Studies',
     blurb: 'Work-climate, NOM-035, turnover, and structure studies with action plans that turn data into measurable change',
-    img: '/assets/on-site-hr.jpg',
+    img: 'src/assets/survey.jpg',
     slug: 'on-site-hr',
   },
   {
@@ -46,13 +46,13 @@ const services: Service[] = [
     {
     title: 'Specialized Services',
     blurb: 'REPSE-certified outsourcing across administration, logistics, finance, and other key functions—custom-tailored to your operation.',
-    img: 'src/assets/executive-search.jpg',
+    img: 'src/assets/specialserv.jpg',
     slug: 'executive-search',
   },
     {
     title: 'HR Soft Landing in Mexico',
     blurb: 'End-to-end HR support that recruits, pays, and integrates your Mexico team in full legal and cultural compliance',
-    img: 'src/assets/executive-search.jpg',
+    img: 'src/assets/softland.jpg',
     slug: 'executive-search',
   },
 ];

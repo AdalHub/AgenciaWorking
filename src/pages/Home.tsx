@@ -3,7 +3,7 @@ import Hero from '../components/hero/hero';
 import WhyChoose from '../components/WhyChoose/WhyChoose';
 import SuccessStories from '../components/SuccessStories/SuccessStories';
 import ServicesGrid from '../components/ServicesGrid/ServicesGrid';
-import Testimonials from '../components/SuccessStories/SuccessStories';
+import OurMission from '../components/OurMission/OurMission';
 import NonDiscrimination from '../components/NonDiscrimination/NonDiscrimination';
 import Footer from '../components/Footer/Footer';
 
@@ -13,10 +13,10 @@ export default function Home() {
       <Header />
       <Hero />
       <main>
-        
+        <OurMission/>
+        <ServicesGrid />
         <WhyChoose />
         <SuccessStories />
-        <ServicesGrid />
         <NonDiscrimination />
       </main>
       <Footer />
