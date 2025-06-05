@@ -4,7 +4,7 @@ export const Grid = styled.div`
   display: grid;
   gap: 1.5rem;
   margin-top: 2rem;   /* trim vertical space */
-
+  
   /* auto-fit trick makes it responsive */
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 `;

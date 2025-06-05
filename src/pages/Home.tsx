@@ -17,7 +17,6 @@ export default function Home() {
         <WhyChoose />
         <SuccessStories />
         <ServicesGrid />
-        <Testimonials />
         <NonDiscrimination />
       </main>
       <Footer />
