@@ -6,11 +6,10 @@ import footerBg from '../../assets/floor.png';
    —————————————————————————————————————————— */
 export const Wrapper = styled.footer`
   position: relative;
+  left: 50%;
+  transform: translateX(-50%); /* centre wrapper regardless of parent */
   width: 100vw;
-  left: 50%;                        /* full-bleed trick */
-  right: 50%;
-  margin-left: -50vw;
-  margin-right: -50vw;
+  margin: 0;
 
   /* background photo + dark overlay */
   background: url(${footerBg}) center / cover no-repeat;

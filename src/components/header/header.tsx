@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Wrapper, Nav, MenuItem, Logo } from './styles';
 import logo from '../../assets/header_logo.jpg';
-
+import { Link } from 'react-router-dom';
 const navLinks = [
   { label: 'Home',     to: '/' },
   { label: 'Contact',  to: '/contact' },
@@ -24,11 +24,16 @@ export default function Header() {
       <Logo src={logo} alt="Working Agencia" />
 
       <Nav>
-        {navLinks.map(({ label, to }) => (
-          <MenuItem key={label} to={to} scrolled={scrolled}>
-            {label}
-          </MenuItem>
-        ))}
++       {navLinks.map(({ label, to }) => (
+         <MenuItem
+           as={Link}          // ⬅️ turn it into a router link
+           key={label}
+           to={to}
+           scrolled={scrolled}
+         >
+           {label}
+         </MenuItem>
+       ))}
       </Nav>
     </Wrapper>
   );
