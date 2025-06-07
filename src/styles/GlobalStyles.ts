@@ -7,6 +7,7 @@ export const GlobalStyles = createGlobalStyle`
     padding: 0;
     overflow-x: hidden;   /* stop any stray 1-pixel jiggle */
     margin: 0; overflow-x: hidden; 
+    color: ${({ theme }) => theme.colors.textDark};
   }
 
 `;
