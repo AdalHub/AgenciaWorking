@@ -1,74 +1,115 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
+import { Link } from 'react-router-dom';
 
+/* —— section wrapper —— */
+export const SectionWrap = styled.section`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 4rem 1rem;
+`;
+
+/* small label */
+export const Kicker = styled.span`
+  display: block;
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.colors.textDark};
+  margin-bottom: 0.5rem;
+`;
+
+/* big headline */
+export const BigTitle = styled.h2`
+  font-family: ${({ theme }) => theme.fonts.heading};
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  max-width: 38rem;
+  margin: 0 0 2rem 0;
+  color: ${({ theme }) => theme.colors.textDark};
+`;
+
+/* —— filter pills —— */
+export const FilterRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+`;
+
+export const Pill = styled.button<{ $active: boolean }>`
+  border: none;
+  font-family: ${({ theme }) => theme.fonts.body};
+  font-size: 0.85rem;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  cursor: pointer;
+  ${({ $active, theme }) =>
+    $active
+      ? css`
+          background: ${theme.colors.primary};
+          color: #fff;
+        `
+      : css`
+          background: #f0f2f5;
+          color: ${theme.colors.textDark};
+        `}
+`;
+
+/* —— responsive grid —— */
 export const Grid = styled.div`
   display: grid;
   gap: 1.5rem;
-  margin-top: 2rem;   /* trim vertical space */
-  
-  /* auto-fit trick makes it responsive */
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 `;
 
-export const Card = styled.article<{ img: string }>`
-  background: ${({ img }) => `url(${img}) center/cover no-repeat`};
+/*   /  /  /           EL card           /  /  /   */
+export const Card = styled.article`
+  background: #fff;
   border-radius: 12px;
-  min-height: 220px;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  padding: 1.5rem;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  transition: box-shadow 0.2s ease;
 
   &:hover {
-    transform: translateY(-4px);
     box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
-  }
-
-  /* overlay */
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 43, 140, 0.55);  /* theme.colors.primary @ 55 % */
-    transition: opacity 0.2s ease;
-    opacity: 0;
-  }
-  &:hover::before {
-    opacity: 1;
-  }
-
-  /* inner content */
-  h3,
-  p,
-  a {
-    position: relative; /* sit above the ::before overlay */
-    z-index: 1;
-    margin: 0;
-    padding: 0 1.25rem;
-    color: ${({ theme }) => theme.colors.textLight};
   }
 
   h3 {
     font-family: ${({ theme }) => theme.fonts.heading};
-    font-size: 1.35rem;
-    margin-top: 1.25rem;
+    font-size: 1.1rem;
+    margin: 0;
+    color: ${({ theme }) => theme.colors.textDark};
   }
 
   p {
     font-family: ${({ theme }) => theme.fonts.body};
-    font-size: 0.95rem;
-    margin: 0.75rem 0 2.5rem;
-  }
-
-  a {
-    font-weight: 600;
-    text-decoration: underline;
-    color: ${({ theme }) => theme.colors.accent};
+    font-size: 0.92rem;
+    color: ${({ theme }) => theme.colors.textDark};
+    flex: 1 1 auto;
   }
 `;
 
-export const Title = styled.h2`
-  font-family: ${({ theme }) => theme.fonts.heading};
+export const Icon = styled.img`
+  width: 48px;
+  height: 48px;
+`;
+
+export const More = styled(Link)`
+  font-size: 0.9rem;
+  font-weight: 600;
   color: ${({ theme }) => theme.colors.primary};
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  
-`;  
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  &::after {
+    content: '›';
+    font-size: 1.1em;
+    transition: transform 0.2s;
+  }
+
+  &:hover::after {
+    transform: translateX(2px);
+  }
+`;

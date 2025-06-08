@@ -1,18 +1,22 @@
 // src/components/ServicesGrid/data.ts
-interface Service {
+export interface Service {
   slug: string;
-  kicker: string;
+  category: 'Communication' | 'Life Style' | 'Business';
+  thumb: string;      // 32-48 px icon
   title: string;
-  subtitle: string;
-  img: string;         // thumbnail for the grid (can be same as detailImg)
-  detailImg?: string;  // large photo on the detail page
   blurb: string;
+  kicker: string;
+  subtitle: string;
+  img: string;
+  detailImg?: string;
   body: string[];
 }
 
 const services: Service[] = [
   {
     slug: 'talent-recruitment',
+    category: 'Business',
+    thumb: '/src/assets/icons/placeholder.svg',
     kicker: 'Staffing',
     title: 'Talent Recruitment & Selection',
     subtitle: 'Swift hires, zero compromise on quality.',
@@ -28,11 +32,13 @@ const services: Service[] = [
   },
   {
     slug: 'high-volume-recruitment',
+    category: 'Business',
+    thumb: '/src/assets/icons/placeholder.svg',
     kicker: 'Scaling',
     title: 'High-Volume Executive & Operational Recruitment',
     subtitle: 'When you need dozens of hires—yesterday.',
     img: '/src/assets/mass-recruitment.jpg',
-    detailImg: '/src/assets/bg.jpg',
+    detailImg: '/src/assets/mass-recruitment.jpg',
     blurb:
       'Scalable hiring campaigns that fill entire teams under your brand and on your deadline.',
     body: [
@@ -42,11 +48,13 @@ const services: Service[] = [
   },
   {
     slug: 'background-checks',
+    category: 'Life Style',
+    thumb: '/src/assets/icons/placeholder.svg',
     kicker: 'Compliance',
     title: 'Background Check Reports',
     subtitle: 'Hire with confidence—and stay compliant.',
     img: '/src/assets/reports.jpg',
-    detailImg: '/src/assets/bg.jpg',
+    detailImg: '/src/assets/reports.jpg',
     blurb:
       'Employment, socioeconomic and criminal-record verification that meets Mexican and U.S. regulations.',
     body: [
@@ -56,11 +64,13 @@ const services: Service[] = [
   },
   {
     slug: 'labor-surveys',
+    category: 'Communication',
+    thumb: '/src/assets/icons/placeholder.svg',
     kicker: 'Diagnostics',
     title: 'Labor Surveys & Studies',
     subtitle: 'Data-driven insights, actionable results.',
     img: '/src/assets/survey.jpg',
-    detailImg: '/src/assets/bg.jpg',
+    detailImg: '/src/assets/survey.jpg',
     blurb:
       'Work-climate, NOM-035, turnover, and structure studies that turn raw data into measurable change.',
     body: [
@@ -70,11 +80,13 @@ const services: Service[] = [
   },
   {
     slug: 'training-upskilling',
+    category: 'Life Style',
+    thumb: '/src/assets/icons/placeholder.svg',
     kicker: 'Development',
     title: 'Training & Upskilling',
     subtitle: 'Equip your team for tomorrow’s challenges.',
     img: '/src/assets/training.jpg',
-    detailImg: '/src/assets/bg.jpg',
+    detailImg: '/src/assets/training.jpg',
     blurb:
       'Customized courses—from leadership and negotiation to customer service—that boost skills and motivation.',
     body: [
@@ -84,11 +96,13 @@ const services: Service[] = [
   },
   {
     slug: 'competency-programs',
+    category: 'Business',
+    thumb: '/src/assets/icons/placeholder.svg',
     kicker: 'Assessment',
     title: 'Competency Tests & Managerial Development',
     subtitle: 'Measure skills, close gaps, accelerate growth.',
     img: '/src/assets/tests.jpg',
-    detailImg: '/src/assets/bg.jpg',
+    detailImg: '/src/assets/tests.jpg',
     blurb:
       'Role-specific assessments plus guided upskilling paths that align employee competencies with business goals.',
     body: [
@@ -98,11 +112,13 @@ const services: Service[] = [
   },
   {
     slug: 'specialized-services',
+    category: 'Communication',
+    thumb: '/src/assets/icons/placeholder.svg',
     kicker: 'Outsourcing',
     title: 'Specialized Services',
     subtitle: 'REPSE-certified outsourcing—done right.',
     img: '/src/assets/specialserv.jpg',
-    detailImg: '/src/assets/bg.jpg',
+    detailImg: '/src/assets/specialserv.jpg',
     blurb:
       'Administration, logistics, finance, and other functions delivered by dedicated teams under full legal compliance.',
     body: [
@@ -112,11 +128,13 @@ const services: Service[] = [
   },
   {
     slug: 'hr-soft-landing',
+    category: 'Business',
+    thumb: '/src/assets/icons/placeholder.svg',
     kicker: 'Expansion',
     title: 'HR Soft Landing in Mexico',
     subtitle: 'Your launchpad for cross-border growth.',
     img: '/src/assets/softland.jpg',
-    detailImg: '/src/assets/bg.jpg',
+    detailImg: '/src/assets/softland.jpg',
     blurb:
       'End-to-end HR support that recruits, pays, and integrates your Mexico team in full legal and cultural compliance.',
     body: [
@@ -124,9 +142,11 @@ const services: Service[] = [
       'Cultural-integration workshops ensure U.S. and Mexican teams collaborate smoothly from day one.',
     ],
   },
-  /* ---------------------- About Us page ----------------------------- */
+  /* ------------- About-Us (excluded from grid by filter) ------------- */
   {
     slug: 'about-us',
+    category: 'Business',
+    thumb: '/src/assets/icons/placeholder.svg',
     kicker: 'Company',
     title: 'About Us',
     subtitle:

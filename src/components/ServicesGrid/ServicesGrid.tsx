@@ -1,28 +1,55 @@
 // src/components/ServicesGrid/ServicesGrid.tsx
-import { Section } from '../container/styles';
-import { Grid, Card, Title } from './styles';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import services from './data';
+import {
+  SectionWrap,
+  Kicker,
+  BigTitle,
+  FilterRow,
+  Pill,
+  Grid,
+  Card,
+  Icon,
+  More,
+} from './styles';
+
+const categories = ['All', 'Communication', 'Life Style', 'Business'] as const;
 
 export default function ServicesGrid() {
-  // skip any item whose slug is "about-us"
-  const serviceCards = services.filter((s) => s.slug !== 'about-us');
+  const [active, setActive] = useState<(typeof categories)[number]>('All');
+
+  const visible = active === 'All'
+    ? services
+    : services.filter((s) => s.category === active);
 
   return (
-    <Section style={{ background: '#F7FBFF' }}>
-      <Title>
-        <h2 style={{ textAlign: 'center' }}>Services we provide</h2>
-      </Title>
+    <SectionWrap>
+      <Kicker>Services</Kicker>
+      <BigTitle>Elevate Every Experience, Simplify Your Everyday Needs.</BigTitle>
+
+      <FilterRow>
+        {categories.map((c) => (
+          <Pill
+            key={c}
+            $active={active === c}
+            onClick={() => setActive(c)}
+          >
+            {c}
+          </Pill>
+        ))}
+      </FilterRow>
 
       <Grid>
-        {serviceCards.map((s) => (
-          <Card key={s.slug} img={s.img}>
+        {visible.map((s) => (
+          <Card key={s.slug}>
+            <Icon src={s.thumb} alt="" />
             <h3>{s.title}</h3>
             <p>{s.blurb}</p>
-            <Link to={`/services/${s.slug}`}>Read&nbsp;More</Link>
+            <More to={`/services/${s.slug}`}>More details</More>
           </Card>
         ))}
       </Grid>
-    </Section>
+    </SectionWrap>
   );
 }
