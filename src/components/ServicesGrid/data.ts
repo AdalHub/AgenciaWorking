@@ -1,12 +1,13 @@
 // src/components/ServicesGrid/data.ts
 interface Service {
-  slug: string;          // URL segment
-  kicker: string;        // small word/phrase above the H1
-  title: string;         // big headline
-  subtitle: string;      // single-line sub-heading under H1
-  img: string;           // banner / hero image
-  blurb: string;         // teaser shown on the grid card
-  body: string[];        // paragraphs on the detail page
+  slug: string;
+  kicker: string;
+  title: string;
+  subtitle: string;
+  img: string;         // thumbnail for the grid (can be same as detailImg)
+  detailImg?: string;  // large photo on the detail page
+  blurb: string;
+  body: string[];
 }
 
 const services: Service[] = [
@@ -16,6 +17,7 @@ const services: Service[] = [
     title: 'Talent Recruitment & Selection',
     subtitle: 'Swift hires, zero compromise on quality.',
     img: 'src/assets/bg.jpg',
+    detailImg: 'src/assets/bg.jpg',
     blurb:
       'Pre-screened, background-checked candidates delivered fast—ready to start when you are.',
     body: [
@@ -30,10 +32,11 @@ const services: Service[] = [
     title: 'High-Volume Executive & Operational Recruitment',
     subtitle: 'When you need dozens of hires—yesterday.',
     img: 'src/assets/mass-recruitment.jpg',
+    detailImg: 'src/assets/bg.jpg',
     blurb:
       'Scalable hiring campaigns that fill entire teams under your brand and on your deadline.',
     body: [
-      'From production operators to regional executives, we deliver 25-150 hires per month without sacrificing quality.',
+      'From production operators to regional executives, we deliver 25–150 hires per month without sacrificing quality.',
       'A dedicated project manager supplies KPI dashboards so you can track time-to-fill, diversity ratios, and pipeline health in real time.',
     ],
   },
@@ -43,8 +46,9 @@ const services: Service[] = [
     title: 'Background Check Reports',
     subtitle: 'Hire with confidence—and stay compliant.',
     img: 'src/assets/reports.jpg',
+    detailImg: 'src/assets/bg.jpg',
     blurb:
-      'Employment, socioeconomic, and criminal-record verification that meets Mexican and U.S. regulations.',
+      'Employment, socioeconomic and criminal-record verification that meets Mexican and U.S. regulations.',
     body: [
       'We partner with accredited labs and government registries to complete multi-jurisdiction searches in under 72 hours.',
       'Reports cover employment history, education validation, criminal and credit checks—formatted for REPSE and ISO audits.',
@@ -56,6 +60,7 @@ const services: Service[] = [
     title: 'Labor Surveys & Studies',
     subtitle: 'Data-driven insights, actionable results.',
     img: 'src/assets/survey.jpg',
+    detailImg: 'src/assets/bg.jpg',
     blurb:
       'Work-climate, NOM-035, turnover, and structure studies that turn raw data into measurable change.',
     body: [
@@ -69,6 +74,7 @@ const services: Service[] = [
     title: 'Training & Upskilling',
     subtitle: 'Equip your team for tomorrow’s challenges.',
     img: 'src/assets/training.jpg',
+    detailImg: 'src/assets/bg.jpg',
     blurb:
       'Customized courses—from leadership and negotiation to customer service—that boost skills and motivation.',
     body: [
@@ -79,14 +85,14 @@ const services: Service[] = [
   {
     slug: 'competency-programs',
     kicker: 'Assessment',
-    title:
-      'Labor Competency Tests & Managerial Development Programs',
+    title: 'Competency Tests & Managerial Development',
     subtitle: 'Measure skills, close gaps, accelerate growth.',
     img: 'src/assets/tests.jpg',
+    detailImg: 'src/assets/bg.jpg',
     blurb:
       'Role-specific assessments plus guided upskilling paths that align employee competencies with business goals.',
     body: [
-      'Psychometric and practical assessments map individual gaps against ISO 9001 role matrices.',
+      'Psychometric and practical assessments map individual gaps against ISO-9001 role matrices.',
       'Employees receive personalized development plans, while leadership gains cohort analytics for succession planning.',
     ],
   },
@@ -96,6 +102,7 @@ const services: Service[] = [
     title: 'Specialized Services',
     subtitle: 'REPSE-certified outsourcing—done right.',
     img: 'src/assets/specialserv.jpg',
+    detailImg: 'src/assets/bg.jpg',
     blurb:
       'Administration, logistics, finance, and other functions delivered by dedicated teams under full legal compliance.',
     body: [
@@ -109,6 +116,7 @@ const services: Service[] = [
     title: 'HR Soft Landing in Mexico',
     subtitle: 'Your launchpad for cross-border growth.',
     img: 'src/assets/softland.jpg',
+    detailImg: 'src/assets/bg.jpg',
     blurb:
       'End-to-end HR support that recruits, pays, and integrates your Mexico team in full legal and cultural compliance.',
     body: [
@@ -116,7 +124,7 @@ const services: Service[] = [
       'Cultural-integration workshops ensure U.S. and Mexican teams collaborate smoothly from day one.',
     ],
   },
-  // ---------------- About-Us entry ----------------
+  /* ---------------------- About Us page ----------------------------- */
   {
     slug: 'about-us',
     kicker: 'Company',
@@ -124,10 +132,11 @@ const services: Service[] = [
     subtitle:
       'Agencia Working empowers organizations through people-centric HR solutions.',
     img: 'src/assets/about-banner.jpg',
+    detailImg: 'src/assets/bg.jpg',
     blurb: '',
     body: [
       'Founded in 1999, Agencia Working began as a boutique recruitment firm in Tamaulipas, Mexico.',
-      'Today we manage full-cycle HR, payroll, and talent-development programs for 120+ cross-border clients.',
+      'Today we manage full-cycle HR, payroll and talent-development programs for 120+ cross-border clients.',
       'Our mission is to help companies grow by unlocking the potential of every employee—from the shop floor to the C-suite.',
     ],
   },

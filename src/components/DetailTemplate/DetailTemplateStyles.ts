@@ -1,15 +1,10 @@
 import styled from 'styled-components';
 
-/* hero area without overlay image tint */
-export const Hero = styled.section<{ $img: string }>`
-  background: ${({ $img }) => `url(${$img}) center / cover no-repeat`};
+/* ─── Hero — no background image ──────────────────────────────────── */
+export const Hero = styled.section`
   padding: 6rem 1rem 4rem;
   text-align: center;
-  color: #fff;
-  background: ${({ $img }) => `url(${$img}) center / cover no-repeat`};
-  padding: 6rem 1rem 4rem;
-  text-align: center;
-  color: ${({ theme }) => theme.colors.textDark};   /* dark text */
+  color: ${({ theme }) => theme.colors.textDark};
 `;
 
 export const Kicker = styled.span`
@@ -39,6 +34,7 @@ export const ButtonsRow = styled.div`
   flex-wrap: wrap;
   gap: 1rem;
   justify-content: center;
+  margin-bottom: 3rem;
 `;
 
 export const Btn = styled.button`
@@ -56,10 +52,10 @@ export const Btn = styled.button`
   }
 `;
 
-/* content section */
+/* ─── Content section ─────────────────────────────────────────────── */
 export const Wrapper = styled.main`
   max-width: 1000px;
-  margin: -6rem auto 4rem;      /* pull image up under hero */
+  margin: 0 auto 4rem;
   padding: 0 1rem;
   text-align: center;
   color: ${({ theme }) => theme.colors.textDark};
@@ -77,5 +73,4 @@ export const BodyP = styled.p`
   line-height: 1.7;
   font-size: 1.05rem;
   margin-bottom: 1.1rem;
-  color: ${({ theme }) => theme.colors.textDark};
 `;
