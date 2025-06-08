@@ -16,7 +16,7 @@ const services: Service[] = [
   {
     slug: 'talent-recruitment',
     category: 'Business',
-    thumb: '/src/assets/icons/placeholder.svg',
+    thumb: '/src/assets/icons/hireicon.svg',
     kicker: 'Staffing',
     title: 'Talent Recruitment & Selection',
     subtitle: 'Swift hires, zero compromise on quality.',
@@ -33,7 +33,7 @@ const services: Service[] = [
   {
     slug: 'high-volume-recruitment',
     category: 'Business',
-    thumb: '/src/assets/icons/placeholder.svg',
+    thumb: '/src/assets/icons/highemp.svg',
     kicker: 'Scaling',
     title: 'High-Volume Executive & Operational Recruitment',
     subtitle: 'When you need dozens of hires—yesterday.',
@@ -65,7 +65,7 @@ const services: Service[] = [
   {
     slug: 'labor-surveys',
     category: 'Communication',
-    thumb: '/src/assets/icons/placeholder.svg',
+    thumb: '/src/assets/icons/labor.svg',
     kicker: 'Diagnostics',
     title: 'Labor Surveys & Studies',
     subtitle: 'Data-driven insights, actionable results.',
@@ -81,7 +81,7 @@ const services: Service[] = [
   {
     slug: 'training-upskilling',
     category: 'Life Style',
-    thumb: '/src/assets/icons/placeholder.svg',
+    thumb: '/src/assets/icons/training.svg',
     kicker: 'Development',
     title: 'Training & Upskilling',
     subtitle: 'Equip your team for tomorrow’s challenges.',
@@ -97,7 +97,7 @@ const services: Service[] = [
   {
     slug: 'competency-programs',
     category: 'Business',
-    thumb: '/src/assets/icons/placeholder.svg',
+    thumb: '/src/assets/icons/comptesti.svg',
     kicker: 'Assessment',
     title: 'Competency Tests & Managerial Development',
     subtitle: 'Measure skills, close gaps, accelerate growth.',
@@ -113,7 +113,7 @@ const services: Service[] = [
   {
     slug: 'specialized-services',
     category: 'Communication',
-    thumb: '/src/assets/icons/placeholder.svg',
+    thumb: '/src/assets/icons/greygear.svg',
     kicker: 'Outsourcing',
     title: 'Specialized Services',
     subtitle: 'REPSE-certified outsourcing—done right.',
@@ -129,7 +129,7 @@ const services: Service[] = [
   {
     slug: 'hr-soft-landing',
     category: 'Business',
-    thumb: '/src/assets/icons/placeholder.svg',
+    thumb: '/src/assets/icons/mexico.svg',
     kicker: 'Expansion',
     title: 'HR Soft Landing in Mexico',
     subtitle: 'Your launchpad for cross-border growth.',
