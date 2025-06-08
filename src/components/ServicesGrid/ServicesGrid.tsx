@@ -11,7 +11,7 @@ export default function ServicesGrid() {
   return (
     <Section style={{ background: '#F7FBFF' }}>
       <Title>
-        <h2 style={{ textAlign: 'center' }}>Services</h2>
+        <h2 style={{ textAlign: 'center' }}>Services we provide</h2>
       </Title>
 
       <Grid>

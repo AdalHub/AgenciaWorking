@@ -16,8 +16,8 @@ const services: Service[] = [
     kicker: 'Staffing',
     title: 'Talent Recruitment & Selection',
     subtitle: 'Swift hires, zero compromise on quality.',
-    img: 'src/assets/bg.jpg',
-    detailImg: 'src/assets/bg.jpg',
+    img: '/src/assets/bg.jpg',
+    detailImg: '/src/assets/bg.jpg',
     blurb:
       'Pre-screened, background-checked candidates delivered fast—ready to start when you are.',
     body: [
@@ -31,8 +31,8 @@ const services: Service[] = [
     kicker: 'Scaling',
     title: 'High-Volume Executive & Operational Recruitment',
     subtitle: 'When you need dozens of hires—yesterday.',
-    img: 'src/assets/mass-recruitment.jpg',
-    detailImg: 'src/assets/bg.jpg',
+    img: '/src/assets/mass-recruitment.jpg',
+    detailImg: '/src/assets/bg.jpg',
     blurb:
       'Scalable hiring campaigns that fill entire teams under your brand and on your deadline.',
     body: [
@@ -45,8 +45,8 @@ const services: Service[] = [
     kicker: 'Compliance',
     title: 'Background Check Reports',
     subtitle: 'Hire with confidence—and stay compliant.',
-    img: 'src/assets/reports.jpg',
-    detailImg: 'src/assets/bg.jpg',
+    img: '/src/assets/reports.jpg',
+    detailImg: '/src/assets/bg.jpg',
     blurb:
       'Employment, socioeconomic and criminal-record verification that meets Mexican and U.S. regulations.',
     body: [
@@ -59,8 +59,8 @@ const services: Service[] = [
     kicker: 'Diagnostics',
     title: 'Labor Surveys & Studies',
     subtitle: 'Data-driven insights, actionable results.',
-    img: 'src/assets/survey.jpg',
-    detailImg: 'src/assets/bg.jpg',
+    img: '/src/assets/survey.jpg',
+    detailImg: '/src/assets/bg.jpg',
     blurb:
       'Work-climate, NOM-035, turnover, and structure studies that turn raw data into measurable change.',
     body: [
@@ -73,8 +73,8 @@ const services: Service[] = [
     kicker: 'Development',
     title: 'Training & Upskilling',
     subtitle: 'Equip your team for tomorrow’s challenges.',
-    img: 'src/assets/training.jpg',
-    detailImg: 'src/assets/bg.jpg',
+    img: '/src/assets/training.jpg',
+    detailImg: '/src/assets/bg.jpg',
     blurb:
       'Customized courses—from leadership and negotiation to customer service—that boost skills and motivation.',
     body: [
@@ -87,8 +87,8 @@ const services: Service[] = [
     kicker: 'Assessment',
     title: 'Competency Tests & Managerial Development',
     subtitle: 'Measure skills, close gaps, accelerate growth.',
-    img: 'src/assets/tests.jpg',
-    detailImg: 'src/assets/bg.jpg',
+    img: '/src/assets/tests.jpg',
+    detailImg: '/src/assets/bg.jpg',
     blurb:
       'Role-specific assessments plus guided upskilling paths that align employee competencies with business goals.',
     body: [
@@ -101,8 +101,8 @@ const services: Service[] = [
     kicker: 'Outsourcing',
     title: 'Specialized Services',
     subtitle: 'REPSE-certified outsourcing—done right.',
-    img: 'src/assets/specialserv.jpg',
-    detailImg: 'src/assets/bg.jpg',
+    img: '/src/assets/specialserv.jpg',
+    detailImg: '/src/assets/bg.jpg',
     blurb:
       'Administration, logistics, finance, and other functions delivered by dedicated teams under full legal compliance.',
     body: [
@@ -115,8 +115,8 @@ const services: Service[] = [
     kicker: 'Expansion',
     title: 'HR Soft Landing in Mexico',
     subtitle: 'Your launchpad for cross-border growth.',
-    img: 'src/assets/softland.jpg',
-    detailImg: 'src/assets/bg.jpg',
+    img: '/src/assets/softland.jpg',
+    detailImg: '/src/assets/bg.jpg',
     blurb:
       'End-to-end HR support that recruits, pays, and integrates your Mexico team in full legal and cultural compliance.',
     body: [
@@ -131,8 +131,8 @@ const services: Service[] = [
     title: 'About Us',
     subtitle:
       'Agencia Working empowers organizations through people-centric HR solutions.',
-    img: 'src/assets/about-banner.jpg',
-    detailImg: 'src/assets/bg.jpg',
+    img: '/src/assets/about-banner.jpg',
+    detailImg: '/src/assets/bg.jpg',
     blurb: '',
     body: [
       'Founded in 1999, Agencia Working began as a boutique recruitment firm in Tamaulipas, Mexico.',
