@@ -25,9 +25,14 @@ const services: Service[] = [
     blurb:
       'Pre-screened, background-checked candidates delivered fast—ready to start when you are.',
     body: [
-      'Our sourcing team taps an active database of 20,000+ qualified professionals across Mexico and the United States.',
-      'Each candidate is skills-tested, reference-checked, and fully vetted for cultural fit before you ever see a résumé.',
-      'You receive a curated shortlist within seven business days, complete with compensation benchmarks and interview notes.',
+      "Finding the right candidate doesn’t have to be time-consuming or complicated. At Agencia. Working, we provide a fast, reliable, and fully customized Recruitment &amp; Selection service tailored to your company’s needs.",
+      "Our service includes:",
+      " Delivery of qualified candidates ready to fill your open positions.",
+      " We handle all pre-screening, assessments, and background checks, so you can focus on strategic priorities.",
+      " Access to our free corporate job board—just send us your open roles and we’ll start recruiting immediately.",
+      "Performance-based fee model:",
+      "You’ll only be charged if you decide to hire a candidate presented by our team. This ensures transparency, quality, and peace of mind.",
+      "Let us take care of finding the right talent—so you can take care of growing your business.",
     ],
   },
   {
@@ -42,8 +47,12 @@ const services: Service[] = [
     blurb:
       'Scalable hiring campaigns that fill entire teams under your brand and on your deadline.',
     body: [
-      'From production operators to regional executives, we deliver 25–150 hires per month without sacrificing quality.',
-      'A dedicated project manager supplies KPI dashboards so you can track time-to-fill, diversity ratios, and pipeline health in real time.',
+      "At Agencia Working, we have the experience and infrastructure to manage high-volume hiring processes for both executive and operational roles, delivering fast, efficient, and results-driven solutions.",
+      "We take full responsibility for your recruitment process:",
+      "  We promote and advertise your job openings under your company’s name across multiple media channels.",
+      "  We conduct candidate interviews and evaluations in alignment with your internal procedures, enriched by our proven expertise.",
+      "If needed, we can assign a dedicated recruitment team to work exclusively on your hiring campaign, ensuring precision, speed, and quality.",
+      "Focus on your business—we’ll take care of the talent.",
     ],
   },
   {
