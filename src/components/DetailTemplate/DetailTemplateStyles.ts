@@ -78,34 +78,32 @@ export const BodyP = styled.p`
 
 /* 👇 add below existing exports */
 export const ContentBlock = styled.div`
-  max-width: 640px;          /* ≤–– “small box” width */
-  margin: 0 auto 1.4rem;     /* centred column         */
+  max-width: 640px;
+  margin: 0 auto 1.4rem;
   font-family: ${({ theme }) => theme.fonts.body};
   font-size: 1.05rem;
   line-height: 1.7;
 
-  /* headings --------------------------------------------------------- */
+  /* NEW –– everything inside this column starts flush-left */
+  text-align: left;
+
+  /* keep the mini-titles centred */
   h2, h3 {
     font-family: ${({ theme }) => theme.fonts.heading};
     font-weight: 700;
     margin: 2rem auto 1rem;
-    text-align: center;
+    text-align: left;
   }
-  h2 {
-    font-size: 1.55rem;
-    background: #fffb7d;     /* yellow highlight stripe */
-    padding: 0 .35rem;
-    display: inline-block;
-  }
+  h2 { font-size: 1.55rem; background:rgba(255, 255, 255, 0); padding: 0 .35rem; display: inline-block; }
   h3 { font-size: 1.25rem; }
 
-  /* paragraphs & lists ---------------------------------------------- */
-  p { text-align: left; }
+  /* list stays tidy and centred as a block */
   ul {
     list-style: disc;
     padding-left: 1.2rem;
-    display: inline-block;   /* centred list */
+    display: inline-block;
     text-align: left;
   }
   li { margin-bottom: .4rem; }
 `;
+

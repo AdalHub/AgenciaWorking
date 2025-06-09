@@ -1,6 +1,5 @@
 import Header from '../components/header/header';
 import Hero from '../components/hero/hero';
-import WhyChoose from '../components/WhyChoose/WhyChoose';
 import SuccessStories from '../components/SuccessStories/SuccessStories';
 import ServicesGrid from '../components/ServicesGrid/ServicesGrid';
 import OurMission from '../components/OurMission/OurMission';
@@ -14,9 +13,8 @@ export default function Home() {
       <Hero />
       <main>
         <OurMission/>
-        <ServicesGrid />
-        <WhyChoose />
         <SuccessStories />
+        <ServicesGrid />
         <NonDiscrimination />
       </main>
       <Footer />
