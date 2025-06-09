@@ -1,17 +1,20 @@
+// src/components/Contact/ContactMapStyles.ts
 import styled from 'styled-components';
 
-/* keeps 16:9 aspect ratio responsively */
+/* —— centered square frame ——————————————— */
 export const MapWrapper = styled.section`
   position: relative;
   width: 100%;
-  padding-top: 56.25%;        /* 16 : 9 */
-  margin-bottom: 3rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  border-radius: 12px;
+  max-width: 1000px;     
+  aspect-ratio: 1 / 1;   
+  margin: 2.5rem auto;   /* centers the block */
+
+  border-radius: 14px;
   overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 `;
 
-/* fills the wrapper */
+/* —— iframe fills the square ———————————— */
 export const Frame = styled.iframe`
   position: absolute;
   inset: 0;
