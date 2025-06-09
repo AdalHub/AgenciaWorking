@@ -16,7 +16,7 @@ export const Avatar = styled.img`
   position: absolute;
   top: -56px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%);  
   width: 112px;
   height: 112px;
   border-radius: 50%;
@@ -66,9 +66,9 @@ export const ArrowButton = styled.button<{ dir: 'left' | 'right' }>`
 
   /* exact outer size, border counted in               */
   box-sizing: border-box;
-  width: 36px;
-  height: 36px;
-  border: 2px solid ${({ theme }) => theme.colors.primary};
+  width: 48px;
+  height: 48px;
+  border: 1px solid ${({ theme }) => theme.colors.primary};
   border-radius: 50%;
 
   /* reset browser defaults that distort shape         */
@@ -80,7 +80,7 @@ export const ArrowButton = styled.button<{ dir: 'left' | 'right' }>`
   color: #fff;
 
   /* glyph size & perfect centring                     */
-  font-size: 1.25rem;
+  font-size: 2.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
