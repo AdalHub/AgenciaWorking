@@ -89,16 +89,24 @@ export default function Header() {
             (cat) => (
               <div key={cat}>
                 <ColTitle>{cat}</ColTitle>
-                {grouped[cat]?.map((s, idx) => (
-                  <ServiceLink
-                    key={s.slug}
-                    to={`/services/${s.slug}`}
-                    $delay={idx * 80}
-                    onClick={() => setOpen(false)}
-                  >
-                    {s.title}
-                  </ServiceLink>
-                ))}
+                {grouped[cat]?.map((s, idx, arr) => {
+                  /* delay: top→bottom on open, bottom→top on close */
+
+                  const openDelay  = idx * 200;
+                  const closeDelay = (arr.length - 1 - idx) * 200;
+
+                  return (
+                    <ServiceLink
+                      key={s.slug}
+                      to={`/services/${s.slug}`}
+                      $open={open}
+                      $delay={open ? openDelay : closeDelay}
+                      onClick={() => setOpen(false)}
+                    >
+                      {s.title}
+                    </ServiceLink>
+                  );
+                })}
               </div>
             ),
           )}
