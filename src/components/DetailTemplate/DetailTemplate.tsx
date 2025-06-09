@@ -13,6 +13,7 @@ import {
   ButtonsRow,
   Btn,
   BodyP,
+  ContentBlock,
 } from './DetailTemplateStyles';
 
 export default function DetailTemplate() {
@@ -58,8 +59,10 @@ export default function DetailTemplate() {
 
       <Wrapper>
         <img src={heroImg} alt={service.title} />
-        {service.body.map((p) => (
-          <BodyP key={p}>{p}</BodyP>
+        {service.body.map((html, idx) => (
+          <ContentBlock key={idx}
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
         ))}
       </Wrapper>
 

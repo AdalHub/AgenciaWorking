@@ -49,8 +49,8 @@ const services: Service[] = [
     body: [
       "At Agencia Working, we have the experience and infrastructure to manage high-volume hiring processes for both executive and operational roles, delivering fast, efficient, and results-driven solutions.",
       "We take full responsibility for your recruitment process:",
-      "  We promote and advertise your job openings under your company’s name across multiple media channels.",
-      "  We conduct candidate interviews and evaluations in alignment with your internal procedures, enriched by our proven expertise.",
+      " We promote and advertise your job openings under your company’s name across multiple media channels.",
+      " We conduct candidate interviews and evaluations in alignment with your internal procedures, enriched by our proven expertise.",
       "If needed, we can assign a dedicated recruitment team to work exclusively on your hiring campaign, ensuring precision, speed, and quality.",
       "Focus on your business—we’ll take care of the talent.",
     ],
@@ -164,9 +164,37 @@ const services: Service[] = [
     detailImg: '/src/assets/bg.jpg',
     blurb: '',
     body: [
-      'Founded in 1999, Agencia Working began as a boutique recruitment firm in Tamaulipas, Mexico.',
-      'Today we manage full-cycle HR, payroll and talent-development programs for 120+ cross-border clients.',
-      'Our mission is to help companies grow by unlocking the potential of every employee—from the shop floor to the C-suite.',
+  /* ───── top section ─────────────────────────────── */
+  '<h2>Our Story</h2>',
+  'Agencia Working is a solid and reliable company that has been operating since 1999. We are driven by a team of highly qualified professionals dedicated to advancing <strong>Human Development</strong> through effective talent and workforce solutions.',
+  'Our main office is located in <strong>Tamaulipas, Mexico</strong>, and we have representatives across various states throughout the country. In <strong>2007</strong>, we expanded into the U.S. market by opening our office in <strong>San Antonio, Texas</strong>.',
+
+  /* ───── clients ─────────────────────────────────── */
+  '<h3>Our Clients</h3>',
+  'We proudly serve companies in the <strong>commercial, services, and manufacturing (maquiladora)</strong> sectors across <strong>Mexico</strong> and the <strong>United States</strong>. We work with dedication, innovation, and a strong ethical framework grounded in <strong>respect, honesty, teamwork, and loyalty</strong>.',
+  '<p><strong>Our clients are our best references.</strong></p>',
+
+  /* ───── compliance ──────────────────────────────── */
+  '<h3>Compliance and Legal Authorization</h3>',
+  'At <strong>Agencia Working</strong>, we stay fully aligned with all applicable laws and government regulations. Since <strong>2006</strong>, we have held an official <strong>registration with Mexico’s Ministry of Labor and Social Welfare (STPS)</strong>, authorising us to operate as a licensed placement agency. We strictly follow legal requirements, including the obligation to offer free job-search services for workers.',
+
+  /* ───── mission / vision / values ───────────────── */
+  '<h2>Our Mission</h2>',
+  'To create meaningful change that fosters <strong>well-being and quality of life</strong>, through work rooted in <strong>warmth, collaboration, and determination</strong>, guided by <strong>ethics, resilience, respect, and legal compliance</strong>. Our mission is to promote human development that drives value and profitability for the companies that embrace it.',
+
+  '<h2>Our Vision</h2>',
+  'To be a trusted agency known for <strong>driving human development</strong> in individuals and organisations, through services that study, stimulate, and enhance talent—maximising human potential as a strategic engine for business growth.',
+
+  '<h2>Our Values</h2>',
+  'At <strong>Agencia Working</strong>, our values are not just principles—we live them every day.',
+  `<ul>
+      <li>Professional and personal ethics</li>
+      <li>Passion for our work and client service</li>
+      <li>Agility, creativity, and dynamism in everything we do</li>
+      <li>Honesty and integrity as the foundation of trust</li>
+      <li>Clarity and simplicity in our actions and processes</li>
+    </ul>`,
+
     ],
   },
 ];

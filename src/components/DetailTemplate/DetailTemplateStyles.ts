@@ -74,3 +74,38 @@ export const BodyP = styled.p`
   font-size: 1.05rem;
   margin-bottom: 1.1rem;
 `;
+
+
+/* 👇 add below existing exports */
+export const ContentBlock = styled.div`
+  max-width: 640px;          /* ≤–– “small box” width */
+  margin: 0 auto 1.4rem;     /* centred column         */
+  font-family: ${({ theme }) => theme.fonts.body};
+  font-size: 1.05rem;
+  line-height: 1.7;
+
+  /* headings --------------------------------------------------------- */
+  h2, h3 {
+    font-family: ${({ theme }) => theme.fonts.heading};
+    font-weight: 700;
+    margin: 2rem auto 1rem;
+    text-align: center;
+  }
+  h2 {
+    font-size: 1.55rem;
+    background: #fffb7d;     /* yellow highlight stripe */
+    padding: 0 .35rem;
+    display: inline-block;
+  }
+  h3 { font-size: 1.25rem; }
+
+  /* paragraphs & lists ---------------------------------------------- */
+  p { text-align: left; }
+  ul {
+    list-style: disc;
+    padding-left: 1.2rem;
+    display: inline-block;   /* centred list */
+    text-align: left;
+  }
+  li { margin-bottom: .4rem; }
+`;
