@@ -4,9 +4,11 @@ import Home from './pages/Home';
 import Contact from './pages/contact.tsx';
 
 import DetailTemplate from './components/DetailTemplate/DetailTemplate';
+import ScrollToTop from './ScrollToTop.tsx';
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop/>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/contact" element={<Contact />} />
