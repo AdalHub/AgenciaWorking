@@ -1,6 +1,6 @@
 import styled, { css } from 'styled-components';
 import { Link } from 'react-router-dom';
-
+import { motion } from 'framer-motion';
 /* —— section wrapper —— */
 export const SectionWrap = styled.section`
   max-width: 1200px;
@@ -56,11 +56,11 @@ export const Pill = styled.button<{ $active: boolean }>`
 export const Grid = styled.div`
   display: grid;
   gap: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, 260px);
 `;
 
 /*   /  /  /           EL card           /  /  /   */
-export const Card = styled.article`
+export const Card = styled(motion.article)`
   background: #fff;
   border-radius: 12px;
   padding: 1.5rem;
