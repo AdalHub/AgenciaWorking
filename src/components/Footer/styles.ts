@@ -41,14 +41,16 @@ export const MainColumn = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  
 `;
 
 export const LogoLink = styled(Link)`
   display: block;
   /* --- MODIFICATION START --- */
   width: 160px;  /* Set your desired width */
-  height: 55px; /* Set your desired height */
+  height: 165px; /* Set your desired height */
   margin-bottom: 1rem;
+  
 
   img {
     width: 100%;
