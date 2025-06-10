@@ -26,43 +26,60 @@ export const Wrapper = styled.footer`
   }
 `;
 
-/* — floating card — */
-export const ContactCard = styled.div`
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: clamp(240px, 50vw, 360px);
+/* ————————————————————————————————
+   Main Footer Grid
+   ———————————————————————————————— */
+export const FooterGrid = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  gap: 2rem;
+`;
 
-  background: #fff;
-  color: ${({ theme }) => theme.colors.textDark};
-  border-radius: 10px;
-  padding: 1.25rem 1.5rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+export const MainColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
 
-  h3 {
-    margin: 0 0 0.5rem;
-    font-family: ${({ theme }) => theme.fonts.heading};
-    font-size: 1.2rem;
-    color: ${({ theme }) => theme.colors.primary};
+export const LogoLink = styled(Link)`
+  display: block;
+  /* --- MODIFICATION START --- */
+  width: 160px;  /* Set your desired width */
+  height: 55px; /* Set your desired height */
+  margin-bottom: 1rem;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Ensures the image fits within the box without stretching */
   }
-  p {
-    margin: 0;
-    font-family: ${({ theme }) => theme.fonts.body};
-    font-size: 0.9rem;
-    line-height: 1.45;
+  /* --- MODIFICATION END --- */
+`;
+
+export const MexicoLocation = styled.a`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-decoration: none;
+  color: ${({ theme }) => theme.colors.textDark};
+  font-weight: 500;
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
   }
 `;
 
-/* ————————————————————————————————
-   Link grid
-   ———————————————————————————————— */
-export const Grid = styled.div`
-  max-width: 1200px;
-  margin: 4rem auto 3rem;
+export const ServicesGrid = styled.div`
   display: grid;
-  gap: 2.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
 `;
 
 export const GroupTitle = styled.h5`
@@ -72,7 +89,7 @@ export const GroupTitle = styled.h5`
   margin: 0 0 1rem;
   opacity: 0.8;
 `;
-/*service category titles*/
+
 export const FooterLink = styled(Link)`
   display: block;
   font-size: 0.9rem;
@@ -85,12 +102,29 @@ export const FooterLink = styled(Link)`
   }
 `;
 
-/* — social row — */
+/* ————————————————————————————————
+   Bottom Section
+   ———————————————————————————————— */
+export const BottomGrid = styled.div`
+  max-width: 1200px;
+  margin: 3rem auto 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+`;
+
+export const ContactInfo = styled.div``;
+
+export const SocialSection = styled.div`
+  text-align: right;
+`;
+
 export const SocialRow = styled.div`
   display: flex;
   gap: 0.75rem;
-  justify-content: center;
-  margin-bottom: 2.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
 `;
 
 export const SocialBtn = styled.a`
@@ -105,7 +139,8 @@ export const SocialBtn = styled.a`
   color: #c0c6d0;
   transition: background 0.25s, color 0.25s;
 
-  &:hovDark    background: #fff;
+  &:hover {
+    background: #fff;
     color: ${({ theme }) => theme.colors.primary};
   }
 
@@ -115,20 +150,17 @@ export const SocialBtn = styled.a`
   }
 `;
 
-/* — notes — */
 export const Note = styled.p`
-  max-width: 900px;
-  margin: 0.8rem auto;
   font-size: 0.85rem;
   line-height: 1.55;
+  margin: 0.8rem 0;
 `;
-/* — contact line — */
+
 export const ContactRow = styled.p`
-  max-width: 1200px;      /* ⬅️ same container width as Grid */
-  margin: 2rem auto 0;    /* ⬅️ centres the whole row */
   font-family: ${({ theme }) => theme.fonts.body};
   font-size: 0.95rem;
-  text-align: left;       /* ⬅️ left-aligns inside the centred block */
+  text-align: left;
+  margin-top: 1.5rem;
 
   a {
     color: ${({ theme }) => theme.colors.primary};
