@@ -15,7 +15,6 @@ export default function Home() {
         <OurMission/>
         <SuccessStories />
         <ServicesGrid />
-        <NonDiscrimination />
       </main>
       <Footer />
     </>

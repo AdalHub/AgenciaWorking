@@ -20,8 +20,8 @@ const services: Service[] = [
     kicker: 'Staffing',
     title: 'Talent Recruitment & Selection',
     subtitle: 'Swift hires, zero compromise on quality.',
-    img: '/src/assets/bg.jpg',
-    detailImg: '/src/assets/bg.jpg',
+    img: '/src/assets/epic.jpg',
+    detailImg: '/src/assets/epic.jpg',
     blurb:
       'Pre-screened, background-checked candidates delivered fast—ready to start when you are.',
     body: [
@@ -228,8 +228,8 @@ const services: Service[] = [
     kicker: 'Cohesion',
     title: 'Team Building Programs',
     subtitle: 'Create a unified, motivated workforce.',
-    img: '/src/assets/team-build-banner.jpg',   // wide hero used on cards
-    detailImg: '/src/assets/team-build-detail.jpg', // full-width image in detail page
+    img: '/src/assets/godly2.jpg',   // wide hero used on cards
+    detailImg: '/src/assets/godly2.jpg', // full-width image in detail page
     blurb: 'Fun, high-impact dynamics that strengthen communication, innovation, and shared vision.',
     body: [
       /* ─── intro paragraphs ─────────────────────────── */
@@ -304,8 +304,8 @@ const services: Service[] = [
     kicker: 'Expansion',
     title: 'HR Soft Landing in Mexico',
     subtitle: 'Your launchpad for cross-border growth.',
-    img: '/src/assets/softland.jpg',
-    detailImg: '/src/assets/softland.jpg',
+    img: '/src/assets/window.jpg',
+    detailImg: '/src/assets/window.jpg',
     blurb:
       'End-to-end HR support that recruits, pays, and integrates your Mexico team in full legal and cultural compliance.',
     body: [
@@ -345,8 +345,8 @@ const services: Service[] = [
     title: 'About Us',
     subtitle:
       'Agencia Working empowers organizations through people-centric HR solutions.',
-    img: '/src/assets/about-banner.jpg',
-    detailImg: '/src/assets/bg.jpg',
+    img: '/src/assets/ehepic.jpg',
+    detailImg: '/src/assets/ehepic.jpg',
     blurb: '',
     body: [
   /* ───── top section ─────────────────────────────── */

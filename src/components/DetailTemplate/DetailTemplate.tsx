@@ -3,6 +3,8 @@ import services from '../ServicesGrid/data';
 import Header from '../header/header';
 import Footer from '../Footer/Footer';
 import placeholderImg from '../../assets/bg.jpg';
+import careersImg from '../../assets/solutions1.jpg'; // any 16:9 photo
+import { CareersBanner } from './DetailTemplateStyles';
 
 import {
   Hero,
@@ -40,7 +42,6 @@ export default function DetailTemplate() {
   return (
     <>
       <Header />
-
       <Hero>
         <Kicker>{service.kicker}</Kicker>
         <MainTitle>{service.title}</MainTitle>
@@ -65,6 +66,19 @@ export default function DetailTemplate() {
           />
         ))}
       </Wrapper>
+      <CareersBanner>
+        <img className="photo" src={careersImg} alt="HR solutions" />
+
+        <div className="content">
+          <h5>Get a quote today</h5>
+          <h2>Ready to start?</h2>
+          <p>
+            Simplify your HR strategy with custom solutions, tailor-made for your
+            business—fast, compliant, and stress-free.
+          </p>
+          <Link to="/contact">Request quote</Link>
+        </div>
+      </CareersBanner>
 
       <Footer />
     </>

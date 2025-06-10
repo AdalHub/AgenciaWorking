@@ -107,3 +107,74 @@ export const ContentBlock = styled.div`
   li { margin-bottom: .4rem; }
 `;
 
+/* ─── Careers CTA banner ────────────────────────────────────────── */
+export const CareersBanner = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  max-width: 1200px;
+  margin: 4rem auto 5rem;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.15);
+
+  @media (max-width: 880px) {
+    grid-template-columns: 1fr;
+  }
+
+  /* left image pane */
+  .photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* right text pane */
+  .content {
+    background: #12232f;          /* deep slate */
+    color: #ffffff;
+    padding: 4rem 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+    justify-content: center;
+
+    h5 {
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin: 0;
+      opacity: 0.7;
+    }
+
+    h2 {
+      font-family: ${({ theme }) => theme.fonts.heading};
+      font-size: clamp(1.8rem, 4vw, 2.4rem);
+      margin: 0;
+    }
+
+    p {
+      font-family: ${({ theme }) => theme.fonts.body};
+      font-size: 1rem;
+      line-height: 1.6;
+      opacity: 0.9;
+      margin: 0;
+      max-width: 32rem;
+    }
+
+    a {
+      margin-top: 1.2rem;
+      display: inline-block;
+      background: ${({ theme }) => theme.colors.primary};
+      color: #fff;
+      padding: 0.6rem 1.8rem;
+      border-radius: 28px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.25s;
+    }
+
+    a:hover {
+      background: ${({ theme }) => theme.colors.accent};
+    }
+  }
+`;

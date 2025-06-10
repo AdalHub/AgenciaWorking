@@ -1,50 +1,40 @@
 import styled from 'styled-components';
+import { Link } from 'react-router-dom';
 import footerBg from '../../assets/floor.png';
 
 /* ——————————————————————————————————————————
-   Full-bleed footer with background image
+   Full-bleed footer background
    —————————————————————————————————————————— */
 export const Wrapper = styled.footer`
   position: relative;
-  left: 50%;
-  transform: translateX(-50%); /* centre wrapper regardless of parent */
   width: 100vw;
-  margin: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  padding-top: 7rem;      /* space for floating card */
+  padding-bottom: 4rem;
+  color: ${({ theme }) => theme.colors.textDark};
 
-  /* background photo + dark overlay */
-  background: url(${footerBg}) center / cover no-repeat;
-  isolation: isolate;               /* so ::before stays behind content */
+  background: rgb(235, 235, 237);
+  isolation: isolate;
 
   &::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5); /* darken photo a bit */
+    background: rgba(0, 0, 0, 0);
     z-index: -1;
   }
-
-
-
-
-
-  /* give breathing room so card doesn’t overlap content above */
-  padding: 6rem 1rem 3rem;
-  text-align: center;
-  color: ${({ theme }) => theme.colors.textLight};
 `;
 
-/* ——————————————————————————————————————————
-   Floating contact card
-   —————————————————————————————————————————— */
+/* — floating card — */
 export const ContactCard = styled.div`
   position: absolute;
-  top: 0;                           /* sit at the very top of wrapper */
+  top: 0;
   left: 50%;
-  transform: translate(-50%, -50%); /* pull up by half its own height */
-
+  transform: translate(-50%, -50%);
   width: clamp(240px, 50vw, 360px);
 
-  background: ${({ theme }) => theme.colors.textLight};
+  background: #fff;
   color: ${({ theme }) => theme.colors.textDark};
   border-radius: 10px;
   padding: 1.25rem 1.5rem;
@@ -56,7 +46,6 @@ export const ContactCard = styled.div`
     font-size: 1.2rem;
     color: ${({ theme }) => theme.colors.primary};
   }
-
   p {
     margin: 0;
     font-family: ${({ theme }) => theme.fonts.body};
@@ -65,12 +54,87 @@ export const ContactCard = styled.div`
   }
 `;
 
-/* ——————————————————————————————————————————
-   Legal note
-   —————————————————————————————————————————— */
-export const Note = styled.p`
-  margin: 0;
-  font-family: ${({ theme }) => theme.fonts.body};
+/* ————————————————————————————————
+   Link grid
+   ———————————————————————————————— */
+export const Grid = styled.div`
+  max-width: 1200px;
+  margin: 4rem auto 3rem;
+  display: grid;
+  gap: 2.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+`;
+
+export const GroupTitle = styled.h5`
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 1rem;
+  opacity: 0.8;
+`;
+/*service category titles*/
+export const FooterLink = styled(Link)`
+  display: block;
   font-size: 0.9rem;
-  line-height: 1.4;
+  margin-bottom: 0.5rem;
+  color: ${({ theme }) => theme.colors.textDark};
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+/* — social row — */
+export const SocialRow = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+`;
+
+export const SocialBtn = styled.a`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid #c0c6d0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c0c6d0;
+  transition: background 0.25s, color 0.25s;
+
+  &:hovDark    background: #fff;
+    color: ${({ theme }) => theme.colors.primary};
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+`;
+
+/* — notes — */
+export const Note = styled.p`
+  max-width: 900px;
+  margin: 0.8rem auto;
+  font-size: 0.85rem;
+  line-height: 1.55;
+`;
+/* — contact line — */
+export const ContactRow = styled.p`
+  max-width: 1200px;      /* ⬅️ same container width as Grid */
+  margin: 2rem auto 0;    /* ⬅️ centres the whole row */
+  font-family: ${({ theme }) => theme.fonts.body};
+  font-size: 0.95rem;
+  text-align: left;       /* ⬅️ left-aligns inside the centred block */
+
+  a {
+    color: ${({ theme }) => theme.colors.primary};
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
 `;
