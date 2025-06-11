@@ -2,13 +2,13 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { ArrowLeft } from 'lucide-react';
-import { ApplicationModal } from './ApplicationModal'; // Path to your new modal component
-import type { JobPosting } from './jobData'; // Import JobPosting interface
+import { ApplicationModal } from './ApplicationModal';
+import type { JobPosting } from './jobData';
 
-// Styled components for the Job Details Page Layout
+// Styled components for the Job Details Page Layout (unchanged, just showing context)
 const JobDetailsWrapper = styled.div`
   max-width: 900px;
-  margin: 0 auto; /* Centered within ListWrap */
+  margin: 0 auto;
   padding: 2rem;
   background: #ffffff;
   border-radius: 12px;
@@ -48,28 +48,28 @@ const JobTitle = styled.h1`
 
 const JobMeta = styled.p`
   font-family: ${({ theme }) => theme.fonts.body};
-  color: #888888; /* Small grey letters */
+  color: #888888;
   font-size: 1rem;
   text-align: center;
   margin-bottom: 1rem;
 `;
 
 const CategoryBox = styled.div`
-  display: block; /* Changed to block to allow margin:auto */
-  width: fit-content; /* Make box fit content */
+  display: block;
+  width: fit-content;
   background: ${({ theme }) => theme.colors.primary};
   color: ${({ theme }) => theme.colors.textLight};
   font-family: ${({ theme }) => theme.fonts.body};
   font-size: 0.9rem;
   padding: 0.5rem 1.2rem;
   border-radius: 8px;
-  margin: 0 auto 2rem; /* Centered box */
+  margin: 0 auto 2rem;
   text-align: center;
 `;
 
 const ApplyButton = styled.button`
   display: block;
-  margin: 2rem auto; /* Centered */
+  margin: 2rem auto;
   background: ${({ theme }) => theme.colors.accent};
   color: #fff;
   border: none;
@@ -96,25 +96,13 @@ const JobDescription = styled.div`
 `;
 
 interface JobDetailsPageProps {
-  job: JobPosting; // The job data to display
-  onBack: () => void; // Function to go back to job listings
-  phpScriptUrl: string; // URL for the PHP script
+  job: JobPosting;
+  onBack: () => void;
+  // phpScriptUrl: string; // Removed: No longer needed
 }
 
-const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ job, onBack, phpScriptUrl }) => {
+const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ job, onBack }) => { // Removed phpScriptUrl from destructuring
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // This check is already handled by JobList rendering this component only if job is found
-  // if (!job) {
-  //   return (
-  //     <JobDetailsWrapper>
-  //       <p>Job not found.</p>
-  //       <BackButton onClick={onBack}>
-  //         <ArrowLeft size={16} /> Back to Job Listings
-  //       </BackButton>
-  //     </JobDetailsWrapper>
-  //   );
-  // }
 
   return (
     <JobDetailsWrapper>
@@ -123,8 +111,8 @@ const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ job, onBack, phpScriptU
       </BackButton>
 
       <JobTitle>{job.title}</JobTitle>
-      <JobMeta>{job.employmentType}</JobMeta> {/* Changed to employmentType */}
-      <CategoryBox>{job.team}</CategoryBox> {/* Changed to team */}
+      <JobMeta>{job.employmentType}</JobMeta>
+      <CategoryBox>{job.team}</CategoryBox>
 
       <ApplyButton onClick={() => setIsModalOpen(true)}>Apply Now</ApplyButton>
 
@@ -139,7 +127,7 @@ const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ job, onBack, phpScriptU
         <ApplicationModal
           jobTitle={job.title}
           onClose={() => setIsModalOpen(false)}
-          phpScriptUrl={phpScriptUrl}
+          // phpScriptUrl={phpScriptUrl} // Removed: No longer needed
         />
       )}
     </JobDetailsWrapper>

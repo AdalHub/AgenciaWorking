@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { CheckCircle, X } from 'lucide-react'; // Import icons
-
+import { CheckCircle, X } from 'lucide-react'; // <-- ADD THIS IMPORT STATEMENT
 import {
   Wrapper,
   Inner,
@@ -13,159 +12,142 @@ import {
   Input,
   TextArea,
   Button,
-  // New imports for pop-up styles
   Overlay,
   PopupBox,
   CloseButton,
   CheckIconContainer,
   SuccessMessage,
-} from './ContactBlockStyles'; // Make sure this path is correct for your styles file
+} from './ContactBlockStyles';
 
-type FormShape = {
+interface ContactFormShape {
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
+  company: string;
   message: string;
-};
+}
 
 export default function ContactBlock() {
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
-  } = useForm<FormShape>();
+    formState: { errors },
+  } = useForm<ContactFormShape>();
 
-  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
-  const [isSuccess, setIsSuccess] = useState<boolean>(false);
-  const [showPopup, setShowPopup] = useState<boolean>(false); // State to control popup visibility
+  const [formStatusMessage, setFormStatusMessage] = useState<string | null>(null);
+  const [showSuccessPopup, setShowSuccessPopup] = useState<boolean>(false);
 
-  const onSubmit = async (data: FormShape) => {
-    setFeedbackMessage(null);
-    setIsSuccess(false);
-    setShowPopup(false); // Ensure popup is hidden before new submission
+  const onSubmit = (data: ContactFormShape) => {
+    setFormStatusMessage(null);
+    setShowSuccessPopup(false);
+
+    const recipientEmail = 'info@agenciaworking.com'; // Your target email
+    const subject = encodeURIComponent('Contact Form Submission from Website');
+    const body = encodeURIComponent(
+      `Full Name: ${data.firstName} ${data.lastName}\n` +
+      `Email: ${data.email}\n` +
+      `Phone: ${data.phone}\n` +
+      `Company: ${data.company || 'N/A'}\n\n` +
+      `Message:\n${data.message}`
+    );
+
+    const mailtoLink = `mailto:${recipientEmail}?subject=${subject}&body=${body}`;
 
     try {
-      // IMPORTANT: Replace with the actual URL of your PHP script on Hostway
-      const response = await fetch('https://www.agenciaworking.com/send_email.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: `${data.firstName} ${data.lastName}`,
-          email: data.email,
-          message: data.message,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setFeedbackMessage('Successfully Submitted message'); // Specific message for success pop-up
-        setIsSuccess(true);
-        reset(); // Reset form fields on success
-        setShowPopup(true); // Show the success pop-up
-      } else {
-        // For general errors, display directly below the form, not in the pop-up
-        setFeedbackMessage(result.message || 'Sorry, something went wrong. Please try again.');
-        setIsSuccess(false);
-        // setShowPopup(false); // Ensure pop-up doesn't show for errors
-      }
-    } catch (err) {
-      console.error('Failed to send message:', err);
-      setFeedbackMessage('An unexpected error occurred. Please check your internet connection and try again.');
-      setIsSuccess(false);
-      // setShowPopup(false); // Ensure pop-up doesn't show for network errors
+      window.location.href = mailtoLink;
+      // Assume success if the mailto link is opened
+      setShowSuccessPopup(true);
+      setFormStatusMessage('Your email client has opened with the pre-filled message. Please click "Send" to complete your submission. We will contact you soon!');
+      reset(); // Reset form fields
+    } catch (error) {
+      setFormStatusMessage('Failed to open email client. Please ensure you have one configured, or email us directly at info@agenciaworking.com.');
+      console.error('Mailto error:', error);
     }
-  };
-
-  const handleClosePopup = () => {
-    setShowPopup(false);
-    setFeedbackMessage(null); // Clear message when closing
-    setIsSuccess(false); // Reset success state
   };
 
   return (
     <Wrapper>
       <Inner>
         <TwoCol>
-          {/* left: address / phones / email */}
+          {/* Left Column (Details) */}
           <div>
-            <Title>Contact Details</Title>
+            <Title>Contact Us</Title>
             <Details>
-              <p>Boulevard&nbsp;Tamaulipas&nbsp;3191&nbsp;Local&nbsp;3&nbsp;y&nbsp;4</p>
-              <p>Fraccionamiento&nbsp;La&nbsp;Misión</p>
-              <p>Ciudad&nbsp;Victoria&nbsp;Tamps,&nbsp;C.P.&nbsp;87025</p>
-              <p>834-147-2218</p>
-              <p>899-461-2756</p>
-              <p>info@agenciaworking.com</p>
+              <p>Boulevard Tamaulipas 3191 Local 3 y 4,</p>
+              <p>Fraccionamiento La Misión, Ciudad Victoria,</p>
+              <p>Tamaulipas. MX C.P. 87025</p>
+              <p>Phone: 834 147 2218</p>
+              <p>Phone: 899 461 2756</p>
+              <p>Email: Info@agenciaworking.com</p>
             </Details>
           </div>
 
-          {/* right: form */}
-          <Form onSubmit={handleSubmit(onSubmit)}>
-            <Row>
+          {/* Right Column (Form) */}
+          <div>
+            <Title>Send Us a Message</Title>
+            <Form onSubmit={handleSubmit(onSubmit)}>
+              <Row>
+                <Input
+                  placeholder="First Name"
+                  {...register('firstName', { required: true })}
+                  $error={!!errors.firstName}
+                />
+                <Input
+                  placeholder="Last Name"
+                  {...register('lastName', { required: true })}
+                  $error={!!errors.lastName}
+                />
+                <Input
+                  placeholder="Email"
+                  type="email"
+                  {...register('email', { required: true, pattern: /^\S+@\S+$/i })}
+                  $error={!!errors.email}
+                />
+              </Row>
               <Input
-                placeholder="First name"
-                {...register('firstName', { required: true })}
-                $error={!!errors.firstName}
+                placeholder="Phone Number"
+                type="tel"
+                {...register('phone', { required: true })}
+                $error={!!errors.phone}
               />
               <Input
-                placeholder="Last name"
-                {...register('lastName', { required: true })}
-                $error={!!errors.lastName}
+                placeholder="Company (Optional)"
+                {...register('company')}
               />
-              <Input
-                placeholder="Email"
-                type="email"
-                {...register('email', {
-                  required: true,
-                  pattern: /^\S+@\S+$/i,
-                })}
-                $error={!!errors.email}
+              <TextArea
+                placeholder="Your Message"
+                rows={5}
+                {...register('message', { required: true })}
+                $error={!!errors.message}
               />
-            </Row>
+              <Button type="submit">
+                Send Message
+              </Button>
 
-            <TextArea
-              placeholder="Message"
-              rows={4}
-              {...register('message', { required: true })}
-              $error={!!errors.message}
-            />
-
-            <Button type="submit" disabled={isSubmitting} className={isSubmitting ? 'loading' : ''}>
-              {isSubmitting ? 'Sending...' : 'Send'}
-            </Button>
-
-            {/* Display general feedback message below the form only if not showing popup */}
-            {feedbackMessage && !showPopup && !isSuccess && ( // Only show error message below form
-              <p style={{ color: 'red', marginTop: '10px' }}>
-                {feedbackMessage}
-              </p>
-            )}
-
-            {/* Optional: Display validation errors */}
-            {errors.firstName && <p style={{ color: 'red' }}>First name is required.</p>}
-            {errors.lastName && <p style={{ color: 'red' }}>Last name is required.</p>}
-            {errors.email && <p style={{ color: 'red' }}>Please enter a valid email.</p>}
-            {errors.message && <p style={{ color: 'red' }}>Message is required.</p>}
-          </Form>
+              {errors.firstName && <p style={{ color: 'red' }}>First Name is required.</p>}
+              {errors.lastName && <p style={{ color: 'red' }}>Last Name is required.</p>}
+              {errors.email && <p style={{ color: 'red' }}>A valid Email is required.</p>}
+              {errors.phone && <p style={{ color: 'red' }}>Phone Number is required.</p>}
+              {errors.message && <p style={{ color: 'red' }}>Message is required.</p>}
+            </Form>
+          </div>
         </TwoCol>
       </Inner>
 
-      {/* Success Pop-up */}
-      {showPopup && isSuccess && (
+      {/* Success/Error Pop-up */}
+      {showSuccessPopup && formStatusMessage && (
         <Overlay>
           <PopupBox>
-            <CloseButton onClick={handleClosePopup}>
-              <X size={24} /> {/* Exit cross icon */}
+            <CloseButton onClick={() => setShowSuccessPopup(false)}>
+              <X size={24} />
             </CloseButton>
             <CheckIconContainer>
-              <CheckCircle /> {/* Green checkmark icon */}
+              <CheckCircle />
             </CheckIconContainer>
             <SuccessMessage>
-              {feedbackMessage} {/* Will display "Successfully Submitted message" */}
+              {formStatusMessage}
             </SuccessMessage>
           </PopupBox>
         </Overlay>

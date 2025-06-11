@@ -11,76 +11,65 @@ import {
   ModalForm,
   ModalInput,
   ModalTextArea,
-  FileInputWrapper,
+  // FileInputWrapper, // This will no longer be needed if we remove file input
   ModalButton,
   ModalStatusMessage,
   CheckIconContainer,
   SuccessMessage,
   PopupBox
-} from './ContactBlockStyles'; // Corrected import path
+} from './ContactBlockStyles';
 
 interface ApplicationFormShape {
   fullName: string;
   email: string;
   phone: string;
   whyApply: string;
-  resume: FileList; // For file input
+  // resume: FileList; // Removed: mailto cannot handle file uploads
 }
 
 interface ApplicationModalProps {
   jobTitle: string; // Pass the job title to the modal
   onClose: () => void;
-  phpScriptUrl: string; // The URL to your send_email.php
+  // phpScriptUrl: string; // Removed: No longer using PHP script
 }
 
-export const ApplicationModal: React.FC<ApplicationModalProps> = ({ jobTitle, onClose, phpScriptUrl }) => {
+export const ApplicationModal: React.FC<ApplicationModalProps> = ({ jobTitle, onClose }) => {
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors}, 
   } = useForm<ApplicationFormShape>();
 
   const [formStatusMessage, setFormStatusMessage] = useState<string | null>(null);
   const [isFormSubmissionSuccess, setIsFormSubmissionSuccess] = useState<boolean>(false);
 
-  const onSubmit = async (data: ApplicationFormShape) => {
+  const onSubmit = (data: ApplicationFormShape) => {
     setFormStatusMessage(null);
     setIsFormSubmissionSuccess(false);
 
-    // Create FormData object to handle file upload
-    const formData = new FormData();
-    formData.append('fullName', data.fullName);
-    formData.append('email', data.email);
-    formData.append('phone', data.phone);
-    formData.append('jobTitle', jobTitle); // Include job title
-    formData.append('whyApply', data.whyApply);
-    if (data.resume && data.resume[0]) {
-      formData.append('resume', data.resume[0]); // Append the actual file
-    }
+    const recipientEmail = 'applications@agenciaworking.com'; // Dedicated email for applications
+    const subject = encodeURIComponent(`Job Application: ${jobTitle}`);
+    const body = encodeURIComponent(
+      `Job Title: ${jobTitle}\n` +
+      `Full Name: ${data.fullName}\n` +
+      `Email: ${data.email}\n` +
+      `Phone: ${data.phone}\n\n` +
+      `Why I'm a great fit:\n${data.whyApply}\n\n` +
+      `Please remember to attach your resume to this email before sending!`
+    );
+
+    const mailtoLink = `mailto:${recipientEmail}?subject=${subject}&body=${body}`;
 
     try {
-      const response = await fetch(phpScriptUrl, {
-        method: 'POST',
-        // DO NOT set Content-Type header when sending FormData;
-        // the browser will set it automatically with the correct boundary.
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setFormStatusMessage('Your application has been sent successfully!');
-        setIsFormSubmissionSuccess(true);
-        reset(); // Reset form fields on success
-      } else {
-        setFormStatusMessage(result.message || 'Failed to send application. Please try again.');
-        setIsFormSubmissionSuccess(false);
-      }
+      window.location.href = mailtoLink;
+      setIsFormSubmissionSuccess(true);
+      setFormStatusMessage('Your email client has opened with the pre-filled application. Please **attach your resume** and click "Send" to complete your application. We will contact you soon!');
+      reset(); // Reset form fields
     } catch (err) {
-      console.error('Application submission error:', err);
-      setFormStatusMessage('An unexpected error occurred. Please check your internet connection.');
+      setFormStatusMessage('Failed to open email client. Please ensure you have one configured, or email us directly at applications@agenciaworking.com with your application and resume.');
       setIsFormSubmissionSuccess(false);
+      console.error('Mailto error:', err);
     }
   };
 
@@ -131,16 +120,11 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({ jobTitle, on
             $error={!!errors.phone}
           />
 
-          <FileInputWrapper>
-            <label htmlFor="resume-upload">Upload Resume (PDF, DOCX)</label>
-            <ModalInput
-              id="resume-upload"
-              type="file"
-              accept=".pdf,.doc,.docx" // Restrict file types
-              {...register('resume', { required: 'Resume file is required.' })} // Added required message
-              $error={!!errors.resume}
-            />
-          </FileInputWrapper>
+          {/* Removed file input and related wrapper */}
+          <p style={{ fontSize: '0.9rem', color: '#505864', marginBottom: '0.5rem', textAlign: 'center' }}>
+            **Important:** Your resume will be attached manually. Please complete the form below, and your email client will open. **Remember to attach your resume to the email before sending!**
+          </p>
+
 
           <ModalTextArea
             placeholder="Tell us why you're a great fit for this role."
@@ -149,10 +133,11 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({ jobTitle, on
             $error={!!errors.whyApply}
           />
 
-          <ModalButton type="submit" disabled={isSubmitting} className={isSubmitting ? 'loading' : ''}>
-            {isSubmitting ? 'Applying...' : 'Submit Application'}
+          <ModalButton type="submit">
+            Open Email Client & Apply
           </ModalButton>
 
+          {/* Form status and error messages */}
           {formStatusMessage && !isFormSubmissionSuccess && (
             <ModalStatusMessage $isSuccess={isFormSubmissionSuccess}>
               {formStatusMessage}
@@ -162,7 +147,6 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({ jobTitle, on
           {errors.fullName && <ModalStatusMessage $isSuccess={false}>Full Name is required.</ModalStatusMessage>}
           {errors.email && <ModalStatusMessage $isSuccess={false}>A valid Email is required.</ModalStatusMessage>}
           {errors.phone && <ModalStatusMessage $isSuccess={false}>Phone Number is required.</ModalStatusMessage>}
-          {errors.resume && <ModalStatusMessage $isSuccess={false}>{errors.resume.message}</ModalStatusMessage>} {/* Display resume error message */}
           {errors.whyApply && <ModalStatusMessage $isSuccess={false}>Please tell us why you want to apply.</ModalStatusMessage>}
         </ModalForm>
       </ApplicationModalContent>

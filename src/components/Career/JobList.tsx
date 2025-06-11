@@ -1,21 +1,20 @@
-import React, { useMemo, useState } from 'react'; // Added useState
+import React, { useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import JobCard from './JobCard'; // Corrected import path
-import jobs from './jobData'; // Corrected import path
-import type { JobPosting } from './jobData'; // Corrected import path
+import JobCard from './JobCard';
+import jobs from './jobData';
+import type { JobPosting } from './jobData';
 import styled from 'styled-components';
-import type { FilterState } from './FilterPanel'; // Assuming FilterPanel is in the same directory
+import type { FilterState } from './FilterPanel';
 
-// Import the new JobDetailsPage
-import JobDetailsPage from './JobDetailsPage'; // Assuming new component in same directory
+import JobDetailsPage from './JobDetailsPage';
 
 const ListWrap = styled.div`
   flex: 1;
   min-width: 0;   /* fix overflow flexbox bug in Firefox */
 `;
 
-// IMPORTANT: Define your PHP script URL here once for all components that need it
-const PHP_SCRIPT_URL = 'https://www.agenciaworking.com/send_email.php'; // REPLACE THIS WITH YOUR ACTUAL HOSTWAY URL
+// PHP_SCRIPT_URL is no longer needed since we are using mailto:
+// const PHP_SCRIPT_URL = 'https://www.agenciaworking.com/send_email.php';
 
 export default function JobList({ filters }: { filters: FilterState }) {
   const [selectedJobSlug, setSelectedJobSlug] = useState<string | null>(null);
@@ -29,7 +28,7 @@ export default function JobList({ filters }: { filters: FilterState }) {
           j.title.toLowerCase().includes(filters.q.toLowerCase()) ||
           j.description.toLowerCase().includes(filters.q.toLowerCase()) ||
           j.team.toLowerCase().includes(filters.q.toLowerCase()) ||
-          j.location.toLowerCase().includes(filters.q.toLowerCase()) // Also search location
+          j.location.toLowerCase().includes(filters.q.toLowerCase())
       );
 
     if (filters.employment)
@@ -66,7 +65,7 @@ export default function JobList({ filters }: { filters: FilterState }) {
         <JobDetailsPage
           job={selectedJob}
           onBack={handleBackToJobListings}
-          phpScriptUrl={PHP_SCRIPT_URL}
+          // phpScriptUrl={PHP_SCRIPT_URL} // Removed: No longer needed
         />
       ) : (
         <AnimatePresence mode="popLayout">
