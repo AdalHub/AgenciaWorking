@@ -1,3 +1,5 @@
+/send_email.php
+
 # Logs
 logs
 *.log
@@ -22,3 +24,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+send_email.php
+send_email.php
