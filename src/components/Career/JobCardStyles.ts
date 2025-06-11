@@ -1,15 +1,24 @@
 import styled from 'styled-components';
-
 import { motion } from 'framer-motion';
 
 export const Card = styled(motion.div)`
   padding: 1.3rem 1.6rem;
   border-bottom: 1px solid #e5e7eb;
+  cursor: pointer; /* Makes the entire card clickable */
+  transition: background-color 0.2s ease; /* Smooth hover effect */
+
+  &:hover {
+    background-color: #f8f8f8; /* Light background on hover */
+  }
 
   h4 {
     font-size: 1rem;
     margin: 0 0 0.4rem;
     color: ${({ theme }) => theme.colors.primary};
+    text-decoration: none; /* Ensure no default underline */
+    &:hover {
+      text-decoration: underline; /* Add underline on title hover */
+    }
   }
 
   .meta {
