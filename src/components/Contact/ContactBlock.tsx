@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CheckCircle, X } from 'lucide-react'; // Import icons
 
@@ -47,7 +47,7 @@ export default function ContactBlock() {
 
     try {
       // IMPORTANT: Replace with the actual URL of your PHP script on Hostway
-      const response = await fetch('https://www.yourdomain.com/send_email.php', {
+      const response = await fetch('https://www.agenciaworking.com/send_email.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
