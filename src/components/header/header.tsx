@@ -11,7 +11,6 @@ import {
   ServiceLink,
 } from './styles';
 import logo from '../../assets/header_logo.jpg';
-import { Link } from 'react-router-dom';
 import services from '../ServicesGrid/data';
 
 /* ---------- NAV LINKS ---------- */

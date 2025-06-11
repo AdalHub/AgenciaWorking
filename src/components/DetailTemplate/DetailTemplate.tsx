@@ -14,7 +14,6 @@ import {
   SubTitle,
   ButtonsRow,
   Btn,
-  BodyP,
   ContentBlock,
 } from './DetailTemplateStyles';
 

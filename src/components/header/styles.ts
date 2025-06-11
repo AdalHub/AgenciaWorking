@@ -66,12 +66,7 @@ export const MenuItem = styled(Link).withConfig({
    MEGA MENU STYLES – new open/close transitions + staggered items
    ===================================================================== */
 
-import { css, keyframes } from 'styled-components';
 
-
-/* —————————————————— panel slide animations ——————————————— */
-const slideIn  = css`opacity: 1; transform: translateY(0);`;
-const slideOut = css`opacity: 0; transform: translateY(-12px);`;
 
 /* ——— panel (no opacity changes) ——————————————— */
 export const MegaWrap = styled.div<{ $open: boolean }>`
@@ -115,17 +110,7 @@ export const ColTitle = styled.h4`
 
 
 
-/* ────────────────────────────────────────────────────────────────── */
-/*  link animations                                                  */
-/* ────────────────────────────────────────────────────────────────── */
-const dropIn = keyframes`
-  from { opacity: 0; transform: translateY(-12px); }
-  to   { opacity: 1; transform: translateY(0);     }
-`;
-const dropOut = keyframes`
-  from { opacity: 1; transform: translateY(0);     }
-  to   { opacity: 0; transform: translateY(-14px); }
-`;
+
 
 /* Service links with transition-based stagger */
 export const ServiceLink = styled(Link)<{

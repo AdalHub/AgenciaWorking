@@ -1,37 +1,37 @@
 import { Features, Heading, SubHeading, Wrapper, RightImage } from './styles';
-import { Award, Ticket, MapPin, User } from 'lucide-react'; // toy icons
-import heroPic from '../../assets/mission.jpg';          // ← replace
-import type { ReactElement } from 'react';
+import { Briefcase, ShieldCheck, TrendingUp, Users } from 'lucide-react'; // Updated icons
+import heroPic from '../../assets/mission.jpg'; // Ensure this image is relevant to HR/business
 
 interface Item {
-  icon: ReactElement;      // instead of JSX.Element
+  icon: ReactElement;
   title: string;
   blurb: string;
 }
+
 const items: Item[] = [
   {
-    icon: <Ticket size={36} strokeWidth={2.2} />,
-    title: 'Easy Booking',
+    icon: <Briefcase size={36} strokeWidth={2.2} />,
+    title: 'Tailored Solutions',
     blurb:
-      'Your ticket purchase with our hassle-free and speedy process, designed for your convenience and ease.',
+      'We provide fast, reliable, and fully customized HR solutions tailored to your company’s unique needs and goals. ',
   },
   {
-    icon: <Award size={36} strokeWidth={2.2} />,
-    title: '100 % Trusted',
+    icon: <ShieldCheck size={36} strokeWidth={2.2} />,
+    title: 'Trusted & Compliant',
     blurb:
-      'We take pride in being 100 % trusted. Every step of the way, you can rely on us for honesty and reliability.',
+      'Operating since 1999, we ensure a legally compliant approach with REPSE certification and official registration with Mexico’s Ministry of Labor and Social Welfare. ',
   },
   {
-    icon: <MapPin size={36} strokeWidth={2.2} />,
-    title: 'Inform & Recommend',
+    icon: <TrendingUp size={36} strokeWidth={2.2} />,
+    title: 'Driving Business Growth',
     blurb:
-      'Get personal recommendations to suit your interests and local tips for a more profitable trip.',
+      'We focus on human development that drives value and profitability for your company, maximizing human potential as a strategic engine for business growth. ',
   },
   {
-    icon: <User size={36} strokeWidth={2.2} />,
-    title: 'Best Tour Guide',
+    icon: <Users size={36} strokeWidth={2.2} />,
+    title: 'Expert Team',
     blurb:
-      'Get personal recommendations to suit your interests and local tips for a more profitable trip.',
+      'Our highly qualified professionals are dedicated to advancing Human Development through effective talent and workforce solutions. ',
   },
 ];
 
@@ -39,10 +39,10 @@ export default function OurMission() {
   return (
     <Wrapper>
       {/* headings */}
-      <Heading>Top-rated Best Service Present for you</Heading>
+      <Heading>Your Strategic Partner in Human Capital</Heading>
       <SubHeading>
-        Discover incredible experiences around the world with the <br />
-        highest-rated travel companions
+        Discover how Agencia Working provides comprehensive human resources solutions <br />
+        to empower your workforce and drive organizational success.
       </SubHeading>
 
       {/* two-column layout */}
@@ -63,7 +63,7 @@ export default function OurMission() {
         {/* right column – animated picture */}
         <RightImage
           src={heroPic}
-          alt="Spectacular destination"
+          alt="Agencia Working Team"
           whileInView={{ x: 0, opacity: 1 }}
           initial={{ x: 120, opacity: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}

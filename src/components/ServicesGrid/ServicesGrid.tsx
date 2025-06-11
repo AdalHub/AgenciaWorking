@@ -1,6 +1,5 @@
 // src/components/ServicesGrid/ServicesGrid.tsx
 import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import services from './data';
 import {

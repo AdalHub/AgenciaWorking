@@ -5,7 +5,6 @@ import {
   CheckboxRow,
   Chips,
   Chip,
-  SearchInputWrap,
   ApplyBtn,
   ClearBtn,
   ButtonsRow,
