@@ -1,7 +1,7 @@
 // ✅ src/components/admin/AdminPanel.tsx
 import { useEffect, useState } from 'react';
 import { signInWithPopup, onAuthStateChanged } from 'firebase/auth';
-import { auth, provider, db } from '../../firebaseConfig';
+import { auth, provider} from '../../firebaseConfig';
 import JobForm from './JobForm';
 import JobList from './JobList';
 

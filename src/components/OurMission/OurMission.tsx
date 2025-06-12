@@ -1,6 +1,7 @@
 import { Features, Heading, SubHeading, Wrapper, RightImage } from './styles';
 import { Briefcase, ShieldCheck, TrendingUp, Users } from 'lucide-react'; // Updated icons
 import heroPic from '../../assets/mission.jpg'; // Ensure this image is relevant to HR/business
+import type { ReactElement } from 'react';
 
 interface Item {
   icon: ReactElement;
