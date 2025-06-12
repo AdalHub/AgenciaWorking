@@ -54,7 +54,7 @@ export default function Footer() {
             <GroupTitle>Business</GroupTitle>
             <FooterLink to="/services/talent-recruitment">Talent Recruitment & Selection</FooterLink>
             <FooterLink to="/services/high-volume-recruitment">High-Volume Executive & Operational Recruitment</FooterLink>
-            <FooterLink to="/services/competency-tests">Competency Tests & Managerial Development</FooterLink>
+            <FooterLink to="/services/competency-programs">Competency Tests & Managerial Development</FooterLink>
             <FooterLink to="/services/team-building">Team Building Programs</FooterLink>
             <FooterLink to="/services/hr-soft-landing">HR Soft Landing in Mexico</FooterLink>
           </div>

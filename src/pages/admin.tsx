@@ -1,7 +1,7 @@
-// src/pages/admin.tsx
+// ✅ src/pages/admin.tsx
 import Header from '../components/header/header';
 import Footer from '../components/Footer/Footer';
-import AdminPanel from '../components/Admin/AdminPanel'; // ✅ contains login + form logic
+import AdminPanel from '../components/Admin/AdminPanel';
 
 export default function AdminPage() {
   return (

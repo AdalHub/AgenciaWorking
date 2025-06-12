@@ -114,7 +114,7 @@ const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ job, onBack }) => { // 
       <JobTitle>{job.title}</JobTitle>
       <JobMeta>{job.employmentType}</JobMeta>
       <CategoryBox>{job.team}</CategoryBox>
-
+      <JobMeta>Posted on: {job.posted}</JobMeta>
       <ApplyButton onClick={() => setIsModalOpen(true)}>Apply Now</ApplyButton>
 
       <JobDescription>

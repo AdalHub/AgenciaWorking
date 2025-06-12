@@ -1,32 +1,42 @@
+// ✅ src/components/admin/AdminPanel.tsx
 import { useEffect, useState } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../../firebaseConfig';
-import Login from './Login';
+import { signInWithPopup, onAuthStateChanged } from 'firebase/auth';
+import { auth, provider, db } from '../../firebaseConfig';
 import JobForm from './JobForm';
+import JobList from './JobList';
 
 export default function AdminPanel() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [formVisible, setFormVisible] = useState(false);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
+    return onAuthStateChanged(auth, (user) => {
       setIsLoggedIn(!!user);
     });
-    return () => unsub();
   }, []);
 
-  if (!isLoggedIn) {
-    return (
-      <div style={{ textAlign: 'center', marginTop: '4rem' }}>
-        <h2>Admin Login</h2>
-        <Login onLogin={() => setIsLoggedIn(true)} /> {/* ✅ Fix applied */}
-      </div>
-    );
-  }
+  const handleLogin = async () => {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error('Login error:', error);
+    }
+  };
 
   return (
     <div style={{ padding: '2rem' }}>
-      <h2 style={{ textAlign: 'center' }}>Post a Job</h2>
-      <JobForm />
+      {!isLoggedIn ? (
+        <button onClick={handleLogin}>Login with Google</button>
+      ) : (
+        <>
+          <h2>Admin Panel</h2>
+          <button onClick={() => setFormVisible((v) => !v)}>
+            {formVisible ? 'Close Form' : 'Add Job'}
+          </button>
+          {formVisible && <JobForm onClose={() => setFormVisible(false)} />}
+          <JobList />
+        </>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
-/send_email.php
-
+src/send_email.php
+src/firebaseConfig.ts
 # Logs
 logs
 *.log

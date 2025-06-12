@@ -13,6 +13,8 @@ import {
 import logo from '../../assets/header_logo.jpg';
 import services from '../ServicesGrid/data';
 
+import logoInverse from '../../assets/header_logo_inverse.png'; // NEW
+
 /* ---------- NAV LINKS ---------- */
 const navLinks = [
   { label: 'Home', to: '/' },
@@ -60,7 +62,8 @@ export default function Header() {
   return (
     <>
       <Wrapper scrolled={scrolled}>
-        <Logo src={logo} alt="Working Agencia" />
+        <Logo src={scrolled ? logoInverse : logo} alt="Working Agencia" />
+
 
         <Nav>
           {navLinks.map(({ label, to }) => (
