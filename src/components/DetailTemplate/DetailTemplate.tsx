@@ -5,6 +5,8 @@ import Footer from '../Footer/Footer';
 import placeholderImg from '../../assets/bg.jpg';
 import careersImg from '../../assets/solutions1.jpg'; // any 16:9 photo
 import { CareersBanner } from './DetailTemplateStyles';
+import { AnimatedImage } from './DetailTemplateStyles';
+import { useState } from 'react';
 
 import {
   Hero,
@@ -21,6 +23,8 @@ export default function DetailTemplate() {
   const { slug } = useParams<{ slug?: string }>();
   const key = slug ?? 'about-us';
   const service = services.find((s) => s.slug === key);
+  const [imgLoaded, setImgLoaded] = useState(false);
+
 
   if (!service) return <Navigate to="/" replace />;
 
@@ -58,7 +62,15 @@ export default function DetailTemplate() {
       </Hero>
 
       <Wrapper>
-        <img src={heroImg} alt={service.title} />
+
+        <AnimatedImage
+          src={heroImg}
+          alt={service.title}
+          onLoad={() => setImgLoaded(true)}
+          $animate={imgLoaded}
+        />
+
+
         {service.body.map((html, idx) => (
           <ContentBlock key={idx}
             dangerouslySetInnerHTML={{ __html: html }}

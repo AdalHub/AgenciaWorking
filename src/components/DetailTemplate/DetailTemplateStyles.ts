@@ -1,4 +1,15 @@
-import styled from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
+
+const fadeInSlideUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
 
 /* ─── Hero — no background image ──────────────────────────────────── */
 export const Hero = styled.section`
@@ -67,6 +78,24 @@ export const Wrapper = styled.main`
     margin-bottom: 2.5rem;
   }
 `;
+
+export const AnimatedImage = styled.img<{ $animate?: boolean }>`
+  width: 100%;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+  margin-bottom: 2.5rem;
+  opacity: 0;
+  transform: translateY(40px);
+  transition: none;
+
+  ${({ $animate }) =>
+    $animate &&
+    css`
+      animation: ${fadeInSlideUp} 1s ease-out forwards;
+    `}
+`;
+
+
 
 export const BodyP = styled.p`
   font-family: ${({ theme }) => theme.fonts.body};

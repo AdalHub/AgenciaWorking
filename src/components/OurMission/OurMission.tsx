@@ -42,8 +42,7 @@ export default function OurMission() {
       {/* headings */}
       <Heading>Your Strategic Partner in Human Capital</Heading>
       <SubHeading>
-        Discover how Agencia Working provides comprehensive human resources solutions <br />
-        to empower your workforce and drive organizational success.
+        Discover how Agencia Working provides comprehensive human resources solutions to empower your workforce and drive organizational success.<br />
       </SubHeading>
 
       {/* two-column layout */}
