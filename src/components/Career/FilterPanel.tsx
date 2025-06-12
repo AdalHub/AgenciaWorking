@@ -14,7 +14,7 @@ import { useState } from 'react';
 export interface FilterState {
   q: string;
   employment: string;
-  teams: string[]; // dynamic team values from Firestore
+  teams: string[];
   sort: string;
 }
 
@@ -23,6 +23,7 @@ interface Props {
   applied: FilterState;
   onApply: (f: FilterState) => void;
   onClose: () => void;
+  availableTeams: string[]; // ✅ received from CareerPage
 }
 
 export default function FilterPanel({
@@ -30,6 +31,7 @@ export default function FilterPanel({
   applied,
   onApply,
   onClose,
+  availableTeams,
 }: Props) {
   const [draft, setDraft] = useState<FilterState>(applied);
 
@@ -41,20 +43,18 @@ export default function FilterPanel({
   const clear = () =>
     setDraft({
       q: '',
-      employment: '', // ✅ reset all required fields
+      employment: '',
       teams: [],
       sort: 'Relevance',
     });
 
-  const toggleTeam = (t: string) => // 🔁 make this accept any string
+  const toggleTeam = (t: string) =>
     setDraft((d) => ({
       ...d,
       teams: d.teams.includes(t)
         ? d.teams.filter((x) => x !== t)
         : [...d.teams, t],
     }));
-
-  const availableTeams = ['Support Services', 'Software']; // 🚧 Replace this later with dynamic values
 
   return (
     <Panel open={open}>

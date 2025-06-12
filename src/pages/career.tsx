@@ -1,10 +1,14 @@
-import { useState } from 'react';
+// career.tsx
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import Header from '../components/header/header';
 import Footer from '../components/Footer/Footer';
-import FilterPanel from '../components/Career/FilterPanel';   // value
+import FilterPanel from '../components/Career/FilterPanel';
 import type { FilterState } from '../components/Career/FilterPanel';
 import JobList from '../components/Career/JobList';
+
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
 
 const Page = styled.main`
   padding: 6rem 1.5rem 4rem;
@@ -61,10 +65,32 @@ export default function CareerPage() {
   const [filters, setFilters] = useState<FilterState>({
     q: '',
     sort: 'Relevance',
+    employment: '',
     teams: [],
-  } as FilterState);
+  });
 
   const [panelOpen, setPanelOpen] = useState(false);
+  const [availableTeams, setAvailableTeams] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, 'jobs'));
+        const teamSet = new Set<string>();
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          if (typeof data.team === 'string') {
+            teamSet.add(data.team);
+          }
+        });
+        setAvailableTeams(Array.from(teamSet).sort());
+      } catch (err) {
+        console.error('Error fetching teams:', err);
+      }
+    };
+
+    fetchTeams();
+  }, []);
 
   return (
     <>
@@ -73,7 +99,6 @@ export default function CareerPage() {
       <Page>
         <h1 style={{ textAlign: 'center' }}>Search Careers</h1>
 
-        {/* top search */}
         <SearchBar>
           <input
             type="text"
@@ -91,7 +116,6 @@ export default function CareerPage() {
           </svg>
         </SearchBar>
 
-        {/* filters toggle for mobile */}
         <Toggle onClick={() => setPanelOpen(true)}>Show filters</Toggle>
 
         <Body>
@@ -100,6 +124,7 @@ export default function CareerPage() {
             applied={filters}
             onApply={setFilters}
             onClose={() => setPanelOpen(false)}
+            availableTeams={availableTeams}
           />
 
           <JobList filters={filters} />
