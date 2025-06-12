@@ -13,9 +13,9 @@ import { useState } from 'react';
 
 export interface FilterState {
   q: string;
-  employment?: 'Full-time' | 'Remote';
-  teams: ('Support Services' | 'Software')[];
-  sort: 'Relevance' | 'Newest';
+  employment: string;
+  teams: string[]; // dynamic team values from Firestore
+  sort: string;
 }
 
 interface Props {
@@ -39,9 +39,14 @@ export default function FilterPanel({
   };
 
   const clear = () =>
-    setDraft({ q: '', teams: [], sort: 'Relevance' });
+    setDraft({
+      q: '',
+      employment: '', // ✅ reset all required fields
+      teams: [],
+      sort: 'Relevance',
+    });
 
-  const toggleTeam = (t: 'Support Services' | 'Software') =>
+  const toggleTeam = (t: string) => // 🔁 make this accept any string
     setDraft((d) => ({
       ...d,
       teams: d.teams.includes(t)
@@ -49,13 +54,15 @@ export default function FilterPanel({
         : [...d.teams, t],
     }));
 
+  const availableTeams = ['Support Services', 'Software']; // 🚧 Replace this later with dynamic values
+
   return (
     <Panel open={open}>
-      {/* SEARCH */}
+      {/* TEAMS FILTER */}
       <Group>
         <GroupLabel>Teams</GroupLabel>
         <Chips>
-          {(['Support Services', 'Software'] as const).map((t) => (
+          {availableTeams.map((t) => (
             <Chip
               key={t}
               active={draft.teams.includes(t)}
@@ -101,7 +108,7 @@ export default function FilterPanel({
         ))}
       </Group>
 
-      {/* ACTION BUTTONS */}
+      {/* BUTTONS */}
       <ButtonsRow>
         <ApplyBtn onClick={handleApply}>Apply Filters</ApplyBtn>
         <ClearBtn onClick={clear}>Clear Filters</ClearBtn>

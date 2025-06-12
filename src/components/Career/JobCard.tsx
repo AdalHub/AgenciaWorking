@@ -1,5 +1,5 @@
 import { Card } from './JobCardStyles'; // Corrected import
-import type { JobPosting } from './jobData'; // Corrected import
+import type { JobPosting } from './types';
 
 /* fade-drop variants */
 const variants = {

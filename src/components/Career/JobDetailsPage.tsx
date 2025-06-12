@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { ArrowLeft } from 'lucide-react';
 import { ApplicationModal } from './ApplicationModal';
-import type { JobPosting } from './jobData';
+
+import type { JobPosting } from './types';
 
 // Styled components for the Job Details Page Layout (unchanged, just showing context)
 const JobDetailsWrapper = styled.div`
