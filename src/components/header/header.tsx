@@ -13,7 +13,7 @@ import {
 import logo from '../../assets/header_logo.jpg';
 import services from '../ServicesGrid/data';
 
-import logoInverse from '../../assets/header_logo_inverse.png'; // NEW
+import logoInverse from '../../../public/header_logo_inverse.png'; // NEW
 
 /* ---------- NAV LINKS ---------- */
 const navLinks = [

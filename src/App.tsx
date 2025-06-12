@@ -5,7 +5,7 @@ import Contact from './pages/contact.tsx';
 import Career from './pages/career';
 import DetailTemplate from './components/DetailTemplate/DetailTemplate';
 import ScrollToTop from './ScrollToTop.tsx';
-import AdminPage from './pages/admin'; // ✅ import admin page
+import AdminPage from './pages/admin';
 
 export default function App() {
   return (
@@ -17,7 +17,7 @@ export default function App() {
         <Route path="/services/:slug" element={<DetailTemplate />} />
         <Route path="/about-us" element={<DetailTemplate />} />
         <Route path="/careers" element={<Career />} />
-        <Route path="/admin" element={<AdminPage />} /> {/* ✅ new route */}
+        <Route path="/admin" element={<AdminPage />} />
       </Routes>
     </BrowserRouter>
   );

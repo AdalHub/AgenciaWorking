@@ -16,7 +16,7 @@ import {
   ContactRow,
 } from './styles';
 import logo from '../../assets/logo.png'; // Make sure to import your logo
-import locationIcon from '../../assets/icons/location.svg'; // Import a location icon SVG
+import locationIcon from '../../../public/icons/location.svg'; // Import a location icon SVG
 
 export default function Footer() {
   return (

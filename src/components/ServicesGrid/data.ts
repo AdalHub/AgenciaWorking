@@ -16,12 +16,12 @@ const services: Service[] = [
   {
     slug: 'talent-recruitment',
     category: 'Business',
-    thumb: '/src/assets/icons/hireicon.svg',
+    thumb: '/icons/hireicon.svg',
     kicker: 'Staffing',
     title: 'Talent Recruitment & Selection',
     subtitle: 'Swift hires, zero compromise on quality.',
-    img: '/src/assets/epic.jpg',
-    detailImg: '/src/assets/epic.jpg',
+    img: '/epic.jpg',
+    detailImg: '/epic.jpg',
     blurb:
       'Pre-screened, background-checked candidates delivered fast—ready to start when you are.',
     body: [
@@ -47,12 +47,12 @@ const services: Service[] = [
   {
     slug: 'background-checks',
     category: 'Life Style',
-    thumb: '/src/assets/icons/placeholder.svg',
+    thumb: '/icons/placeholder.svg',
     kicker: 'Compliance',
     title: 'Background Check Reports',
     subtitle: 'Hire with confidence—and stay compliant.',
-    img: '/src/assets/reports.jpg',
-    detailImg: '/src/assets/reports.jpg',
+    img: '/reports.jpg',
+    detailImg: '/reports.jpg',
     blurb:
       'Employment, socioeconomic and criminal-record verification that meets Mexican and U.S. regulations.',
     body: [
@@ -75,12 +75,12 @@ const services: Service[] = [
   {
     slug: 'high-volume-recruitment',
     category: 'Business',
-    thumb: '/src/assets/icons/highemp.svg',
+    thumb: 'icons/highemp.svg',
     kicker: 'Scaling',
     title: 'High-Volume Executive & Operational Recruitment',
     subtitle: 'When you need dozens of hires—yesterday.',
-    img: '/src/assets/mass-recruitment.jpg',
-    detailImg: '/src/assets/mass-recruitment.jpg',
+    img: '/mass-recruitment.jpg',
+    detailImg: '/mass-recruitment.jpg',
     blurb:
       'Scalable hiring campaigns that fill entire teams under your brand and on your deadline.',
     body: [
@@ -104,12 +104,12 @@ const services: Service[] = [
   {
     slug: 'labor-surveys',
     category: 'Communication',
-    thumb: '/src/assets/icons/labor.svg',
+    thumb: '/icons/labor.svg',
     kicker: 'Diagnostics',
     title: 'Labor Surveys & Studies',
     subtitle: 'Data-driven insights, actionable results.',
-    img: '/src/assets/survey.jpg',
-    detailImg: '/src/assets/survey.jpg',
+    img: '/survey.jpg',
+    detailImg: '/survey.jpg',
     blurb:
       'Work-climate, NOM-035, turnover, and structure studies that turn raw data into measurable change.',
     body: [
@@ -136,12 +136,12 @@ const services: Service[] = [
   {
     slug: 'training-upskilling',
     category: 'Life Style',
-    thumb: '/src/assets/icons/training.svg',
+    thumb: '/icons/training.svg',
     kicker: 'Development',
     title: 'Training & Upskilling',
     subtitle: 'Equip your team for tomorrow’s challenges.',
-    img: '/src/assets/training.jpg',
-    detailImg: '/src/assets/training.jpg',
+    img: '/training.jpg',
+    detailImg: '/training.jpg',
     blurb:
       'Customized courses—from leadership and negotiation to customer service—that boost skills and motivation.',
     body: [
@@ -180,12 +180,12 @@ const services: Service[] = [
   {
     slug: 'competency-programs',
     category: 'Business',
-    thumb: '/src/assets/icons/comptesti.svg',
+    thumb: '/icons/comptesti.svg',
     kicker: 'Assessment',
     title: 'Competency Tests & Managerial Development',
     subtitle: 'Measure skills, close gaps, accelerate growth.',
-    img: '/src/assets/tests.jpg',
-    detailImg: '/src/assets/tests.jpg',
+    img: '/tests.jpg',
+    detailImg: '/tests.jpg',
     blurb:
       'Role-specific assessments plus guided upskilling paths that align employee competencies with business goals.',
     body: [
@@ -224,12 +224,12 @@ const services: Service[] = [
     /* ------------- Team Building ------------- */
     slug: 'team-building',                      // URL = /services/team-building
     category: 'Business',                       // or 'Life Style' if you prefer
-    thumb: '/src/assets/icons/team.svg',  // 32–48 px icon (add or change path)
+    thumb: '/icons/team.svg',  // 32–48 px icon (add or change path)
     kicker: 'Cohesion',
     title: 'Team Building Programs',
     subtitle: 'Create a unified, motivated workforce.',
-    img: '/src/assets/godly2.jpg',   // wide hero used on cards
-    detailImg: '/src/assets/godly2.jpg', // full-width image in detail page
+    img: '/godly2.jpg',   // wide hero used on cards
+    detailImg: '/godly2.jpg', // full-width image in detail page
     blurb: 'Fun, high-impact dynamics that strengthen communication, innovation, and shared vision.',
     body: [
       /* ─── intro paragraphs ─────────────────────────── */
@@ -259,12 +259,12 @@ const services: Service[] = [
   {
     slug: 'specialized-services',
     category: 'Communication',
-    thumb: '/src/assets/icons/greygear.svg',
+    thumb: '/icons/greygear.svg',
     kicker: 'Outsourcing',
     title: 'Specialized Services',
     subtitle: 'REPSE-certified outsourcing—done right.',
-    img: '/src/assets/specialserv.jpg',
-    detailImg: '/src/assets/specialserv.jpg',
+    img: '/specialserv.jpg',
+    detailImg: '/specialserv.jpg',
     blurb:
       'Administration, logistics, finance, and other functions delivered by dedicated teams under full legal compliance.',
     body: [
@@ -300,12 +300,12 @@ const services: Service[] = [
   {
     slug: 'hr-soft-landing',
     category: 'Business',
-    thumb: '/src/assets/icons/mexico.svg',
+    thumb: '/icons/mexico.svg',
     kicker: 'Expansion',
     title: 'HR Soft Landing in Mexico',
     subtitle: 'Your launchpad for cross-border growth.',
-    img: '/src/assets/window.jpg',
-    detailImg: '/src/assets/window.jpg',
+    img: '/window.jpg',
+    detailImg: '/window.jpg',
     blurb:
       'End-to-end HR support that recruits, pays, and integrates your Mexico team in full legal and cultural compliance.',
     body: [
@@ -340,13 +340,13 @@ const services: Service[] = [
   {
     slug: 'about-us',
     category: 'Business',
-    thumb: '/src/assets/icons/placeholder.svg',
+    thumb: '/icons/placeholder.svg',
     kicker: 'Company',
     title: 'About Us',
     subtitle:
       'Agencia Working empowers organizations through people-centric HR solutions.',
-    img: '/src/assets/ehepic.jpg',
-    detailImg: '/src/assets/ehepic.jpg',
+    img: 'ehepic.jpg',
+    detailImg: '/ehepic.jpg',
     blurb: '',
     body: [
   /* ───── top section ─────────────────────────────── */
