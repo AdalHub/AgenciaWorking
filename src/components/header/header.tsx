@@ -9,7 +9,6 @@ import {
   PanelWrap,
   Panel,
   MobileLink,
-  SmallLink,
   BackBtn,
   RightArrow,
   MegaWrap,
