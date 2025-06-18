@@ -1,39 +1,95 @@
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
-
 /* ——————————————————————————————————————————
-   Full-bleed footer background
+   Full-bleed wrapper — make it responsive
    —————————————————————————————————————————— */
 export const Wrapper = styled.footer`
   position: relative;
+
+  /* full-bleed for desktop */
   width: 100vw;
   left: 50%;
   transform: translateX(-50%);
-  padding-top: 7rem;      /* space for floating card */
-  padding-bottom: 4rem;
-  color: ${({ theme }) => theme.colors.textDark};
 
+  padding: 7rem clamp(1rem, 4vw, 3rem) 4rem;   /* side padding grows/shrinks */
   background: rgb(235, 235, 237);
   isolation: isolate;
+  color: ${({ theme }) => theme.colors.textDark};
 
   &::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0);
     z-index: -1;
+    background: rgba(0, 0, 0, 0);
+  }
+
+  /* —— MOBILE: turn off the translate trick & add padding —— */
+  @media (max-width: 600px) {
+    width: 100%;          /* no 100vw - it ignores the scrollbar */
+    left: 0;
+    transform: none;
   }
 `;
 
 /* ————————————————————————————————
-   Main Footer Grid
+   Main footer grid
    ———————————————————————————————— */
 export const FooterGrid = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1fr 3fr;
+  grid-template-columns: 1fr 3fr;   /* logo   |  services */
   gap: 2rem;
+
+  @media (max-width: 900px) {       /* tablet */
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @media (max-width: 600px) {       /* phone  */
+    grid-template-columns: 1fr;
+  }
+`;
+
+/* collapse the three-column services grid */
+export const ServicesGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+
+  @media (max-width: 900px) {  grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 600px) {  grid-template-columns: 1fr; }
+`;
+
+
+export const SocialSection = styled.div`
+  text-align: right;
+`;
+
+export const SocialRow = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+`;
+/* ————————————————————————————————
+   Bottom strip (contacts + socials)
+   ———————————————————————————————— */
+export const BottomGrid = styled.div`
+  max-width: 1200px;
+  margin: 3rem auto 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+    text-align: center;
+
+    /* helper tweaks so the icons sit in the middle */
+    ${SocialSection} { text-align: center; }
+    ${SocialRow}     { justify-content: center; }
+  }
 `;
 
 export const MainColumn = styled.div`
@@ -77,12 +133,6 @@ export const MexicoLocation = styled.a`
   }
 `;
 
-export const ServicesGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
-`;
-
 export const GroupTitle = styled.h5`
   font-size: 0.8rem;
   letter-spacing: 0.08em;
@@ -103,30 +153,11 @@ export const FooterLink = styled(Link)`
   }
 `;
 
-/* ————————————————————————————————
-   Bottom Section
-   ———————————————————————————————— */
-export const BottomGrid = styled.div`
-  max-width: 1200px;
-  margin: 3rem auto 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  align-items: start;
-`;
+
 
 export const ContactInfo = styled.div``;
 
-export const SocialSection = styled.div`
-  text-align: right;
-`;
 
-export const SocialRow = styled.div`
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-  margin-top: 1rem;
-`;
 
 export const SocialBtn = styled.a`
   width: 36px;
