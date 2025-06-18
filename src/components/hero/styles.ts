@@ -4,8 +4,11 @@ import { Section } from '../container/styles';  // the 1200-px grid
 /* ———————————————————————————————
    OUTER full-width banner
    ——————————————————————————————— */
+/* src/components/hero/styles.ts */
 export const Banner = styled.section<{ $bg: string }>`
-  /* full-bleed trick */
+  padding-top: 64px;            /* room for the fixed header          */
+  min-height: calc(60vh);       /* keep your existing min-height      */
+
   position: relative;
   left: 50%;
   right: 50%;
@@ -13,13 +16,12 @@ export const Banner = styled.section<{ $bg: string }>`
   margin-left: -50vw;
   margin-right: -50vw;
 
-  /* hero look */
-  min-height: 60vh;
   background: url(${({ $bg }) => $bg}) center / cover no-repeat;
-  display: flex;            /* centres the inner grid */
+  display: flex;
   align-items: center;
-  overflow: hidden;         /* keep children inside banner height */
+  overflow: hidden;
 `;
+
 
 /* ———————————————————————————————
    INNER grid – stays max-width 1200 px
