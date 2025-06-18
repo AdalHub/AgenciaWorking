@@ -5,7 +5,14 @@ import { motion } from 'framer-motion';
 export const Wrapper = styled.section`
   max-width: 1200px;
   margin-inline: auto;
+
+  /* NEW – adds a breathing gutter on small screens
+           16 px  →  40 px  →  48 px            */
+  padding-inline: clamp(1rem, 5vw, 3rem);
+
+  /* keep your original vertical spacing */
   padding-block: 5rem 6rem;
+
   text-align: center;
 `;
 
@@ -29,8 +36,9 @@ export const Features = styled.div`
   display: grid;
   gap: 2.5rem;
 
+  /* two-column layout on desktops, single column below 1024 px */
   @media (min-width: ${({ theme }) => theme.breakpoints.lg}) {
-    grid-template-columns: 1fr 420px; /* left text / right image */
+    grid-template-columns: 1fr 420px;
     align-items: center;
   }
 
@@ -43,6 +51,8 @@ export const Features = styled.div`
   }
 
   li {
+    /* NEW – prevents the flex row from sliding under the gutter   */
+    max-width: 100%;
     display: flex;
     gap: 1.1rem;
     text-align: left;
@@ -50,7 +60,7 @@ export const Features = styled.div`
 
   .icon {
     color: ${({ theme }) => theme.colors.primary};
-    flex-shrink: 0;
+    flex-shrink: 0;       /* icon never squashes */
     margin-top: 0.2rem;
   }
 
