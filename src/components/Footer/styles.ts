@@ -29,6 +29,11 @@ export const Wrapper = styled.footer`
     width: 100%;          /* no 100vw - it ignores the scrollbar */
     left: 0;
     transform: none;
+    margin-left: 0;      /* NEW */
+    margin-right: 0;     /* NEW */
+    padding-left: 1rem;            /* safe gutter so text wraps */
+    padding-right: 1rem;
+    box-sizing: border-box;
   }
 `;
 
@@ -200,5 +205,10 @@ export const ContactRow = styled.p`
   }
   a:hover {
     text-decoration: underline;
+  }
+  
+    /* —— phones —— */
+  @media (max-width: 600px) {
+    text-align: center;
   }
 `;
