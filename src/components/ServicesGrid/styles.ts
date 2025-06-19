@@ -57,6 +57,11 @@ export const Grid = styled.div`
   display: grid;
   gap: 1.5rem;
   grid-template-columns: repeat(auto-fill, 260px);
+
+  /* —— phones (≤ 600 px) —— */
+  @media (max-width: 600px) {
+    justify-content: center;               /* centres the single column */
+  }
 `;
 
 /*   /  /  /           EL card           /  /  /   */
