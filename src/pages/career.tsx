@@ -13,7 +13,7 @@ import { db } from '../firebaseConfig';
 const Page = styled.main`
   padding: 6rem 1.5rem 4rem;
 `;
-
+/* career.tsx – styles inside the component file  */
 const SearchBar = styled.div`
   max-width: 720px;
   margin: 0 auto 2.5rem;
@@ -25,6 +25,7 @@ const SearchBar = styled.div`
     border: 1px solid #c7ccd6;
     border-radius: 32px;
     font-size: 1rem;
+    box-sizing: border-box;   /* ← NEW: keeps padding + border inside 100% */
   }
 
   svg {
@@ -36,6 +37,7 @@ const SearchBar = styled.div`
     pointer-events: none;
   }
 `;
+
 
 const Body = styled.section`
   max-width: 1280px;
