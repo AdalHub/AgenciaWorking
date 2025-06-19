@@ -21,8 +21,6 @@ export const Banner = styled.section<{ $bg: string }>`
   align-items: center;
   overflow: hidden;
 `;
-
-
 /* ———————————————————————————————
    INNER grid – stays max-width 1200 px
    ——————————————————————————————— */
@@ -30,6 +28,24 @@ export const Inner = styled(Section)`
   display: flex;
   align-items: center;
   gap: 2.5rem;
+
+  /* ← NEW: responsive gutter so inner content is never flush */
+  padding: 0 clamp(1rem, 5vw, 2rem);
+`;
+
+/* headline unchanged */
+
+/* — CTA — */
+export const CTA = styled.a`
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textLight};
+  padding: 0.8rem 1.8rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 600;
+
+  /* ← NEW: keeps a comfy gap between button & right wall */
+  margin-right: auto;
 `;
 
 /* headline & CTA unchanged */
@@ -42,13 +58,4 @@ export const Headline = styled.h1`
   margin: 0;
   padding: 1rem 1.5rem;
   max-width: 14ch;
-`;
-
-export const CTA = styled.a`
-  background: ${({ theme }) => theme.colors.accent};
-  color: ${({ theme }) => theme.colors.textLight};
-  padding: 0.8rem 1.8rem;
-  border-radius: 999px;
-  text-decoration: none;
-  font-weight: 600;
 `;
