@@ -141,7 +141,7 @@ export default function Header() {
               label === 'Services' ? (
                 <MobileLink
                   as="button"
-                  to="#"            // 👈 satisfies LinkProps
+                  to="#"            // satisfies LinkProps
                   key={label}
                   onClick={() => setLevel(1)}
                 >

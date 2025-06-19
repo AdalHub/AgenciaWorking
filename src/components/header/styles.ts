@@ -153,6 +153,7 @@ export const PanelWrap = styled.div<{ $level: 0 | 1 }>`
 `;
 
 export const Panel = styled.div`
+  padding-top:0.50rem;
   width: 50%;
   padding: 2.5rem 1.75rem 4rem;
 `;
@@ -195,6 +196,7 @@ export const BackBtn = styled.button`
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  padding-top: 1.50rem;      /* keeps arrow away from viewport edge */
   font-size: 1.5rem;
   color: #0f172a;
   cursor: pointer;
