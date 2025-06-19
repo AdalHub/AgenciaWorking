@@ -1,7 +1,7 @@
 import styled, { css } from 'styled-components';
 import { Link } from 'react-router-dom';
 
-/* ——————————————————— HEADER BAR ——————————————————— */
+/* ───────────────── HEADER BAR ───────────────── */
 export const Wrapper = styled.header<{ $scrolled: boolean }>`
   position: fixed;
   top: 0;
@@ -17,15 +17,12 @@ export const Wrapper = styled.header<{ $scrolled: boolean }>`
   z-index: 9999;
 `;
 
-
-
-
 export const Logo = styled.img`
   height: 48px;
   flex-shrink: 0;
 `;
 
-/* ——————————— desktop links ——————————— */
+/* ───────────────── DESKTOP NAV ───────────────── */
 export const Nav = styled.nav`
   display: flex;
   gap: 1.25rem;
@@ -66,48 +63,40 @@ export const MenuItem = styled(Link)<{
     `}
 `;
 
-/* ——————————— mobile hamburger ——————————— */
+/* ───────────────── MOBILE HAMBURGER ───────────────── */
 export const Burger = styled.button<{
   $scrolled: boolean;
   $open: boolean;
 }>`
-  /* 1️⃣  hide on desktop  */
   display: none;
-
-  /* 2️⃣  reset default button look */
   background: none;
   border: 0;
   padding: 0;
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;  /* no blue flash on mobile */
+  -webkit-tap-highlight-color: transparent;
 
-  /* 3️⃣  mobile only */
   @media (max-width: 899px) {
-    display: flex;                /* flex lets us centre the bars  */
+    display: flex;
     align-items: center;
     justify-content: center;
-
-    /* Apple / Material both aim for ≥44 × 44 px tap target */
     width: 44px;
     height: 44px;
-    border-radius: 8px;           /* slight pill feel */
+    border-radius: 8px;
     transition: background 0.2s;
   }
 
-  /* 4️⃣  optional hover / active feedback (desktop + mobile) */
   &:hover,
   &:active {
     background: rgba(0, 0, 0, 0.08);
   }
 
-  /* 5️⃣  the three bars */
   span,
   span::before,
   span::after {
     content: '';
     display: block;
-    width: 26px;                  /* a bit wider than before       */
-    height: 3px;                  /* thicker = easier to see       */
+    width: 26px;
+    height: 3px;
     border-radius: 1.5px;
     background: ${({ $scrolled }) => ($scrolled ? '#fff' : '#0f172a')};
     transition: transform 0.25s, opacity 0.25s, background 0.25s;
@@ -117,14 +106,13 @@ export const Burger = styled.button<{
   }
   span::before {
     position: absolute;
-    top: -8px;                    /* bar spacing                   */
+    top: -8px;
   }
   span::after {
     position: absolute;
-    top:  8px;
+    top: 8px;
   }
 
-  /* 6️⃣  animate into an “X” when open */
   ${({ $open }) =>
     $open &&
     css`
@@ -142,7 +130,7 @@ export const Burger = styled.button<{
     `}
 `;
 
-/* ——————————— MOBILE OVERLAY ——————————— */
+/* ───────────────── MOBILE OVERLAY ───────────────── */
 export const Overlay = styled.div<{ $open: boolean }>`
   @media (min-width: 900px) {
     display: none;
@@ -156,9 +144,9 @@ export const Overlay = styled.div<{ $open: boolean }>`
   transition: transform 550ms cubic-bezier(0.23, 1, 0.32, 1);
 `;
 
-/* wrapper that slides root <-> services panel */
+/* panel wrapper slides root <-> services */
 export const PanelWrap = styled.div<{ $level: 0 | 1 }>`
-  width: 200%;               /* two side-by-side panels */
+  width: 200%;
   display: flex;
   transition: transform 550ms cubic-bezier(0.23, 1, 0.32, 1);
   transform: translateX(${({ $level }) => ($level === 0 ? '0' : '-50%')});
@@ -169,19 +157,19 @@ export const Panel = styled.div`
   padding: 2.5rem 1.75rem 4rem;
 `;
 
+/* ───────────────── MOBILE LINKS ───────────────── */
 export const MobileLink = styled(Link)`
-  display: block;
+  display: flex;                 /* keeps arrow & text inline-centre */
+  align-items: center;
   font-size: 1.8rem;
   font-weight: 600;
   margin: 0.75rem 0;
   color: #0f172a;
   text-decoration: none;
-
-  /* ⬇️ neutralise default <button> look when we use “as='button'” */
   background: none;
   border: 0;
   padding: 0;
-  cursor: pointer;                       /* also nice for links */
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 `;
 
@@ -192,23 +180,25 @@ export const SmallLink = styled(MobileLink)`
 `;
 
 export const RightArrow = styled.span`
-  float: right;
+  width: 8px;
+  height: 8px;
   border: solid currentColor;
   border-width: 0 2px 2px 0;
-  padding: 4px;
-  transform: rotate(-45deg) translateY(-2px);
+  transform: rotate(-45deg);
+  margin-left: 0.75rem;  /* nice gap from text */
+  flex-shrink: 0;        /* never collapse     */
 `;
 
+/* back chevron */
 export const BackBtn = styled.button`
-  background: none;
-  border: 0;
-  font-size: 1.5rem;
+  all: unset;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 2rem;
+  font-size: 1.5rem;
   color: #0f172a;
   cursor: pointer;
+  margin-bottom: 2rem;
 
   &::before {
     content: '';
@@ -219,7 +209,7 @@ export const BackBtn = styled.button`
   }
 `;
 
-/* ——————————— existing mega-menu (desktop) ——————————— */
+/* ───────────────── DESKTOP MEGA MENU ───────────────── */
 export const MegaWrap = styled.div<{ $open: boolean }>`
   position: fixed;
   top: 64px;
@@ -235,7 +225,7 @@ export const MegaWrap = styled.div<{ $open: boolean }>`
   pointer-events: ${({ $open }) => ($open ? 'auto' : 'none')};
 
   @media (max-width: 899px) {
-    display: none; /* hide on mobile */
+    display: none;
   }
 `;
 
@@ -248,6 +238,7 @@ export const Columns = styled.div`
     grid-template-columns: 1fr 1fr;
   }
 `;
+
 export const ColTitle = styled.h4`
   font-size: 0.8rem;
   text-transform: uppercase;
@@ -268,4 +259,3 @@ export const ServiceLink = styled(Link)<{ $open: boolean; $delay: number }>`
     opacity 260ms ease ${({ $delay }) => $delay}ms,
     transform 260ms ease ${({ $delay }) => $delay}ms;
 `;
-console.log('[styles] exports:', { BackBtn });
