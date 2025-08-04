@@ -12,8 +12,9 @@ export default function Home() {
       <Hero />
       <main>
         <OurMission/>
-        <SuccessStories />
         <ServicesGrid />
+        <SuccessStories />
+
       </main>
       <Footer />
     </>
