@@ -127,10 +127,12 @@ const JobDetailsPage: React.FC<JobDetailsPageProps> = ({ job, onBack }) => { // 
       {isModalOpen && (
         <ApplicationModal
           jobTitle={job.title}
+          jobId={job.id}           // make sure this is present
           onClose={() => setIsModalOpen(false)}
-          // phpScriptUrl={phpScriptUrl} // Removed: No longer needed
         />
       )}
+
+
     </JobDetailsWrapper>
   );
 };

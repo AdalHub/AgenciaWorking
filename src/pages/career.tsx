@@ -1,4 +1,4 @@
-// career.tsx
+// src/pages/career.tsx   <-- prefer this filename (see note at bottom)
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import Header from '../components/header/header';
@@ -7,27 +7,22 @@ import FilterPanel from '../components/Career/FilterPanel';
 import type { FilterState } from '../components/Career/FilterPanel';
 import JobList from '../components/Career/JobList';
 
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
-
 const Page = styled.main`
   padding: 6rem 1.5rem 4rem;
 `;
-/* career.tsx – styles inside the component file  */
+
 const SearchBar = styled.div`
   max-width: 720px;
   margin: 0 auto 2.5rem;
   position: relative;
-
   input {
     width: 100%;
     padding: 0.85rem 3rem 0.85rem 1rem;
     border: 1px solid #c7ccd6;
     border-radius: 32px;
     font-size: 1rem;
-    box-sizing: border-box;   /* ← NEW: keeps padding + border inside 100% */
+    box-sizing: border-box;
   }
-
   svg {
     position: absolute;
     right: 1rem;
@@ -37,7 +32,6 @@ const SearchBar = styled.div`
     pointer-events: none;
   }
 `;
-
 
 const Body = styled.section`
   max-width: 1280px;
@@ -55,7 +49,6 @@ const Toggle = styled.button`
   cursor: pointer;
   margin-bottom: 1.5rem;
   display: none;
-
   @media (max-width: 920px) {
     display: inline-flex;
     align-items: center;
@@ -74,30 +67,24 @@ export default function CareerPage() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [availableTeams, setAvailableTeams] = useState<string[]>([]);
 
+  // 🔁 Load teams from our PHP public jobs endpoint
   useEffect(() => {
-    const fetchTeams = async () => {
+    (async () => {
       try {
-        const snapshot = await getDocs(collection(db, 'jobs'));
-        const teamSet = new Set<string>();
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          if (typeof data.team === 'string') {
-            teamSet.add(data.team);
-          }
-        });
-        setAvailableTeams(Array.from(teamSet).sort());
-      } catch (err) {
-        console.error('Error fetching teams:', err);
+        const res = await fetch('/api/jobs.php?public=1');
+        const jobs: Array<{ team?: string }> = await res.json();
+        const s = new Set<string>();
+        jobs.forEach(j => { if (j.team) s.add(j.team); });
+        setAvailableTeams(Array.from(s).sort());
+      } catch (e) {
+        console.error('Error loading teams', e);
       }
-    };
-
-    fetchTeams();
+    })();
   }, []);
 
   return (
     <>
       <Header />
-
       <Page>
         <h1 style={{ textAlign: 'center' }}>Search Careers</h1>
 
@@ -106,9 +93,7 @@ export default function CareerPage() {
             type="text"
             placeholder="Search by technology, team, location…"
             value={filters.q}
-            onChange={(e) =>
-              setFilters((f) => ({ ...f, q: e.target.value }))
-            }
+            onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
           />
           <svg width="18" height="18" viewBox="0 0 24 24">
             <path
@@ -128,11 +113,9 @@ export default function CareerPage() {
             onClose={() => setPanelOpen(false)}
             availableTeams={availableTeams}
           />
-
           <JobList filters={filters} />
         </Body>
       </Page>
-
       <Footer />
     </>
   );

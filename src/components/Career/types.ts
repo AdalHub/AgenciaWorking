@@ -1,10 +1,11 @@
-export interface JobPosting {
-  id: string;
+// Shared on careers side
+export type JobPosting = {
+  id: number;
   title: string;
-  description: string;
-  employmentType: string;
-  team: string;
-  location: string;
   slug: string;
-  posted: string; // ✅ ISO 8601 date string (YYYY-MM-DD)
-}
+  team: string;
+  employmentType: string;
+  location: string;
+  description: string;
+  posted: string; // YYYY-MM-DD
+};

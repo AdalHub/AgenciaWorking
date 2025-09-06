@@ -1,0 +1,16 @@
+# /agenciaworking/.htaccess  (same folder as index.html)
+Options -Indexes
+
+RewriteEngine On
+RewriteBase /
+
+# Do NOT rewrite real files or folders
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Let the PHP API pass through untouched
+RewriteRule ^api/ - [L]
+
+# Everything else goes to the SPA entry
+RewriteRule . /index.html [L]
