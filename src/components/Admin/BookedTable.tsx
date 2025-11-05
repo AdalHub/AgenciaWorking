@@ -1,75 +1,111 @@
 // src/components/Admin/BookedTable.tsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type BookingRow = {
   id: number;
   start_utc: string;
   end_utc: string;
-  customer_name?: string;
-  customer_email?: string;
-  customer_phone?: string;
-  note?: string;
+  customer_name: string | null;
+  customer_email: string | null;
+  customer_phone: string | null;
+  note: string | null;
 };
 
 interface Props {
-  serviceId: number;
+  serviceId: number | null;
 }
 
 export default function BookedTable({ serviceId }: Props) {
   const [rows, setRows] = useState<BookingRow[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(
-        `/api/bookings.php?action=list_for_admin&service_id=${serviceId}`,
-        { credentials: 'include' }
-      );
-      const data = await res.json();
-      setRows(data);
-    } catch (err) {
-      console.error('Failed to load bookings', err);
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    if (!serviceId) {
+      setRows([]);
+      return;
+    }
+
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // ✅ correct endpoint name + send cookies
+        const res = await fetch(
+          `/api/bookings.php?action=list_for_admin&service_id=${serviceId}`,
+          { credentials: 'include' }
+        );
+        const data = await res.json();
+
+        if (!res.ok) {
+          setError(data.error || 'Failed to load bookings');
+          setRows([]);
+          return;
+        }
+
+        // defensive: make sure it's an array
+        if (Array.isArray(data)) {
+          setRows(data);
+        } else {
+          setRows([]);
+        }
+      } catch (err) {
+        console.error(err);
+        setError('Network error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     load();
   }, [serviceId]);
 
-  return (
-    <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff' }}>
-      <div style={{ padding: '10px 12px', borderBottom: '1px solid #e5e7eb' }}>
-        <h4 style={{ margin: 0 }}>Booked slots</h4>
+  if (!serviceId) {
+    return <div style={{ marginTop: '1rem' }}>Select a service to see bookings.</div>;
+  }
+
+  if (loading) {
+    return <div style={{ marginTop: '1rem' }}>Loading bookings…</div>;
+  }
+
+  if (error) {
+    return (
+      <div style={{ marginTop: '1rem', color: 'red' }}>
+        {error === 'Unauthorized'
+          ? 'You must be logged in as admin to see bookings.'
+          : error}
       </div>
-      {loading ? (
-        <div style={{ padding: 12 }}>Loading…</div>
-      ) : rows.length === 0 ? (
-        <div style={{ padding: 12 }}>No bookings yet.</div>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: '1rem' }}>
+      <h3>Booked slots</h3>
+      {rows.length === 0 ? (
+        <div>No bookings yet.</div>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ background: '#f3f4f6' }}>
-              <th style={th}>Start</th>
-              <th style={th}>End</th>
-              <th style={th}>Name</th>
-              <th style={th}>Email</th>
-              <th style={th}>Phone</th>
-              <th style={th}>Note</th>
+            <tr>
+              <th style={{ textAlign: 'left', padding: 6 }}>Start</th>
+              <th style={{ textAlign: 'left', padding: 6 }}>End</th>
+              <th style={{ textAlign: 'left', padding: 6 }}>Name</th>
+              <th style={{ textAlign: 'left', padding: 6 }}>Email</th>
+              <th style={{ textAlign: 'left', padding: 6 }}>Phone</th>
+              <th style={{ textAlign: 'left', padding: 6 }}>Note</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.id}>
-                <td style={td}>{r.start_utc}</td>
-                <td style={td}>{r.end_utc}</td>
-                <td style={td}>{r.customer_name || r.customer_email || ''}</td>
-                <td style={td}>{r.customer_email}</td>
-                <td style={td}>{r.customer_phone}</td>
-                <td style={td}>{r.note}</td>
+                <td style={{ padding: 6 }}>{r.start_utc}</td>
+                <td style={{ padding: 6 }}>{r.end_utc}</td>
+                <td style={{ padding: 6 }}>{r.customer_name || '—'}</td>
+                <td style={{ padding: 6 }}>{r.customer_email || '—'}</td>
+                <td style={{ padding: 6 }}>{r.customer_phone || '—'}</td>
+                <td style={{ padding: 6, maxWidth: 200, whiteSpace: 'pre-wrap' }}>
+                  {r.note || '—'}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -78,16 +114,3 @@ export default function BookedTable({ serviceId }: Props) {
     </div>
   );
 }
-
-const th: React.CSSProperties = {
-  textAlign: 'left',
-  padding: '6px 8px',
-  fontSize: 13,
-  borderBottom: '1px solid #e5e7eb',
-};
-
-const td: React.CSSProperties = {
-  padding: '6px 8px',
-  fontSize: 13,
-  borderBottom: '1px solid #e5e7eb',
-};
