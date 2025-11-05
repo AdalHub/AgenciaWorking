@@ -1,4 +1,6 @@
+// src/components/header/header.tsx
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Wrapper,
   Logo,
@@ -20,17 +22,28 @@ import {
 import logo from '../../assets/header_logo.jpg';
 import logoInverse from '../../../public/header_logo_inverse.png';
 import services from '../ServicesGrid/data';
+import AuthModal from '../Public/AuthModal';
+
+type PublicUser = {
+  id: number;
+  email: string;
+  name?: string;
+  phone?: string;
+} | null;
 
 /* top-level links */
 const links = [
   { label: 'Home', to: '/' },
   { label: 'Services', to: '#' },
   { label: 'Contact', to: '/contact' },
-  { label: 'Careers', to: '/careers' },
+  { label: 'Careers', to: '/career' }, // your file is pages/career.tsx
   { label: 'About Us', to: '/about-us' },
 ];
 
 export default function Header() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   /* scroll colour change (desktop & mobile) */
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -38,6 +51,38 @@ export default function Header() {
     window.addEventListener('scroll', handler);
     return () => window.removeEventListener('scroll', handler);
   }, []);
+
+  /* ————— user auth (public user) ————— */
+  const [user, setUser] = useState<PublicUser>(null);
+  const [showAuth, setShowAuth] = useState(false);
+
+  const loadMe = async () => {
+    try {
+      const res = await fetch('/api/user_auth.php?action=me', {
+        credentials: 'include',
+      });
+      const data = await res.json();
+      setUser(data.user);
+    } catch (err) {
+      console.error('header me failed', err);
+    }
+  };
+
+  useEffect(() => {
+    loadMe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/user_auth.php?action=logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      setUser(null);
+    } catch (err) {
+      console.error('logout failed', err);
+    }
+  };
 
   /* ————— DESKTOP MEGA ————— */
   const [megaOpen, setMegaOpen] = useState(false);
@@ -70,7 +115,12 @@ export default function Header() {
   return (
     <>
       <Wrapper $scrolled={scrolled}>
-        <Logo src={scrolled ? logoInverse : logo} alt="Working Agencia" />
+        <Logo
+          src={scrolled ? logoInverse : logo}
+          alt="Working Agencia"
+          onClick={() => navigate('/')}
+          style={{ cursor: 'pointer' }}
+        />
 
         {/* desktop nav */}
         <Nav>
@@ -86,6 +136,36 @@ export default function Header() {
               {label}
             </MenuItem>
           ))}
+
+          {/* new: schedule */}
+          <button
+            onClick={() => navigate('/schedule')}
+            style={{
+              background: location.pathname.startsWith('/schedule')
+                ? '#1d4ed8'
+                : '#eff6ff',
+              color: location.pathname.startsWith('/schedule') ? '#fff' : '#1d4ed8',
+              border: 'none',
+              borderRadius: 6,
+              padding: '6px 12px',
+              cursor: 'pointer',
+              marginLeft: '0.75rem',
+            }}
+          >
+            Schedule
+          </button>
+
+          {/* new: auth controls */}
+          {user ? (
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, color: scrolled ? '#fff' : '#1f2937' }}>
+                {user.email}
+              </span>
+              <button onClick={handleLogout}>Logout</button>
+            </div>
+          ) : (
+            <button onClick={() => setShowAuth(true)}>Login / Signup</button>
+          )}
         </Nav>
 
         {/* hamburger */}
@@ -141,7 +221,7 @@ export default function Header() {
               label === 'Services' ? (
                 <MobileLink
                   as="button"
-                  to="#"            // satisfies LinkProps
+                  to="#"
                   key={label}
                   onClick={() => setLevel(1)}
                 >
@@ -159,32 +239,69 @@ export default function Header() {
               ),
             )}
 
-            
+            {/* mobile: schedule */}
+            <MobileLink
+              to="/schedule"
+              onClick={() => setMobileOpen(false)}
+            >
+              Schedule
+            </MobileLink>
+
+            {/* mobile: auth */}
+            {user ? (
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setMobileOpen(false);
+                }}
+                style={{ marginTop: '1rem' }}
+              >
+                Logout ({user.email})
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setShowAuth(true);
+                  setMobileOpen(false);
+                }}
+                style={{ marginTop: '1rem' }}
+              >
+                Login / Signup
+              </button>
+            )}
           </Panel>
 
           {/* services sub-panel */}
           <Panel>
             <BackBtn onClick={() => setLevel(0)}>Services</BackBtn>
-            {(['Communication', 'Life Style', 'Business'] as const).map(
-              (cat) => (
-                <div key={cat} style={{ marginBottom: '2rem' }}>
-                  <h4 style={{ fontSize: '1rem', opacity: 0.7 }}>{cat}</h4>
-                  {grouped[cat]?.map((s) => (
-                    <MobileLink
-                      key={s.slug}
-                      to={`/services/${s.slug}`}
-                      onClick={() => setMobileOpen(false)}
-                      style={{ fontSize: '1.3rem', fontWeight: 500 }}
-                    >
-                      {s.title}
-                    </MobileLink>
-                  ))}
-                </div>
-              ),
-            )}
+            {(['Communication', 'Life Style', 'Business'] as const).map((cat) => (
+              <div key={cat} style={{ marginBottom: '2rem' }}>
+                <h4 style={{ fontSize: '1rem', opacity: 0.7 }}>{cat}</h4>
+                {grouped[cat]?.map((s) => (
+                  <MobileLink
+                    key={s.slug}
+                    to={`/services/${s.slug}`}
+                    onClick={() => setMobileOpen(false)}
+                    style={{ fontSize: '1.3rem', fontWeight: 500 }}
+                  >
+                    {s.title}
+                  </MobileLink>
+                ))}
+              </div>
+            ))}
           </Panel>
         </PanelWrap>
       </Overlay>
+
+      {showAuth && (
+        <AuthModal
+          onClose={() => setShowAuth(false)}
+          onAuthSuccess={(u) => {
+            setUser(u);
+            setShowAuth(false);
+          }}
+        />
+      )}
     </>
   );
 }

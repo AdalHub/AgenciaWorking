@@ -27,3 +27,8 @@ dist-ssr
 send_email.php
 send_email.php
 send_email.php
+
+api/*
+api/config.php
+api/config.php
+api/config.php
