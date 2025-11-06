@@ -30,7 +30,7 @@ export default function BookedTable({ serviceId }: Props) {
       setLoading(true);
       setError(null);
       try {
-        // ✅ correct endpoint name + send cookies
+        // correct endpoint name + send cookies
         const res = await fetch(
           `/api/bookings.php?action=list_for_admin&service_id=${serviceId}`,
           { credentials: 'include' }

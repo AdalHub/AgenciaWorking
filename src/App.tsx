@@ -20,7 +20,7 @@ export default function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/services/:slug" element={<DetailTemplate />} />
         <Route path="/about-us" element={<DetailTemplate />} />
-        <Route path="/careers" element={<Career />} />
+        <Route path="/career" element={<Career />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/schedule" element={<ScheduleList />} />
         <Route path="/schedule/:id" element={<ServiceDetail />} />

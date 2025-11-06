@@ -1,40 +1,80 @@
 // src/components/Admin/Login.tsx
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
-export default function Login({ onLogin }: { onLogin: () => void }) {
-  const [username, setUsername] = useState('');
+interface AdminLoginProps {
+  onLogin?: () => void;
+}
+
+export default function AdminLogin({ onLogin }: AdminLoginProps) {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [err, setErr] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetch('/api/auth.php?action=me')
-      .then(r => r.json())
-      .then(d => { if (d.user) onLogin(); })
-      .catch(() => {});
-  }, [onLogin]);
-
-  const handleLogin = async () => {
-    setErr(null);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
     try {
       const res = await fetch('/api/auth.php?action=login', {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ username, password })
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username: email, password }),
       });
-      if (!res.ok) throw new Error('Bad creds');
-      onLogin();
-    } catch (e) {
-      setErr('Invalid username or password.');
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Login failed');
+      } else {
+        // logged in!
+        if (onLogin) onLogin();
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Network error');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{maxWidth: 360, margin: '4rem auto', display:'grid', gap:12}}>
-      <h2>Admin Login</h2>
-      <input placeholder="Username" value={username} onChange={e=>setUsername(e.target.value)} />
-      <input placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
-      <button onClick={handleLogin}>Login</button>
-      {err && <div style={{color:'crimson'}}>{err}</div>}
+    <div style={{ maxWidth: 420, margin: '0 auto' }}>
+      <h2 style={{ textAlign: 'center', marginBottom: '1rem' }}>Admin Login</h2>
+      <form onSubmit={handleSubmit}>
+        <input
+          style={{ width: '100%', marginBottom: 8, padding: 6 }}
+          placeholder="admin username / email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <input
+          style={{ width: '100%', marginBottom: 8, padding: 6 }}
+          type="password"
+          placeholder="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: '100%',
+            padding: '0.6rem',
+            background: '#111',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 4,
+            cursor: 'pointer',
+          }}
+        >
+          {loading ? 'Logging in…' : 'Login'}
+        </button>
+        {error && (
+          <p style={{ color: 'red', marginTop: 8 }}>
+            {error}
+          </p>
+        )}
+      </form>
     </div>
   );
 }
