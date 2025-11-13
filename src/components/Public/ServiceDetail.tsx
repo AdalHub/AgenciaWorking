@@ -1,6 +1,8 @@
 // src/components/Public/ServiceDetail.tsx
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import Header from '../../components/header/header';
+import Footer from '../../components/Footer/Footer';
 
 type PublicUser = {
   id: number;
@@ -33,6 +35,7 @@ type BookingIntent = {
 
 export default function ServiceDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const serviceId = Number(id);
   const [service, setService] = useState<PublicService | null>(null);
   const [availability, setAvailability] = useState<AvailabilityBlock[]>([]);
@@ -130,23 +133,67 @@ export default function ServiceDetail() {
 
   if (loading) {
     return (
-      <div style={{ maxWidth: 900, margin: '2rem auto', padding: '0 1rem' }}>
-        Loading…
-      </div>
+      <>
+        <Header />
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '6rem 1rem 2rem' }}>
+          Loading…
+        </div>
+        <Footer />
+      </>
     );
   }
 
   if (!service) {
     return (
-      <div style={{ maxWidth: 900, margin: '2rem auto', padding: '0 1rem' }}>
-        Service not found.
-      </div>
+      <>
+        <Header />
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '6rem 1rem 2rem' }}>
+          <button
+            onClick={() => navigate('/schedule')}
+            style={{
+              marginBottom: '1rem',
+              background: '#111',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              padding: '8px 16px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            ← Back to Schedule
+          </button>
+          Service not found.
+        </div>
+        <Footer />
+      </>
     );
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: '2rem auto', padding: '0 1rem' }}>
-      <h1>{service.title}</h1>
+    <>
+      <Header />
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '6rem 1rem 2rem' }}>
+        <button
+          onClick={() => navigate('/schedule')}
+          style={{
+            marginBottom: '1.5rem',
+            background: '#111',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 6,
+            padding: '8px 16px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          ← Back to Schedule
+        </button>
+        <h1>{service.title}</h1>
       <p style={{ color: '#4b5563' }}>{service.description}</p>
       <p style={{ fontWeight: 600 }}>${service.hourly_rate.toFixed(2)}/hr</p>
 
@@ -223,6 +270,8 @@ export default function ServiceDetail() {
           )}
         </div>
       )}
-    </div>
+      </div>
+      <Footer />
+    </>
   );
 }
