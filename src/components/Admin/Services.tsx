@@ -29,11 +29,11 @@ export default function Services() {
   const loadServices = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/services.php?action=list', {
+      const res = await fetch('/api/services.php?action=list&include_inactive=1', {
         credentials: 'include',
       });
       const data = await res.json();
-      // data is array of active services; admin may want to see all
+      // Admin view: include both active and inactive services
       setServices(data);
       if (!selected && data.length > 0) {
         setSelected(data[0]);
@@ -49,10 +49,37 @@ export default function Services() {
     loadServices();
   }, []);
 
-  const handleCreatedOrUpdated = () => {
+  const handleCreatedOrUpdated = async () => {
+    const editedId = editing?.id; // Save the ID before clearing
     setShowForm(false);
     setEditing(null);
-    loadServices();
+    
+    // Reload services and update selected if it was edited
+    setLoading(true);
+    try {
+      const res = await fetch('/api/services.php?action=list&include_inactive=1', {
+        credentials: 'include',
+      });
+      const data = await res.json();
+      setServices(data);
+      
+      // Update selected service if it was the one being edited
+      if (editedId) {
+        const updated = data.find((s: AdminService) => s.id === editedId);
+        if (updated) {
+          setSelected(updated);
+        } else if (data.length > 0) {
+          // If edited service not found, select first one
+          setSelected(data[0]);
+        }
+      } else if (!selected && data.length > 0) {
+        setSelected(data[0]);
+      }
+    } catch (err) {
+      console.error('Failed to load services', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

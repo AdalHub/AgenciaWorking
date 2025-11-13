@@ -8,6 +8,7 @@ export type AdminService = {
   hourly_rate: number;
   hourly_rate_cents?: number;
   is_active?: number;
+  notify_emails?: string;
 };
 
 interface Props {
@@ -51,6 +52,9 @@ export default function ServicesList({
             <div style={{ fontWeight: 500 }}>{svc.title}</div>
             <div style={{ fontSize: 12, color: '#6b7280' }}>
               ${svc.hourly_rate.toFixed(2)}/hr {svc.is_active === 0 ? '(inactive)' : ''}
+            </div>
+            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+              Notify: {svc.notify_emails || '(none)'}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 4 }}>
