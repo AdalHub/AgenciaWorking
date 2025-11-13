@@ -53,8 +53,8 @@ export default function ServicesList({
             <div style={{ fontSize: 12, color: '#6b7280' }}>
               ${svc.hourly_rate.toFixed(2)}/hr {svc.is_active === 0 ? '(inactive)' : ''}
             </div>
-            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
-              Notify: {svc.notify_emails || '(none)'}
+            <div style={{ fontSize: 11, color: svc.notify_emails ? '#059669' : '#9ca3af', marginTop: 4 }}>
+              📧 Notify: {svc.notify_emails ? svc.notify_emails : '(none)'}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 4 }}>

@@ -34,6 +34,8 @@ export default function Services() {
       });
       const data = await res.json();
       // Admin view: include both active and inactive services
+      console.log('Loaded services:', data);
+      console.log('First service notify_emails:', data[0]?.notify_emails);
       setServices(data);
       if (!selected && data.length > 0) {
         setSelected(data[0]);

@@ -21,6 +21,24 @@ export default function ServiceForm({ initial, onDone, onCancel }: Props) {
 
   const isEdit = !!initial?.id;
 
+  // Update form fields when initial data changes (e.g., when editing a different service)
+  React.useEffect(() => {
+    if (initial) {
+      setTitle(initial.title ?? '');
+      setDescription(initial.description ?? '');
+      setRate(String(initial.hourly_rate ?? 0));
+      setActive(initial.is_active !== 0);
+      setNotifyEmails(initial.notify_emails ?? '');
+    } else {
+      // Reset form for new service
+      setTitle('');
+      setDescription('');
+      setRate('0');
+      setActive(true);
+      setNotifyEmails('');
+    }
+  }, [initial]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -34,33 +52,36 @@ export default function ServiceForm({ initial, onDone, onCancel }: Props) {
       // API expects cents:
       const hourly_rate_cents = Math.round(parsed * 100);
 
+      const payload: any = {
+        title,
+        description,
+        hourly_rate_cents,
+        active: isEdit ? (active ? 1 : 0) : 1,
+        notify_emails: notifyEmails.trim(), // Ensure we send the notify emails
+      };
+      
       if (isEdit) {
-        await fetch('/api/services.php?action=update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            id: initial?.id,
-            title,
-            description,
-            hourly_rate_cents,
-            active: active ? 1 : 0,
-            notify_emails: notifyEmails, // NEW
-          }),
-        });
-      } else {
-        await fetch('/api/services.php?action=create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            title,
-            description,
-            hourly_rate_cents,
-            active: 1,
-            notify_emails: notifyEmails, // NEW
-          }),
-        });
+        payload.id = initial?.id;
+      }
+      
+      console.log('Saving service with payload:', payload);
+      
+      const url = isEdit 
+        ? '/api/services.php?action=update'
+        : '/api/services.php?action=create';
+        
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      
+      const result = await res.json();
+      console.log('Save result:', result);
+      
+      if (!res.ok) {
+        throw new Error(result.error || 'Failed to save service');
       }
 
       onDone();
