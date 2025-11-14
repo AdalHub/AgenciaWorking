@@ -71,3 +71,15 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Fade in and drop down animation for job/service cards */
+@keyframes fadeInDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

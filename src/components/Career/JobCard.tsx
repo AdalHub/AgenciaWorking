@@ -5,9 +5,12 @@ export interface JobCardProps {
   job: JobPosting;
   onOpen?: (job: JobPosting) => void;   // open details
   onApply?: (job: JobPosting) => void;  // open modal directly (optional)
+  index?: number; // for staggered animation
 }
 
-const JobCard: React.FC<JobCardProps> = ({ job, onOpen, onApply }) => {
+const JobCard: React.FC<JobCardProps> = ({ job, onOpen, onApply, index = 0 }) => {
+  const delay = index * 170; // 170ms stagger like header
+  
   return (
     <div
       onClick={() => onOpen?.(job)}
@@ -17,6 +20,9 @@ const JobCard: React.FC<JobCardProps> = ({ job, onOpen, onApply }) => {
         padding: 16,
         marginBottom: 12,
         cursor: 'pointer',
+        opacity: 0,
+        transform: 'translateY(-12px)',
+        animation: `fadeInDrop 260ms ease ${delay}ms forwards`,
       }}
       role="button"
       tabIndex={0}

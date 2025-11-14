@@ -328,10 +328,21 @@ export default function ScheduleList() {
           ) : filtered.length === 0 ? (
             <p>No services found.</p>
           ) : (
-            filtered.map((svc) => {
+            filtered.map((svc, index) => {
               const price = (svc.hourly_rate_cents || 0) / 100;
+              const delay = index * 170; // 170ms stagger like header
+              // Create a filter signature to force re-animation when filters change
+              const filterKey = `${q}-${priceFilter}-${sort}-${category}`;
               return (
-                <div key={svc.id} style={listCard}>
+                <div
+                  key={`${filterKey}-${svc.id}`}
+                  style={{
+                    ...listCard,
+                    opacity: 0,
+                    transform: 'translateY(-12px)',
+                    animation: `fadeInDrop 260ms ease ${delay}ms forwards`,
+                  }}
+                >
                   <h3 style={{ marginBottom: 4 }}>{svc.title}</h3>
                   <p style={{ marginBottom: 4, color: '#6a6f77' }}>
                     ${price.toFixed(2)}/hr

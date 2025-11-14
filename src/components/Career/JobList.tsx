@@ -60,13 +60,17 @@ export default function JobList({ filters }: { filters: FilterState }) {
     );
   }
 
+  // Create a filter signature to force re-animation when filters change
+  const filterKey = `${filters.q}-${filters.sort}-${filters.employment}-${filters.teams?.join(',') || ''}`;
+
   return (
     <div style={{ flex: 1 }}>
       {filtered.length === 0 && <div>No jobs found.</div>}
-      {filtered.map(job => (
+      {filtered.map((job, index) => (
         <JobCard
-          key={job.id}
+          key={`${filterKey}-${job.id}`}
           job={job}
+          index={index}
           onOpen={(j) => setSelected(j)}
           onApply={(j) => setApplyFor(j)}
         />
