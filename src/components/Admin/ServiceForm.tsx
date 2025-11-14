@@ -113,6 +113,25 @@ export default function ServiceForm({ initial, onDone, onCancel }: Props) {
         placeholder="Title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
+        style={{
+          width: '100%',
+          padding: '0.75rem 1rem',
+          background: '#ffffff',
+          border: '2px solid #e5e7eb',
+          borderRadius: 8,
+          fontSize: '1rem',
+          color: '#111827',
+          boxSizing: 'border-box',
+          transition: 'border-color 0.2s, box-shadow 0.2s',
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = '#063591';
+          e.target.style.boxShadow = '0 0 0 3px rgba(6, 53, 145, 0.1)';
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = '#e5e7eb';
+          e.target.style.boxShadow = 'none';
+        }}
       />
 
       <textarea
@@ -120,6 +139,27 @@ export default function ServiceForm({ initial, onDone, onCancel }: Props) {
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         rows={4}
+        style={{
+          width: '100%',
+          padding: '0.75rem 1rem',
+          background: '#ffffff',
+          border: '2px solid #e5e7eb',
+          borderRadius: 8,
+          fontSize: '1rem',
+          color: '#111827',
+          boxSizing: 'border-box',
+          transition: 'border-color 0.2s, box-shadow 0.2s',
+          resize: 'vertical',
+          fontFamily: 'inherit',
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = '#063591';
+          e.target.style.boxShadow = '0 0 0 3px rgba(6, 53, 145, 0.1)';
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = '#e5e7eb';
+          e.target.style.boxShadow = 'none';
+        }}
       />
 
       <input
@@ -129,6 +169,25 @@ export default function ServiceForm({ initial, onDone, onCancel }: Props) {
         placeholder="Hourly rate (e.g., 49.99)"
         value={rate}
         onChange={(e) => setRate(e.target.value)}
+        style={{
+          width: '100%',
+          padding: '0.75rem 1rem',
+          background: '#ffffff',
+          border: '2px solid #e5e7eb',
+          borderRadius: 8,
+          fontSize: '1rem',
+          color: '#111827',
+          boxSizing: 'border-box',
+          transition: 'border-color 0.2s, box-shadow 0.2s',
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = '#063591';
+          e.target.style.boxShadow = '0 0 0 3px rgba(6, 53, 145, 0.1)';
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = '#e5e7eb';
+          e.target.style.boxShadow = 'none';
+        }}
       />
 
       {/* Notify emails (comma-separated) */}
@@ -139,6 +198,27 @@ export default function ServiceForm({ initial, onDone, onCancel }: Props) {
           value={notifyEmails}
           onChange={(e) => setNotifyEmails(e.target.value)}
           rows={2}
+          style={{
+            width: '100%',
+            padding: '0.75rem 1rem',
+            background: '#ffffff',
+            border: '2px solid #e5e7eb',
+            borderRadius: 8,
+            fontSize: '1rem',
+            color: '#111827',
+            boxSizing: 'border-box',
+            transition: 'border-color 0.2s, box-shadow 0.2s',
+            resize: 'vertical',
+            fontFamily: 'inherit',
+          }}
+          onFocus={(e) => {
+            e.target.style.borderColor = '#063591';
+            e.target.style.boxShadow = '0 0 0 3px rgba(6, 53, 145, 0.1)';
+          }}
+          onBlur={(e) => {
+            e.target.style.borderColor = '#e5e7eb';
+            e.target.style.boxShadow = 'none';
+          }}
         />
         <span style={{ fontSize: 12, color: '#6b7280' }}>
           These emails will receive notifications when a booking is made for this service.

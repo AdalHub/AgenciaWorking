@@ -69,8 +69,17 @@ export const SearchInputWrap = styled.div`
     width: 100%;
     padding: 0.55rem 2.5rem 0.55rem 0.75rem;
     font-size: 0.9rem;
-    border: 1px solid #c7ccd6;
-    border-radius: 6px;
+    background: #ffffff;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    color: #111827;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    &:focus {
+      outline: none;
+      border-color: #063591;
+      box-shadow: 0 0 0 3px rgba(6, 53, 145, 0.1);
+    }
   }
   svg {
     position: absolute;

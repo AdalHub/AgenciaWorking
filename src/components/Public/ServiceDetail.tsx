@@ -233,7 +233,28 @@ export default function ServiceDetail() {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="anything your team should know"
-          style={{ width: '100%', minHeight: 80 }}
+          style={{
+            width: '100%',
+            minHeight: 80,
+            padding: '0.75rem 1rem',
+            background: '#ffffff',
+            border: '2px solid #e5e7eb',
+            borderRadius: 8,
+            fontSize: '1rem',
+            color: '#111827',
+            boxSizing: 'border-box',
+            transition: 'border-color 0.2s, box-shadow 0.2s',
+            resize: 'vertical',
+            fontFamily: 'inherit',
+          }}
+          onFocus={(e) => {
+            e.target.style.borderColor = '#063591';
+            e.target.style.boxShadow = '0 0 0 3px rgba(6, 53, 145, 0.1)';
+          }}
+          onBlur={(e) => {
+            e.target.style.borderColor = '#e5e7eb';
+            e.target.style.boxShadow = 'none';
+          }}
         />
       </div>
 

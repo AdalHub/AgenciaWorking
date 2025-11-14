@@ -47,10 +47,13 @@ const searchBarWrap: React.CSSProperties = {
 const searchInput: React.CSSProperties = {
   width: '100%',
   padding: '0.85rem 3rem 0.85rem 1rem',
-  border: '1px solid #c7ccd6',
+  background: '#ffffff',
+  border: '2px solid #e5e7eb',
   borderRadius: 32,
   fontSize: '1rem',
+  color: '#111827',
   boxSizing: 'border-box',
+  transition: 'border-color 0.2s, box-shadow 0.2s',
 };
 
 const listCard: React.CSSProperties = {
@@ -166,6 +169,14 @@ export default function ScheduleList() {
           placeholder="Search by service name, description…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
+          onFocus={(e) => {
+            e.target.style.borderColor = '#063591';
+            e.target.style.boxShadow = '0 0 0 3px rgba(6, 53, 145, 0.1)';
+          }}
+          onBlur={(e) => {
+            e.target.style.borderColor = '#e5e7eb';
+            e.target.style.boxShadow = 'none';
+          }}
         />
         <svg
           width="18"

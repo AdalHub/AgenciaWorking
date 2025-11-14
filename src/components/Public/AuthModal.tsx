@@ -118,6 +118,25 @@ export default function AuthModal({ onClose, onAuthSuccess }: Props) {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '0.75rem 1rem',
+              background: '#ffffff',
+              border: '2px solid #e5e7eb',
+              borderRadius: 8,
+              fontSize: '1rem',
+              color: '#111827',
+              boxSizing: 'border-box',
+              transition: 'border-color 0.2s, box-shadow 0.2s',
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#063591';
+              e.target.style.boxShadow = '0 0 0 3px rgba(6, 53, 145, 0.1)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#e5e7eb';
+              e.target.style.boxShadow = 'none';
+            }}
           />
           <input
             required
@@ -125,6 +144,25 @@ export default function AuthModal({ onClose, onAuthSuccess }: Props) {
             placeholder="Password (min 6 chars)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '0.75rem 1rem',
+              background: '#ffffff',
+              border: '2px solid #e5e7eb',
+              borderRadius: 8,
+              fontSize: '1rem',
+              color: '#111827',
+              boxSizing: 'border-box',
+              transition: 'border-color 0.2s, box-shadow 0.2s',
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#063591';
+              e.target.style.boxShadow = '0 0 0 3px rgba(6, 53, 145, 0.1)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#e5e7eb';
+              e.target.style.boxShadow = 'none';
+            }}
           />
           {mode === 'signup' && (
             <>
@@ -132,11 +170,49 @@ export default function AuthModal({ onClose, onAuthSuccess }: Props) {
                 placeholder="Full name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  background: '#ffffff',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: 8,
+                  fontSize: '1rem',
+                  color: '#111827',
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.2s, box-shadow 0.2s',
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#063591';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(6, 53, 145, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#e5e7eb';
+                  e.target.style.boxShadow = 'none';
+                }}
               />
               <input
                 placeholder="Phone"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  background: '#ffffff',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: 8,
+                  fontSize: '1rem',
+                  color: '#111827',
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.2s, box-shadow 0.2s',
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#063591';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(6, 53, 145, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#e5e7eb';
+                  e.target.style.boxShadow = 'none';
+                }}
               />
             </>
           )}
