@@ -1,5 +1,6 @@
 // src/components/Admin/Login.tsx
 import { useState } from 'react';
+import ForgotPassword from './ForgotPassword';
 
 interface AdminLoginProps {
   onLogin?: () => void;
@@ -10,6 +11,7 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,6 +115,33 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
           </p>
         )}
       </form>
+      <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+        <button
+          type="button"
+          onClick={() => setShowForgotPassword(true)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#063591',
+            cursor: 'pointer',
+            textDecoration: 'underline',
+            fontSize: '0.9rem',
+            padding: '0.5rem',
+            fontWeight: 500,
+          }}
+        >
+          Forgot Password?
+        </button>
+      </div>
+      {showForgotPassword && (
+        <ForgotPassword
+          onClose={() => setShowForgotPassword(false)}
+          onSuccess={() => {
+            setShowForgotPassword(false);
+            if (onLogin) onLogin();
+          }}
+        />
+      )}
     </div>
   );
 }

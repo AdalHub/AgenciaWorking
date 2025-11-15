@@ -126,9 +126,12 @@ export default function Services() {
               }
             }}
           />
+        </div>
 
+        {/* RIGHT: edit form (when open) + availability + bookings for selected service */}
+        <div style={{ flex: 1 }}>
           {showForm && (
-            <div style={{ marginTop: 16 }}>
+            <div style={{ marginBottom: 24 }}>
               <ServiceForm
                 initial={editing ?? undefined}
                 onDone={handleCreatedOrUpdated}
@@ -136,23 +139,22 @@ export default function Services() {
               />
             </div>
           )}
-        </div>
-
-        {/* RIGHT: availability + bookings for selected service */}
-        <div style={{ flex: 1 }}>
+          
           {selected ? (
             <>
-              <h3 style={{ marginBottom: 12 }}>
-                {selected.title} – ${selected.hourly_rate.toFixed(2)}/hr
-              </h3>
+              {!showForm && (
+                <h3 style={{ marginBottom: 12 }}>
+                  {selected.title} – ${selected.hourly_rate.toFixed(2)}/hr
+                </h3>
+              )}
               <AvailabilityEditor service={selected} />
               <div style={{ marginTop: 24 }}>
                 <BookedTable serviceId={selected.id} />
               </div>
             </>
-          ) : (
+          ) : !showForm ? (
             <p>Select a service to manage its availability and bookings.</p>
-          )}
+          ) : null}
         </div>
       </div>
     </main>

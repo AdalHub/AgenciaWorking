@@ -8,6 +8,7 @@ import AdminPanel from '../components/Admin/AdminPanel';
 
 // our NEW services admin
 import Services from '../components/Admin/Services';
+import ForgotPassword from '../components/Admin/ForgotPassword';
 
 type AdminTab = 'jobs' | 'services';
 
@@ -15,6 +16,7 @@ export default function AdminPage() {
   const [checking, setChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [tab, setTab] = useState<AdminTab>('jobs');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const checkAdmin = async () => {
     try {
@@ -136,6 +138,33 @@ export default function AdminPage() {
                 Login
               </button>
             </form>
+            <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#063591',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  fontSize: '0.9rem',
+                  padding: '0.5rem',
+                  fontWeight: 500,
+                }}
+              >
+                Forgot Password?
+              </button>
+            </div>
+            {showForgotPassword && (
+              <ForgotPassword
+                onClose={() => setShowForgotPassword(false)}
+                onSuccess={() => {
+                  setShowForgotPassword(false);
+                  checkAdmin();
+                }}
+              />
+            )}
           </div>
         ) : (
           // logged in → show tabs
