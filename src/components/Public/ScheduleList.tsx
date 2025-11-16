@@ -1,8 +1,10 @@
 // src/components/Public/ScheduleList.tsx
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import styled from 'styled-components';
 import Header from '../../components/header/header';
 import Footer from '../../components/Footer/Footer';
+import ScheduleFilterPanel, { type ScheduleFilterState } from './ScheduleFilterPanel';
 
 type Service = {
   id: number;
@@ -13,65 +15,146 @@ type Service = {
   category?: string;
 };
 
-type PriceFilter = 'all' | 'lt50' | '50to100' | 'gt100';
-type SortFilter = 'low' | 'high';
+const Page = styled.main`
+  padding: 6rem 1.5rem 4rem;
+  min-height: 100vh;
+  background: #fff;
+`;
 
-const pageWrap: React.CSSProperties = {
-  minHeight: '100vh',
-  background: '#fff',
-};
+const SearchBar = styled.div`
+  max-width: 720px;
+  margin: 0 auto 2.5rem;
+  position: relative;
+  input {
+    width: 100%;
+    padding: 0.85rem 3rem 0.85rem 1rem;
+    background: #ffffff;
+    border: 2px solid #e5e7eb;
+    border-radius: 32px;
+    font-size: 1rem;
+    color: #111827;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    &:focus {
+      outline: none;
+      border-color: #063591;
+      box-shadow: 0 0 0 3px rgba(6, 53, 145, 0.1);
+    }
+  }
+  svg {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c7480;
+    pointer-events: none;
+  }
+`;
 
-const mainWrap: React.CSSProperties = {
-  maxWidth: 1280,
-  margin: '0 auto',
-  padding: '6rem 1.5rem 4rem',
-  display: 'flex',
-  gap: '2rem',
-};
+const Body = styled.section`
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  gap: 2rem;
+`;
 
-const leftPanel: React.CSSProperties = {
-  width: 230,
-  flex: '0 0 230px',
-};
+const Toggle = styled.button`
+  background: ${({ theme }) => theme.colors.primary};
+  color: #fff;
+  border: none;
+  padding: 0.55rem 1.3rem;
+  border-radius: 22px;
+  cursor: pointer;
+  margin-bottom: 1.5rem;
+  display: none;
+  @media (max-width: 920px) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+`;
 
-const rightPanel: React.CSSProperties = {
-  flex: 1,
-};
+const ServiceCard = styled.div`
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 5px 22px rgba(0, 0, 0, 0.03);
 
-const searchBarWrap: React.CSSProperties = {
-  maxWidth: 720,
-  margin: '0 auto 2.5rem',
-  position: 'relative',
-};
+  h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+    @media (max-width: 768px) {
+      font-size: 1.1rem;
+    }
+  }
 
-const searchInput: React.CSSProperties = {
-  width: '100%',
-  padding: '0.85rem 3rem 0.85rem 1rem',
-  background: '#ffffff',
-  border: '2px solid #e5e7eb',
-  borderRadius: 32,
-  fontSize: '1rem',
-  color: '#111827',
-  boxSizing: 'border-box',
-  transition: 'border-color 0.2s, box-shadow 0.2s',
-};
+  .price {
+    margin-bottom: 0.5rem;
+    color: #6a6f77;
+    font-size: 0.95rem;
+  }
 
-const listCard: React.CSSProperties = {
-  background: '#fff',
-  border: '1px solid rgba(0,0,0,0.04)',
-  borderRadius: 16,
-  padding: '1.25rem 1.5rem 1.25rem',
-  marginBottom: '1rem',
-  boxShadow: '0 5px 22px rgba(0,0,0,0.03)',
-};
+  .description {
+    margin-bottom: 12px;
+    color: #374151;
+    line-height: 1.5;
+    @media (max-width: 768px) {
+      font-size: 0.9rem;
+    }
+  }
+
+  .buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    
+    button {
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: opacity 0.2s;
+      
+      &:hover {
+        opacity: 0.9;
+      }
+      
+      @media (max-width: 768px) {
+        flex: 1;
+        min-width: 120px;
+        padding: 10px 16px;
+      }
+    }
+  }
+`;
+
+const Backdrop = styled.div<{ open: boolean }>`
+  display: none;
+  @media (max-width: 920px) {
+    display: ${({ open }) => (open ? 'block' : 'none')};
+    position: fixed;
+    top: 64px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9979;
+  }
+`;
 
 export default function ScheduleList() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
-  const [q, setQ] = useState('');
-  const [priceFilter, setPriceFilter] = useState<PriceFilter>('all');
-  const [sort, setSort] = useState<SortFilter>('low');
-  const [category, setCategory] = useState<string>('all');
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [filters, setFilters] = useState<ScheduleFilterState>({
+    q: '',
+    priceFilter: 'all',
+    sort: 'low',
+    category: 'all',
+  });
 
   const navigate = useNavigate();
 
@@ -115,7 +198,7 @@ export default function ScheduleList() {
     let list = [...services];
 
     // search
-    const term = q.trim().toLowerCase();
+    const term = filters.q.trim().toLowerCase();
     if (term) {
       list = list.filter(
         (s) =>
@@ -125,14 +208,16 @@ export default function ScheduleList() {
     }
 
     // category
-    if (category !== 'all') {
-      list = list.filter((s) => (s.category || '').toLowerCase() === category.toLowerCase());
+    if (filters.category !== 'all') {
+      list = list.filter(
+        (s) => (s.category || '').toLowerCase() === filters.category.toLowerCase(),
+      );
     }
 
     // price
     list = list.filter((s) => {
       const price = s.hourly_rate_cents / 100;
-      switch (priceFilter) {
+      switch (filters.priceFilter) {
         case 'lt50':
           return price < 50;
         case '50to100':
@@ -148,245 +233,101 @@ export default function ScheduleList() {
     list.sort((a, b) => {
       const pa = a.hourly_rate_cents;
       const pb = b.hourly_rate_cents;
-      if (sort === 'low') return pa - pb;
+      if (filters.sort === 'low') return pa - pb;
       return pb - pa;
     });
 
     return list;
-  }, [services, q, priceFilter, sort, category]);
+  }, [services, filters]);
 
   return (
-    <div style={pageWrap}>
+    <>
       <Header />
+      <Page>
+        <h1 style={{ textAlign: 'center' }}>Search Services</h1>
 
-      <h1 style={{ textAlign: 'center', marginTop: '4.5rem', marginBottom: '1rem' }}>
-        Search Services
-      </h1>
-
-      <div style={searchBarWrap}>
-        <input
-          style={searchInput}
-          placeholder="Search by service name, description…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onFocus={(e) => {
-            e.target.style.borderColor = '#063591';
-            e.target.style.boxShadow = '0 0 0 3px rgba(6, 53, 145, 0.1)';
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor = '#e5e7eb';
-            e.target.style.boxShadow = 'none';
-          }}
-        />
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          style={{
-            position: 'absolute',
-            right: '1.15rem',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: '#6c7480',
-            pointerEvents: 'none',
-          }}
-        >
-          <path
-            fill="currentColor"
-            d="M21 20.3 15.8 15a7.4 7.4 0 1 0-1 1l5.3 5.3a.7.7 0 1 0 1-1ZM4 10.4a6.3 6.3 0 1 1 12.6 0A6.3 6.3 0 0 1 4 10.4Z"
+        <SearchBar>
+          <input
+            type="text"
+            placeholder="Search by service name, description…"
+            value={filters.q}
+            onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
           />
-        </svg>
-      </div>
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <path
+              fill="currentColor"
+              d="M21 20.3 15.8 15a7.4 7.4 0 1 0-1 1l5.3 5.3a.7.7 0 1 0 1-1ZM4 10.4a6.3 6.3 0 1 1 12.6 0A6.3 6.3 0 0 1 4 10.4Z"
+            />
+          </svg>
+        </SearchBar>
 
-      <section style={mainWrap}>
-        {/* LEFT FILTERS */}
-        <aside style={leftPanel}>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <h4 style={{ marginBottom: 6 }}>Category</h4>
-            <button
-              onClick={() => setCategory('all')}
-              style={{
-                display: 'block',
-                marginBottom: 6,
-                background: category === 'all' ? '#063591' : '#edf0f7',
-                color: category === 'all' ? '#fff' : '#182b4d',
-                border: 'none',
-                borderRadius: 999,
-                padding: '4px 12px',
-                cursor: 'pointer',
-              }}
-            >
-              All
-            </button>
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setCategory(cat)}
-                style={{
-                  display: 'block',
-                  marginBottom: 6,
-                  background: category === cat ? '#063591' : '#edf0f7',
-                  color: category === cat ? '#fff' : '#182b4d',
-                  border: 'none',
-                  borderRadius: 999,
-                  padding: '4px 12px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-              >
-                {cat}
-              </button>
-            ))}
+        <Toggle onClick={() => setPanelOpen(true)}>Show filters</Toggle>
+
+        <Body>
+          <Backdrop open={panelOpen} onClick={() => setPanelOpen(false)} />
+          <ScheduleFilterPanel
+            open={panelOpen}
+            applied={filters}
+            onApply={setFilters}
+            onClose={() => setPanelOpen(false)}
+            availableCategories={categories}
+          />
+          <div style={{ flex: 1 }}>
+            {loading ? (
+              <p>Loading services…</p>
+            ) : filtered.length === 0 ? (
+              <p>No services found.</p>
+            ) : (
+              filtered.map((svc, index) => {
+                const price = (svc.hourly_rate_cents || 0) / 100;
+                const delay = index * 170; // 170ms stagger like header
+                // Create a filter signature to force re-animation when filters change
+                const filterKey = `${filters.q}-${filters.priceFilter}-${filters.sort}-${filters.category}`;
+                return (
+                  <ServiceCard
+                    key={`${filterKey}-${svc.id}`}
+                    style={{
+                      opacity: 0,
+                      transform: 'translateY(-12px)',
+                      animation: `fadeInDrop 260ms ease ${delay}ms forwards`,
+                    }}
+                  >
+                    <h3>{svc.title}</h3>
+                    <p className="price">
+                      ${price.toFixed(2)}/hr
+                      {svc.category ? ` • ${svc.category}` : ''}
+                    </p>
+                    <p className="description">
+                      {svc.description || 'No description.'}
+                    </p>
+                    <div className="buttons">
+                      <button
+                        onClick={() => navigate(`/schedule/${svc.id}`)}
+                        style={{
+                          background: '#111',
+                          color: '#fff',
+                        }}
+                      >
+                        View details
+                      </button>
+                      <button
+                        onClick={() => navigate(`/schedule/${svc.id}`)}
+                        style={{
+                          background: '#0b5bff',
+                          color: '#fff',
+                        }}
+                      >
+                        Schedule
+                      </button>
+                    </div>
+                  </ServiceCard>
+                );
+              })
+            )}
           </div>
-
-          <div style={{ marginBottom: '1.5rem' }}>
-            <h4 style={{ marginBottom: 6 }}>Price per hour</h4>
-            <label style={{ display: 'block', marginBottom: 4 }}>
-              <input
-                type="radio"
-                name="price"
-                checked={priceFilter === 'all'}
-                onChange={() => setPriceFilter('all')}
-              />{' '}
-              Any
-            </label>
-            <label style={{ display: 'block', marginBottom: 4 }}>
-              <input
-                type="radio"
-                name="price"
-                checked={priceFilter === 'lt50'}
-                onChange={() => setPriceFilter('lt50')}
-              />{' '}
-              &lt; $50
-            </label>
-            <label style={{ display: 'block', marginBottom: 4 }}>
-              <input
-                type="radio"
-                name="price"
-                checked={priceFilter === '50to100'}
-                onChange={() => setPriceFilter('50to100')}
-              />{' '}
-              $50 – $100
-            </label>
-            <label style={{ display: 'block', marginBottom: 4 }}>
-              <input
-                type="radio"
-                name="price"
-                checked={priceFilter === 'gt100'}
-                onChange={() => setPriceFilter('gt100')}
-              />{' '}
-              &gt; $100
-            </label>
-          </div>
-
-          <div style={{ marginBottom: '1.5rem' }}>
-            <h4 style={{ marginBottom: 6 }}>Sort by</h4>
-            <label style={{ display: 'block', marginBottom: 4 }}>
-              <input
-                type="radio"
-                name="sort"
-                checked={sort === 'low'}
-                onChange={() => setSort('low')}
-              />{' '}
-              Lowest price
-            </label>
-            <label style={{ display: 'block', marginBottom: 4 }}>
-              <input
-                type="radio"
-                name="sort"
-                checked={sort === 'high'}
-                onChange={() => setSort('high')}
-              />{' '}
-              Highest price
-            </label>
-          </div>
-
-          <button
-            onClick={() => {
-              setQ('');
-              setPriceFilter('all');
-              setSort('low');
-              setCategory('all');
-            }}
-            style={{
-              marginTop: 10,
-              background: '#fff',
-              border: '1px solid #dde1ea',
-              borderRadius: 999,
-              padding: '6px 14px',
-              cursor: 'pointer',
-            }}
-          >
-            Clear filters
-          </button>
-        </aside>
-
-        {/* RIGHT LIST */}
-        <div style={rightPanel}>
-          {loading ? (
-            <p>Loading services…</p>
-          ) : filtered.length === 0 ? (
-            <p>No services found.</p>
-          ) : (
-            filtered.map((svc, index) => {
-              const price = (svc.hourly_rate_cents || 0) / 100;
-              const delay = index * 170; // 170ms stagger like header
-              // Create a filter signature to force re-animation when filters change
-              const filterKey = `${q}-${priceFilter}-${sort}-${category}`;
-              return (
-                <div
-                  key={`${filterKey}-${svc.id}`}
-                  style={{
-                    ...listCard,
-                    opacity: 0,
-                    transform: 'translateY(-12px)',
-                    animation: `fadeInDrop 260ms ease ${delay}ms forwards`,
-                  }}
-                >
-                  <h3 style={{ marginBottom: 4 }}>{svc.title}</h3>
-                  <p style={{ marginBottom: 4, color: '#6a6f77' }}>
-                    ${price.toFixed(2)}/hr
-                    {svc.category ? ` • ${svc.category}` : ''}
-                  </p>
-                  <p style={{ marginBottom: 12, maxWidth: 680 }}>
-                    {svc.description || 'No description.'}
-                  </p>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <button
-                      onClick={() => navigate(`/schedule/${svc.id}`)}
-                      style={{
-                        background: '#111',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 6,
-                        padding: '6px 12px',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      View details
-                    </button>
-                    <button
-                      onClick={() => navigate(`/schedule/${svc.id}`)}
-                      style={{
-                        background: '#0b5bff',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 6,
-                        padding: '6px 12px',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Schedule
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </section>
-
+        </Body>
+      </Page>
       <Footer />
-    </div>
+    </>
   );
 }
