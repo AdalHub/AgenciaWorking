@@ -13,11 +13,29 @@ interface Props {
   service: AdminService;
 }
 
+// Hook to detect mobile screen size
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+}
+
 export default function AvailabilityEditor({ service }: Props) {
   const [blocks, setBlocks] = useState<AvailabilityBlock[]>([]);
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
   const [loading, setLoading] = useState(false);
+  const isMobile = useIsMobile();
 
   const loadBlocks = async () => {
     setLoading(true);
@@ -93,11 +111,17 @@ export default function AvailabilityEditor({ service }: Props) {
   };
 
   return (
-    <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, background: '#fff' }}>
+    <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, background: '#fff', width: '100%', boxSizing: 'border-box' }}>
       <h4 style={{ marginTop: 0 }}>Availability</h4>
       <form
         onSubmit={handleAdd}
-        style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}
+        style={{ 
+          display: 'flex', 
+          gap: 8, 
+          flexWrap: 'wrap', 
+          marginBottom: 12,
+          flexDirection: isMobile ? 'column' : 'row',
+        }}
       >
         <input
           type="datetime-local"
@@ -113,6 +137,9 @@ export default function AvailabilityEditor({ service }: Props) {
             color: '#111827',
             boxSizing: 'border-box',
             transition: 'border-color 0.2s, box-shadow 0.2s',
+            width: isMobile ? '100%' : 'auto',
+            flex: isMobile ? '1 1 100%' : '1 1 auto',
+            minWidth: isMobile ? 'auto' : 200,
           }}
           onFocus={(e) => {
             e.target.style.borderColor = '#063591';
@@ -137,6 +164,9 @@ export default function AvailabilityEditor({ service }: Props) {
             color: '#111827',
             boxSizing: 'border-box',
             transition: 'border-color 0.2s, box-shadow 0.2s',
+            width: isMobile ? '100%' : 'auto',
+            flex: isMobile ? '1 1 100%' : '1 1 auto',
+            minWidth: isMobile ? 'auto' : 200,
           }}
           onFocus={(e) => {
             e.target.style.borderColor = '#063591';
@@ -147,7 +177,17 @@ export default function AvailabilityEditor({ service }: Props) {
             e.target.style.boxShadow = 'none';
           }}
         />
-        <button type="submit">Add</button>
+        <button 
+          type="submit"
+          style={{
+            width: isMobile ? '100%' : 'auto',
+            flex: isMobile ? '1 1 100%' : '0 0 auto',
+            padding: '0.75rem 1.5rem',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Add
+        </button>
       </form>
 
       {loading ? (
@@ -165,12 +205,27 @@ export default function AvailabilityEditor({ service }: Props) {
                 alignItems: 'center',
                 borderBottom: '1px solid #e5e7eb',
                 padding: '6px 0',
+                flexWrap: 'wrap',
+                gap: 8,
               }}
             >
-              <span>
+              <span style={{ 
+                flex: '1 1 auto',
+                wordBreak: 'break-word',
+                minWidth: 0,
+                fontSize: isMobile ? '0.875rem' : '1rem',
+              }}>
                 {b.start_utc} → {b.end_utc}
               </span>
-              <button onClick={() => handleRemove(b.id)} style={{ background: '#fee2e2' }}>
+              <button 
+                onClick={() => handleRemove(b.id)} 
+                style={{ 
+                  background: '#fee2e2',
+                  flexShrink: 0,
+                  padding: isMobile ? '4px 8px' : '6px 12px',
+                  fontSize: isMobile ? '0.875rem' : '1rem',
+                }}
+              >
                 Remove
               </button>
             </li>

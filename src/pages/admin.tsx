@@ -12,11 +12,29 @@ import ForgotPassword from '../components/Admin/ForgotPassword';
 
 type AdminTab = 'jobs' | 'services';
 
+// Hook to detect mobile screen size
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+}
+
 export default function AdminPage() {
   const [checking, setChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [tab, setTab] = useState<AdminTab>('jobs');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const isMobile = useIsMobile();
 
   const checkAdmin = async () => {
     try {
@@ -45,7 +63,13 @@ export default function AdminPage() {
   return (
     <>
       <Header />
-      <main style={{ minHeight: '65vh', paddingTop: '80px' }}>
+      <main style={{ 
+        minHeight: '65vh', 
+        paddingTop: '80px',
+        width: '100%',
+        overflowX: 'hidden',
+        boxSizing: 'border-box',
+      }}>
         {checking ? (
           <p style={{ textAlign: 'center' }}>Checking admin session…</p>
         ) : !isAdmin ? (
@@ -168,18 +192,33 @@ export default function AdminPage() {
           </div>
         ) : (
           // logged in → show tabs
-          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 16px 48px' }}>
-            <h2 style={{ marginBottom: '1rem' }}>Admin</h2>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+          <div style={{ 
+            maxWidth: 1200, 
+            margin: '0 auto', 
+            padding: isMobile ? '0 12px 48px' : '0 16px 48px',
+            width: '100%',
+            boxSizing: 'border-box',
+            overflowX: 'hidden',
+          }}>
+            <h2 style={{ marginBottom: '1rem', fontSize: isMobile ? '1.5rem' : '2rem' }}>Admin</h2>
+            <div style={{ 
+              display: 'flex', 
+              gap: 12, 
+              marginBottom: 20,
+              flexWrap: 'wrap',
+            }}>
               <button
                 onClick={() => setTab('jobs')}
                 style={{
-                  padding: '6px 14px',
+                  padding: isMobile ? '8px 12px' : '6px 14px',
                   borderRadius: 999,
                   border: 'none',
                   background: tab === 'jobs' ? '#111' : '#e7e8ec',
                   color: tab === 'jobs' ? '#fff' : '#111',
                   cursor: 'pointer',
+                  fontSize: isMobile ? '0.875rem' : '1rem',
+                  whiteSpace: 'nowrap',
+                  flex: isMobile ? '1 1 auto' : '0 0 auto',
                 }}
               >
                 Job postings
@@ -187,12 +226,15 @@ export default function AdminPage() {
               <button
                 onClick={() => setTab('services')}
                 style={{
-                  padding: '6px 14px',
+                  padding: isMobile ? '8px 12px' : '6px 14px',
                   borderRadius: 999,
                   border: 'none',
                   background: tab === 'services' ? '#111' : '#e7e8ec',
                   color: tab === 'services' ? '#fff' : '#111',
                   cursor: 'pointer',
+                  fontSize: isMobile ? '0.875rem' : '1rem',
+                  whiteSpace: 'nowrap',
+                  flex: isMobile ? '1 1 auto' : '0 0 auto',
                 }}
               >
                 Services & scheduling

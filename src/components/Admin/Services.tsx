@@ -1,23 +1,29 @@
 // src/components/Admin/Services.tsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import ServicesList from './ServicesList';
 import type { AdminService } from './ServicesList';
 import ServiceForm from './ServiceForm';
 import AvailabilityEditor from './AvailabilityEditor';
 import BookedTable from './BookedTable';
 
-const containerStyle: React.CSSProperties = {
-  maxWidth: 1200,
-  margin: '0 auto',
-  padding: '80px 16px 32px',
-  boxSizing: 'border-box',
-};
+// Hook to detect mobile screen size
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
 
-const flexRow: React.CSSProperties = {
-  display: 'flex',
-  gap: '1.5rem',
-  alignItems: 'flex-start',
-};
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+}
+
+// Note: containerStyle will be created dynamically to handle mobile padding
 
 export default function Services() {
   const [services, setServices] = useState<AdminService[]>([]);
@@ -25,6 +31,7 @@ export default function Services() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<AdminService | null>(null);
   const [loading, setLoading] = useState(false);
+  const isMobile = useIsMobile();
 
   const loadServices = async () => {
     setLoading(true);
@@ -85,18 +92,48 @@ export default function Services() {
   };
 
   return (
-    <main style={containerStyle}>
-      <h2 style={{ marginBottom: '1rem' }}>Admin – Services</h2>
-      <p style={{ marginBottom: '1.5rem', maxWidth: 700 }}>
+    <div style={{
+      maxWidth: 1200,
+      margin: '0 auto',
+      padding: isMobile ? '0 0 32px' : '0 16px 32px',
+      boxSizing: 'border-box',
+      width: '100%',
+      overflowX: 'hidden',
+    }}>
+      <h2 style={{ marginBottom: '1rem', fontSize: isMobile ? '1.5rem' : '2rem' }}>Admin – Services</h2>
+      <p style={{ marginBottom: '1.5rem', maxWidth: 700, fontSize: isMobile ? '0.875rem' : '1rem' }}>
         Create services, manage availability windows, and view bookings for each service.
       </p>
 
-      <div style={flexRow}>
+      <div style={{
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: '1.5rem',
+        alignItems: 'flex-start',
+      }}>
         {/* LEFT: services list + buttons */}
-        <div style={{ flex: '0 0 300px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div style={{ 
+          flex: isMobile ? '1 1 100%' : '0 0 300px',
+          width: isMobile ? '100%' : 'auto',
+          minWidth: 0,
+        }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginBottom: 12,
+            flexWrap: 'wrap',
+            gap: 8,
+          }}>
             <h3 style={{ margin: 0 }}>Services</h3>
-            <button onClick={() => { setShowForm(true); setEditing(null); }}>
+            <button 
+              onClick={() => { setShowForm(true); setEditing(null); }}
+              style={{
+                padding: '6px 12px',
+                fontSize: '0.875rem',
+                whiteSpace: 'nowrap',
+              }}
+            >
               + New
             </button>
           </div>
@@ -129,7 +166,11 @@ export default function Services() {
         </div>
 
         {/* RIGHT: edit form (when open) + availability + bookings for selected service */}
-        <div style={{ flex: 1 }}>
+        <div style={{ 
+          flex: isMobile ? '1 1 100%' : 1,
+          width: isMobile ? '100%' : 'auto',
+          minWidth: 0,
+        }}>
           {showForm && (
             <div style={{ marginBottom: 24 }}>
               <ServiceForm
@@ -143,7 +184,7 @@ export default function Services() {
           {selected ? (
             <>
               {!showForm && (
-                <h3 style={{ marginBottom: 12 }}>
+                <h3 style={{ marginBottom: 12, wordBreak: 'break-word' }}>
                   {selected.title} – ${selected.hourly_rate.toFixed(2)}/hr
                 </h3>
               )}
@@ -157,6 +198,6 @@ export default function Services() {
           ) : null}
         </div>
       </div>
-    </main>
+    </div>
   );
 }
