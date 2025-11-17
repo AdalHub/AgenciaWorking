@@ -9,8 +9,9 @@ import AdminPanel from '../components/Admin/AdminPanel';
 // our NEW services admin
 import Services from '../components/Admin/Services';
 import ForgotPassword from '../components/Admin/ForgotPassword';
+import Calendar from '../components/Admin/Calendar';
 
-type AdminTab = 'jobs' | 'services';
+type AdminTab = 'jobs' | 'services' | 'calendar';
 
 // Hook to detect mobile screen size
 function useIsMobile() {
@@ -239,14 +240,33 @@ export default function AdminPage() {
               >
                 Services & scheduling
               </button>
+              <button
+                onClick={() => setTab('calendar')}
+                style={{
+                  padding: isMobile ? '8px 12px' : '6px 14px',
+                  borderRadius: 999,
+                  border: 'none',
+                  background: tab === 'calendar' ? '#111' : '#e7e8ec',
+                  color: tab === 'calendar' ? '#fff' : '#111',
+                  cursor: 'pointer',
+                  fontSize: isMobile ? '0.875rem' : '1rem',
+                  whiteSpace: 'nowrap',
+                  flex: isMobile ? '1 1 auto' : '0 0 auto',
+                }}
+              >
+                Calendar
+              </button>
             </div>
 
             {tab === 'jobs' ? (
               // your original admin screen
               <AdminPanel />
-            ) : (
+            ) : tab === 'services' ? (
               // our new one
               <Services />
+            ) : (
+              // calendar view
+              <Calendar />
             )}
           </div>
         )}

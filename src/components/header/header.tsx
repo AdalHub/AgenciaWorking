@@ -55,6 +55,8 @@ export default function Header() {
   /* ————— user auth (public user) ————— */
   const [user, setUser] = useState<PublicUser>(null);
   const [showAuth, setShowAuth] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const loadMe = async () => {
     try {
@@ -71,6 +73,23 @@ export default function Header() {
   useEffect(() => {
     loadMe();
   }, []);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserMenu]);
 
   const handleLogout = async () => {
     try {
@@ -157,11 +176,141 @@ export default function Header() {
 
           {/* new: auth controls */}
           {user ? (
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <span style={{ fontSize: 13, color: scrolled ? '#fff' : '#1f2937' }}>
-                {user.email}
-              </span>
-              <button onClick={handleLogout}>Logout</button>
+            <div
+              ref={userMenuRef}
+              style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
+            >
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'none';
+                }}
+              >
+                <svg
+                  width="32"
+                  height="32"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={scrolled ? '#fff' : '#1f2937'}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </button>
+
+              {/* Dropdown Menu */}
+              {showUserMenu && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    marginTop: '8px',
+                    background: '#fff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    minWidth: '180px',
+                    zIndex: 10000,
+                    animation: 'fadeInDown 0.2s ease',
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      navigate('/account');
+                      setShowUserMenu(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      color: '#111827',
+                      transition: 'background 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#f9fafb';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'none';
+                    }}
+                  >
+                    Account
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigate('/my-schedule');
+                      setShowUserMenu(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      color: '#111827',
+                      borderTop: '1px solid #e5e7eb',
+                      transition: 'background 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#f9fafb';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'none';
+                    }}
+                  >
+                    My Schedule
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setShowUserMenu(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      color: '#ef4444',
+                      borderTop: '1px solid #e5e7eb',
+                      transition: 'background 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#fef2f2';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'none';
+                    }}
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <button onClick={() => setShowAuth(true)}>Login / Signup</button>
@@ -249,15 +398,30 @@ export default function Header() {
 
             {/* mobile: auth */}
             {user ? (
-              <button
-                onClick={() => {
-                  handleLogout();
-                  setMobileOpen(false);
-                }}
-                style={{ marginTop: '1rem' }}
-              >
-                Logout ({user.email})
-              </button>
+              <>
+                <MobileLink
+                  to="/account"
+                  onClick={() => setMobileOpen(false)}
+                  style={{ marginTop: '1rem' }}
+                >
+                  Account
+                </MobileLink>
+                <MobileLink
+                  to="/my-schedule"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  My Schedule
+                </MobileLink>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setMobileOpen(false);
+                  }}
+                  style={{ marginTop: '1rem', color: '#ef4444' }}
+                >
+                  Logout
+                </button>
+              </>
             ) : (
               <button
                 onClick={() => {
@@ -302,6 +466,21 @@ export default function Header() {
           }}
         />
       )}
+
+      <style>
+        {`
+          @keyframes fadeInDown {
+            from {
+              opacity: 0;
+              transform: translateY(-8px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+        `}
+      </style>
     </>
   );
 }
