@@ -35,6 +35,8 @@ export default function Footer() {
             <FooterLink to="/careers">Jobs</FooterLink>
             <FooterLink to="/contact">Contact us</FooterLink>
             <FooterLink to="/about-us">About us</FooterLink>
+            <FooterLink to="/privacy-policy">Privacy Policy</FooterLink>
+            <FooterLink to="/terms-of-service">Terms of Service</FooterLink>
           </div>
         </MainColumn>
 

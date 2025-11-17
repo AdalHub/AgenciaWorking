@@ -10,6 +10,8 @@ import ScheduleList from './components/Public/ScheduleList';
 import ServiceDetail from './components/Public/ServiceDetail';
 import PaymentSuccess from './components/Public/PaymentSuccess';
 import PaymentFailed from './components/Public/PaymentFailed';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 
 export default function App() {
   return (
@@ -26,6 +28,8 @@ export default function App() {
         <Route path="/schedule/:id" element={<ServiceDetail />} />
         <Route path="/payment/success" element={<PaymentSuccess />} />
         <Route path="/payment/failed" element={<PaymentFailed />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
       </Routes>
     </BrowserRouter>
   );

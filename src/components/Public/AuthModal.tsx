@@ -1,6 +1,8 @@
 // src/components/Public/AuthModal.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ForgotPassword from './ForgotPassword';
+
+const GOOGLE_CLIENT_ID = '249999009032-3tvnrjvsr52akh1e363l456mt0pa8fds.apps.googleusercontent.com';
 
 type PublicUser = {
   id: number;
@@ -14,6 +16,19 @@ interface Props {
   onAuthSuccess: (user: PublicUser) => void;
 }
 
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: any) => void;
+          renderButton: (element: HTMLElement | null, config: any) => void;
+        };
+      };
+    };
+  }
+}
+
 export default function AuthModal({ onClose, onAuthSuccess }: Props) {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
@@ -23,6 +38,61 @@ export default function AuthModal({ onClose, onAuthSuccess }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+
+  // Initialize Google Sign-In
+  useEffect(() => {
+    const initGoogleSignIn = () => {
+      if (window.google && googleButtonRef.current) {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: async (response: any) => {
+            setError(null);
+            setLoading(true);
+            try {
+              const res = await fetch('/api/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ idToken: response.credential }),
+              });
+              const data = await res.json();
+              if (!res.ok) {
+                setError(data.error || 'Google login failed');
+              } else {
+                onAuthSuccess(data.user);
+              }
+            } catch (err) {
+              console.error(err);
+              setError('Network error');
+            } finally {
+              setLoading(false);
+            }
+          },
+        });
+
+        window.google.accounts.id.renderButton(googleButtonRef.current, {
+          theme: 'outline',
+          size: 'large',
+          width: '100%',
+          text: 'signin_with',
+        });
+      }
+    };
+
+    // Wait for Google script to load
+    if (window.google) {
+      initGoogleSignIn();
+    } else {
+      const checkGoogle = setInterval(() => {
+        if (window.google) {
+          clearInterval(checkGoogle);
+          initGoogleSignIn();
+        }
+      }, 100);
+      return () => clearInterval(checkGoogle);
+    }
+  }, [onAuthSuccess]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,6 +181,30 @@ export default function AuthModal({ onClose, onAuthSuccess }: Props) {
           >
             Signup
           </button>
+        </div>
+
+        {/* Google Sign-In Button */}
+        <div 
+          ref={googleButtonRef}
+          style={{ 
+            marginBottom: 16,
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        />
+
+        <div style={{ 
+          textAlign: 'center', 
+          marginBottom: 16,
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+        }}>
+          <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
+          <span style={{ padding: '0 12px', fontSize: '0.875rem', color: '#6b7280' }}>
+            or continue with email
+          </span>
+          <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
