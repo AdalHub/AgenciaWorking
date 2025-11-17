@@ -128,25 +128,48 @@ export default function AvailabilityEditor({ service }: Props) {
           value={start}
           onChange={(e) => setStart(e.target.value)}
           required
+          placeholder="Start date & time"
           style={{
             padding: '0.75rem 1rem',
-            background: '#ffffff',
-            border: '2px solid #e5e7eb',
+            background: '#f9fafb',
+            border: '2px solid #d1d5db',
             borderRadius: 8,
             fontSize: '1rem',
             color: '#111827',
             boxSizing: 'border-box',
-            transition: 'border-color 0.2s, box-shadow 0.2s',
+            transition: 'all 0.2s',
             width: isMobile ? '100%' : 'auto',
             flex: isMobile ? '1 1 100%' : '1 1 auto',
-            minWidth: isMobile ? 'auto' : 200,
+            minWidth: isMobile ? 'auto' : 240,
+            cursor: 'pointer',
+            pointerEvents: 'auto',
+            WebkitAppearance: 'none',
+            MozAppearance: 'textfield',
+            outline: 'none',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#9ca3af';
+            e.currentTarget.style.background = '#ffffff';
+          }}
+          onMouseLeave={(e) => {
+            if (document.activeElement !== e.currentTarget) {
+              e.currentTarget.style.borderColor = '#d1d5db';
+              e.currentTarget.style.background = '#f9fafb';
+            }
+          }}
+          onClick={(e) => {
+            // Ensure the input receives focus and opens the picker
+            e.currentTarget.focus();
+            e.currentTarget.showPicker?.();
           }}
           onFocus={(e) => {
             e.target.style.borderColor = '#063591';
+            e.target.style.background = '#ffffff';
             e.target.style.boxShadow = '0 0 0 3px rgba(6, 53, 145, 0.1)';
           }}
           onBlur={(e) => {
-            e.target.style.borderColor = '#e5e7eb';
+            e.target.style.borderColor = '#d1d5db';
+            e.target.style.background = '#f9fafb';
             e.target.style.boxShadow = 'none';
           }}
         />
@@ -155,25 +178,48 @@ export default function AvailabilityEditor({ service }: Props) {
           value={end}
           onChange={(e) => setEnd(e.target.value)}
           required
+          placeholder="End date & time"
           style={{
             padding: '0.75rem 1rem',
-            background: '#ffffff',
-            border: '2px solid #e5e7eb',
+            background: '#f9fafb',
+            border: '2px solid #d1d5db',
             borderRadius: 8,
             fontSize: '1rem',
             color: '#111827',
             boxSizing: 'border-box',
-            transition: 'border-color 0.2s, box-shadow 0.2s',
+            transition: 'all 0.2s',
             width: isMobile ? '100%' : 'auto',
             flex: isMobile ? '1 1 100%' : '1 1 auto',
-            minWidth: isMobile ? 'auto' : 200,
+            minWidth: isMobile ? 'auto' : 240,
+            cursor: 'pointer',
+            pointerEvents: 'auto',
+            WebkitAppearance: 'none',
+            MozAppearance: 'textfield',
+            outline: 'none',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#9ca3af';
+            e.currentTarget.style.background = '#ffffff';
+          }}
+          onMouseLeave={(e) => {
+            if (document.activeElement !== e.currentTarget) {
+              e.currentTarget.style.borderColor = '#d1d5db';
+              e.currentTarget.style.background = '#f9fafb';
+            }
+          }}
+          onClick={(e) => {
+            // Ensure the input receives focus and opens the picker
+            e.currentTarget.focus();
+            e.currentTarget.showPicker?.();
           }}
           onFocus={(e) => {
             e.target.style.borderColor = '#063591';
+            e.target.style.background = '#ffffff';
             e.target.style.boxShadow = '0 0 0 3px rgba(6, 53, 145, 0.1)';
           }}
           onBlur={(e) => {
-            e.target.style.borderColor = '#e5e7eb';
+            e.target.style.borderColor = '#d1d5db';
+            e.target.style.background = '#f9fafb';
             e.target.style.boxShadow = 'none';
           }}
         />
@@ -184,6 +230,26 @@ export default function AvailabilityEditor({ service }: Props) {
             flex: isMobile ? '1 1 100%' : '0 0 auto',
             padding: '0.75rem 1.5rem',
             whiteSpace: 'nowrap',
+            background: '#111',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            fontSize: '1rem',
+            fontWeight: 500,
+            cursor: 'pointer',
+            transition: 'background-color 0.2s, opacity 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#333';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#111';
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.style.opacity = '0.8';
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.style.opacity = '1';
           }}
         >
           Add

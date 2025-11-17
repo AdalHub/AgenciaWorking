@@ -100,6 +100,10 @@ const ServiceCard = styled.div`
     margin-bottom: 12px;
     color: #374151;
     line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
     @media (max-width: 768px) {
       font-size: 0.9rem;
     }
@@ -296,9 +300,6 @@ export default function ScheduleList() {
                     <p className="price">
                       ${price.toFixed(2)}/hr
                       {svc.category ? ` • ${svc.category}` : ''}
-                    </p>
-                    <p className="description">
-                      {svc.description || 'No description.'}
                     </p>
                     <div className="buttons">
                       <button
