@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../../components/header/header';
 import Footer from '../../components/Footer/Footer';
+import { markdownToHtml } from '../../utils/markdownToHtml';
 
 type PublicUser = {
   id: number;
@@ -194,8 +195,74 @@ export default function ServiceDetail() {
           ← Back to Schedule
         </button>
         <h1>{service.title}</h1>
-      <p style={{ color: '#4b5563' }}>{service.description}</p>
-      <p style={{ fontWeight: 600 }}>${service.hourly_rate.toFixed(2)}/hr</p>
+      {service.description && (
+        <>
+          <style>{`
+            .service-description h1 {
+              font-size: 2rem;
+              font-weight: 700;
+              margin: 1.5rem 0 1rem;
+              color: #111827;
+            }
+            .service-description h2 {
+              font-size: 1.5rem;
+              font-weight: 600;
+              margin: 1.25rem 0 0.75rem;
+              color: #111827;
+            }
+            .service-description h3 {
+              font-size: 1.25rem;
+              font-weight: 600;
+              margin: 1rem 0 0.5rem;
+              color: #1f2937;
+            }
+            .service-description p {
+              margin: 0.75rem 0;
+              line-height: 1.7;
+              color: #374151;
+            }
+            .service-description ul,
+            .service-description ol {
+              margin: 0.75rem 0;
+              padding-left: 1.5rem;
+              color: #374151;
+            }
+            .service-description li {
+              margin: 0.5rem 0;
+              line-height: 1.6;
+            }
+            .service-description a {
+              color: #063591;
+              text-decoration: underline;
+              transition: color 0.2s;
+            }
+            .service-description a:hover {
+              color: #0b5bff;
+            }
+            .service-description strong {
+              font-weight: 600;
+              color: #111827;
+            }
+            .service-description em {
+              font-style: italic;
+            }
+          `}</style>
+          <div
+            className="service-description"
+            style={{
+              color: '#374151',
+              lineHeight: 1.7,
+              marginBottom: '1.5rem',
+            }}
+            dangerouslySetInnerHTML={{
+              __html: markdownToHtml(service.description),
+            }}
+          />
+        </>
+      )}
+      <p style={{ fontWeight: 600, fontSize: '1.125rem', marginBottom: '2rem' }}>
+        ${service.hourly_rate.toFixed(2)}/hr
+      </p>
 
       <h3 style={{ marginTop: '2rem' }}>Available time slots</h3>
       {availability.length === 0 ? (
