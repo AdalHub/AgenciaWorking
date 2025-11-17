@@ -66,36 +66,26 @@ export default function MySchedule() {
         const servicesData = await servicesRes.json();
         setServices(Array.isArray(servicesData) ? servicesData : []);
 
-        // Load user's bookings - we need to fetch from all services and filter by user email
-        const allBookings: Booking[] = [];
-        if (Array.isArray(servicesData)) {
-          for (const service of servicesData) {
-            try {
-              const bookingsRes = await fetch(
-                `/api/bookings.php?action=list_for_admin&service_id=${service.id}`,
-                { credentials: 'include' }
-              );
-              if (bookingsRes.ok) {
-                const bookingsData = await bookingsRes.json();
-                if (Array.isArray(bookingsData)) {
-                  // Filter bookings for this user by email
-                  const userBookings = bookingsData.filter(
-                    (b: any) => b.customer_email === meData.user.email
-                  );
-                  allBookings.push(
-                    ...userBookings.map((b: any) => ({
-                      ...b,
-                      service_id: service.id,
-                    }))
-                  );
-                }
-              }
-            } catch (err) {
-              console.error(`Failed to load bookings for service ${service.id}`, err);
+        // Load user's bookings using the user-specific endpoint
+        try {
+          const bookingsRes = await fetch('/api/bookings.php?action=list_for_user', {
+            credentials: 'include',
+          });
+          if (bookingsRes.ok) {
+            const bookingsData = await bookingsRes.json();
+            if (Array.isArray(bookingsData)) {
+              setBookings(bookingsData);
+            } else {
+              setBookings([]);
             }
+          } else {
+            console.error('Failed to load user bookings');
+            setBookings([]);
           }
+        } catch (err) {
+          console.error('Failed to load user bookings', err);
+          setBookings([]);
         }
-        setBookings(allBookings);
       } catch (err) {
         console.error('Failed to load schedule data', err);
       } finally {
