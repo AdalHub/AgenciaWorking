@@ -14,11 +14,13 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import Account from './pages/Account';
 import MySchedule from './pages/MySchedule';
+import IntercomMessenger from './components/IntercomMessenger';
 
 export default function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <IntercomMessenger />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/contact" element={<Contact />} />
