@@ -75,9 +75,7 @@ export default function ContactBlock() {
           <div>
             <Title>Contact Us</Title>
             <Details>
-              <p>Boulevard Tamaulipas 3191 Local 3 y 4,</p>
-              <p>Fraccionamiento La Misión, Ciudad Victoria,</p>
-              <p>Tamaulipas. MX C.P. 87025</p>
+              <p>C. Zacatecas #806 , Fracc Valle de Aguayo , Cd. Victoria, Tamaulipas MX 87020</p>
               <p>Phone: 834 147 2218</p>
               <p>Phone: 899 461 2756</p>
               <p>Email: Info@agenciaworking.com</p>

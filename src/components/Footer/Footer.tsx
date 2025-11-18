@@ -68,7 +68,7 @@ export default function Footer() {
         <ContactInfo>
           <ContactRow>
             <span>Contact us: </span>
-            <a href="tel:+1 52(834)-147-2218">+1 (512) 555-0123</a>
+            <a href="tel:+528342574327">834-257-4327</a>
             <span> | </span>
             <a href="mailto:info@agenciaworking.com">info@agenciaworking.com</a>
           </ContactRow>
