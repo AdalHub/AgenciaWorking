@@ -7,32 +7,35 @@ import Footer from '../Footer/Footer';
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const sessionId = searchParams.get('session_id');
+  // PayPal returns 'token' as the order ID in the query string
+  const orderId = searchParams.get('token') || searchParams.get('order_id');
   const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading');
 
   useEffect(() => {
     const confirm = async () => {
-      if (!sessionId) {
+      if (!orderId) {
         setStatus('error');
         return;
       }
       try {
-        const res = await fetch(`/api/stripe.php?action=confirm&session_id=${encodeURIComponent(sessionId)}`, {
+        const res = await fetch(`/api/paypal.php?action=confirm&order_id=${encodeURIComponent(orderId)}`, {
           credentials: 'include',
         });
-        await res.json();
+        const data = await res.json();
+        console.log('PayPal confirm response:', data);
         if (!res.ok) {
+          console.error('PayPal confirm error:', data);
           setStatus('error');
         } else {
           setStatus('ok');
         }
       } catch (err) {
-        console.error(err);
+        console.error('PayPal confirm exception:', err);
         setStatus('error');
       }
     };
     confirm();
-  }, [sessionId]);
+  }, [orderId]);
 
   return (
     <>

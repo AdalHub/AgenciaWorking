@@ -46,7 +46,7 @@ export default function ServiceDetail() {
   const [note, setNote] = useState('');
   const [bookingIntent, setBookingIntent] = useState<BookingIntent | null>(null);
   const [intentError, setIntentError] = useState('');
-  const [stripeError, setStripeError] = useState('');
+  const [paypalError, setPaypalError] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -75,7 +75,7 @@ export default function ServiceDetail() {
 
   const handlePickSlot = async (slot: AvailabilityBlock) => {
     setIntentError('');
-    setStripeError('');
+    setPaypalError('');
     setBookingIntent(null);
 
     if (!user) {
@@ -110,11 +110,11 @@ export default function ServiceDetail() {
     }
   };
 
-  const handleStripeCheckout = async () => {
+  const handlePaypalCheckout = async () => {
     if (!bookingIntent) return;
-    setStripeError('');
+    setPaypalError('');
     try {
-      const res = await fetch('/api/stripe.php?action=create_checkout_session', {
+      const res = await fetch('/api/paypal.php?action=create_order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -122,13 +122,13 @@ export default function ServiceDetail() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setStripeError(data.error || 'Failed to start Stripe checkout');
+        setPaypalError(data.error || 'Failed to start PayPal checkout');
         return;
       }
       window.location.href = data.url;
     } catch (err) {
-      console.error('stripe create session failed', err);
-      setStripeError('Network error');
+      console.error('paypal create order failed', err);
+      setPaypalError('Network error');
     }
   };
 
@@ -348,12 +348,12 @@ export default function ServiceDetail() {
               ? ` (billed ${bookingIntent.hours_billed.toFixed(2)} hrs)`
               : null}
           </div>
-          <button style={{ marginTop: '0.75rem' }} onClick={handleStripeCheckout}>
+          <button style={{ marginTop: '0.75rem' }} onClick={handlePaypalCheckout}>
             Proceed to Payment
           </button>
-          {stripeError && (
+          {paypalError && (
             <div style={{ marginTop: '0.5rem', background: '#fee2e2', padding: '0.5rem' }}>
-              {stripeError}
+              {paypalError}
             </div>
           )}
         </div>
