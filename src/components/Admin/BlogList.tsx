@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 export type AdminBlog = {
   id: number;
   title: string;
+  author?: string;
   thumbnail?: string;
   body: string;
   created_at: string;

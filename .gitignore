@@ -32,3 +32,4 @@ api/*
 api/config.php
 api/config.php
 api/config.php
+api/.htaccess

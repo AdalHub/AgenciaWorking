@@ -7,6 +7,7 @@ import Footer from '../components/Footer/Footer';
 interface Blog {
   id: number;
   title: string;
+  author?: string;
   thumbnail?: string;
   created_at: string;
   updated_at: string;
@@ -106,6 +107,16 @@ export default function BlogListPage() {
                   }}>
                     {blog.title}
                   </h2>
+                  {blog.author && (
+                    <p style={{
+                      fontSize: '0.875rem',
+                      color: '#374151',
+                      fontWeight: 500,
+                      margin: '0 0 0.25rem 0',
+                    }}>
+                      By {blog.author}
+                    </p>
+                  )}
                   <p style={{
                     fontSize: '0.875rem',
                     color: '#6b7280',

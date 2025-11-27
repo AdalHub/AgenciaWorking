@@ -35,6 +35,7 @@ type PublicUser = {
 const links = [
   { label: 'Home', to: '/' },
   { label: 'Services', to: '#' },
+  { label: 'Blog', to: '/blog' },
   { label: 'Contact', to: '/contact' },
   { label: 'Careers', to: '/career' }, // your file is pages/career.tsx
   { label: 'About Us', to: '/about-us' },
@@ -141,71 +142,58 @@ export default function Header() {
           style={{ cursor: 'pointer' }}
         />
 
-        {/* desktop nav */}
-        <Nav>
-          {links.map(({ label, to }) => (
-            <MenuItem
-              key={label}
-              to={to}
-              $scrolled={scrolled}
-              $hassub={label === 'Services'}
-              onMouseEnter={label === 'Services' ? openMega : undefined}
-              onMouseLeave={label === 'Services' ? closeMega : undefined}
-            >
-              {label}
-            </MenuItem>
-          ))}
-        </Nav>
+        {/* Right side container: Nav + Schedule + Auth controls grouped together */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          flexShrink: 0,
+        }}>
+          {/* desktop nav */}
+          <Nav>
+            {links.map(({ label, to }) => (
+              <MenuItem
+                key={label}
+                to={to}
+                $scrolled={scrolled}
+                $hassub={label === 'Services'}
+                onMouseEnter={label === 'Services' ? openMega : undefined}
+                onMouseLeave={label === 'Services' ? closeMega : undefined}
+              >
+                {label}
+              </MenuItem>
+            ))}
+          </Nav>
 
-        {/* Blog button - outside Nav to ensure visibility */}
-        <button
-          onClick={() => navigate('/blog')}
-          style={{
-            background: location.pathname.startsWith('/blog')
-              ? '#1d4ed8'
-              : '#eff6ff',
-            color: location.pathname.startsWith('/blog') ? '#fff' : '#1d4ed8',
-            border: 'none',
-            borderRadius: 6,
-            padding: '6px 12px',
-            cursor: 'pointer',
-            marginLeft: '0.75rem',
-            fontSize: '0.9rem',
-            fontWeight: 500,
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
-          }}
-        >
-          Blog
-        </button>
+          {/* Schedule button */}
+          <button
+            onClick={() => navigate('/schedule')}
+            style={{
+              background: location.pathname.startsWith('/schedule')
+                ? '#1d4ed8'
+                : '#eff6ff',
+              color: location.pathname.startsWith('/schedule') ? '#fff' : '#1d4ed8',
+              border: 'none',
+              borderRadius: 6,
+              padding: '6px 12px',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            Schedule
+          </button>
 
-        {/* new: schedule */}
-        <button
-          onClick={() => navigate('/schedule')}
-          style={{
-            background: location.pathname.startsWith('/schedule')
-              ? '#1d4ed8'
-              : '#eff6ff',
-            color: location.pathname.startsWith('/schedule') ? '#fff' : '#1d4ed8',
-            border: 'none',
-            borderRadius: 6,
-            padding: '6px 12px',
-            cursor: 'pointer',
-            marginLeft: '0.75rem',
-            flexShrink: 0,
-          }}
-        >
-          Schedule
-        </button>
-
-        {/* new: auth controls */}
+          {/* auth controls */}
           {user ? (
-            <div
-              ref={userMenuRef}
-              style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
-            >
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
+          <div
+            ref={userMenuRef}
+            style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
+          >
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -223,25 +211,25 @@ export default function Header() {
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'none';
                 }}
+            >
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={scrolled ? '#fff' : '#1f2937'}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <svg
-                  width="32"
-                  height="32"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke={scrolled ? '#fff' : '#1f2937'}
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </button>
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </button>
 
-              {/* Dropdown Menu */}
-              {showUserMenu && (
-                <div
+            {/* Dropdown Menu */}
+            {showUserMenu && (
+              <div
                   style={{
                     position: 'absolute',
                     top: '100%',
@@ -255,91 +243,91 @@ export default function Header() {
                     zIndex: 10000,
                     animation: 'fadeInDown 0.2s ease',
                   }}
+              >
+                <button
+                  onClick={() => {
+                    navigate('/account');
+                    setShowUserMenu(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    color: '#111827',
+                    transition: 'background 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#f9fafb';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'none';
+                  }}
                 >
-                  <button
-                    onClick={() => {
-                      navigate('/account');
-                      setShowUserMenu(false);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      background: 'none',
-                      border: 'none',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      fontSize: '0.875rem',
-                      color: '#111827',
-                      transition: 'background 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#f9fafb';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'none';
-                    }}
-                  >
-                    Account
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigate('/my-schedule');
-                      setShowUserMenu(false);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      background: 'none',
-                      border: 'none',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      fontSize: '0.875rem',
-                      color: '#111827',
-                      borderTop: '1px solid #e5e7eb',
-                      transition: 'background 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#f9fafb';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'none';
-                    }}
-                  >
-                    My Schedule
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setShowUserMenu(false);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      background: 'none',
-                      border: 'none',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      fontSize: '0.875rem',
-                      color: '#ef4444',
-                      borderTop: '1px solid #e5e7eb',
-                      transition: 'background 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#fef2f2';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'none';
-                    }}
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <button onClick={() => setShowAuth(true)}>Login / Signup</button>
-          )}
-
+                  Account
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/my-schedule');
+                    setShowUserMenu(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    color: '#111827',
+                    borderTop: '1px solid #e5e7eb',
+                    transition: 'background 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#f9fafb';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'none';
+                  }}
+                >
+                  My Schedule
+                </button>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setShowUserMenu(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    color: '#ef4444',
+                    borderTop: '1px solid #e5e7eb',
+                    transition: 'background 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#fef2f2';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'none';
+                  }}
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button onClick={() => setShowAuth(true)}>Login / Signup</button>
+        )}
+        </div>
 
         {/* hamburger */}
         <Burger

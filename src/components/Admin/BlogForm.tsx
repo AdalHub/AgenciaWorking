@@ -17,6 +17,7 @@ interface Props {
 
 export default function BlogForm({ initial, onDone, onCancel }: Props) {
   const [title, setTitle] = useState(initial?.title ?? '');
+  const [author, setAuthor] = useState(initial?.author ?? '');
   const [thumbnail, setThumbnail] = useState(initial?.thumbnail ?? '');
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [bodyBlocks, setBodyBlocks] = useState<ContentBlock[]>(() => {
@@ -41,6 +42,7 @@ export default function BlogForm({ initial, onDone, onCancel }: Props) {
   React.useEffect(() => {
     if (initial) {
       setTitle(initial.title ?? '');
+      setAuthor(initial.author ?? '');
       setThumbnail(initial.thumbnail ?? '');
       try {
         const parsed = JSON.parse(initial.body);
@@ -50,6 +52,7 @@ export default function BlogForm({ initial, onDone, onCancel }: Props) {
       }
     } else {
       setTitle('');
+      setAuthor('');
       setThumbnail('');
       setBodyBlocks([{ type: 'text', content: '' }]);
     }
@@ -162,6 +165,7 @@ export default function BlogForm({ initial, onDone, onCancel }: Props) {
 
       const payload: any = {
         title,
+        author,
         thumbnail: finalThumbnail,
         body: JSON.stringify(bodyBlocks),
       };
@@ -216,6 +220,31 @@ export default function BlogForm({ initial, onDone, onCancel }: Props) {
         placeholder="Title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
+        style={{
+          width: '100%',
+          padding: '0.75rem 1rem',
+          background: '#ffffff',
+          border: '2px solid #e5e7eb',
+          borderRadius: 8,
+          fontSize: '1rem',
+          color: '#111827',
+          boxSizing: 'border-box',
+          transition: 'border-color 0.2s, box-shadow 0.2s',
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = '#063591';
+          e.target.style.boxShadow = '0 0 0 3px rgba(6, 53, 145, 0.1)';
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = '#e5e7eb';
+          e.target.style.boxShadow = 'none';
+        }}
+      />
+
+      <input
+        placeholder="Author (optional)"
+        value={author}
+        onChange={(e) => setAuthor(e.target.value)}
         style={{
           width: '100%',
           padding: '0.75rem 1rem',

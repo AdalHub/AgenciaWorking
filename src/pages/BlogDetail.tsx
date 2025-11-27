@@ -14,6 +14,7 @@ interface ContentBlock {
 interface Blog {
   id: number;
   title: string;
+  author?: string;
   thumbnail?: string;
   body: string;
   created_at: string;
@@ -104,13 +105,30 @@ export default function BlogDetailPage() {
           {blog.title}
         </h1>
 
-        <p style={{
-          fontSize: '0.875rem',
-          color: '#6b7280',
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.5rem',
           marginBottom: '2rem',
         }}>
-          {new Date(blog.created_at).toLocaleDateString()}
-        </p>
+          {blog.author && (
+            <p style={{
+              fontSize: '1rem',
+              color: '#374151',
+              fontWeight: 500,
+              margin: 0,
+            }}>
+              Author: {blog.author}
+            </p>
+          )}
+          <p style={{
+            fontSize: '0.875rem',
+            color: '#6b7280',
+            margin: 0,
+          }}>
+            {new Date(blog.created_at).toLocaleDateString()}
+          </p>
+        </div>
 
         {blog.thumbnail && (
           <img

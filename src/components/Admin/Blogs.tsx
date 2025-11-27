@@ -156,9 +156,27 @@ export default function Blogs() {
             loading={loading}
             selectedId={selected?.id ?? null}
             onSelect={(blog) => setSelected(blog)}
-            onEdit={(blog) => {
-              setEditing(blog);
-              setShowForm(true);
+            onEdit={async (blog) => {
+              // Fetch full blog data including body before editing
+              try {
+                const res = await fetch(`/api/blogs.php?action=get&id=${blog.id}`, {
+                  credentials: 'include',
+                });
+                if (res.ok) {
+                  const fullBlog = await res.json();
+                  setEditing(fullBlog);
+                  setShowForm(true);
+                } else {
+                  // Fallback to list data if get fails
+                  setEditing(blog);
+                  setShowForm(true);
+                }
+              } catch (err) {
+                console.error('Failed to load full blog data', err);
+                // Fallback to list data
+                setEditing(blog);
+                setShowForm(true);
+              }
             }}
             onDelete={async (blog) => {
               if (!window.confirm(`Delete blog "${blog.title}"?`)) return;
