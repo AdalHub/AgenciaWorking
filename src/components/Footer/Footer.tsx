@@ -33,6 +33,7 @@ export default function Footer() {
           </MexicoLocation>
           <div>
             <FooterLink to="/careers">Jobs</FooterLink>
+            <FooterLink to="/blog">Blog</FooterLink>
             <FooterLink to="/contact">Contact us</FooterLink>
             <FooterLink to="/about-us">About us</FooterLink>
             <FooterLink to="/privacy-policy">Privacy Policy</FooterLink>

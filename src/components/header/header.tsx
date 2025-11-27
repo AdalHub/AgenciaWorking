@@ -155,26 +155,50 @@ export default function Header() {
               {label}
             </MenuItem>
           ))}
+        </Nav>
 
-          {/* new: schedule */}
-          <button
-            onClick={() => navigate('/schedule')}
-            style={{
-              background: location.pathname.startsWith('/schedule')
-                ? '#1d4ed8'
-                : '#eff6ff',
-              color: location.pathname.startsWith('/schedule') ? '#fff' : '#1d4ed8',
-              border: 'none',
-              borderRadius: 6,
-              padding: '6px 12px',
-              cursor: 'pointer',
-              marginLeft: '0.75rem',
-            }}
-          >
-            Schedule
-          </button>
+        {/* Blog button - outside Nav to ensure visibility */}
+        <button
+          onClick={() => navigate('/blog')}
+          style={{
+            background: location.pathname.startsWith('/blog')
+              ? '#1d4ed8'
+              : '#eff6ff',
+            color: location.pathname.startsWith('/blog') ? '#fff' : '#1d4ed8',
+            border: 'none',
+            borderRadius: 6,
+            padding: '6px 12px',
+            cursor: 'pointer',
+            marginLeft: '0.75rem',
+            fontSize: '0.9rem',
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+          }}
+        >
+          Blog
+        </button>
 
-          {/* new: auth controls */}
+        {/* new: schedule */}
+        <button
+          onClick={() => navigate('/schedule')}
+          style={{
+            background: location.pathname.startsWith('/schedule')
+              ? '#1d4ed8'
+              : '#eff6ff',
+            color: location.pathname.startsWith('/schedule') ? '#fff' : '#1d4ed8',
+            border: 'none',
+            borderRadius: 6,
+            padding: '6px 12px',
+            cursor: 'pointer',
+            marginLeft: '0.75rem',
+            flexShrink: 0,
+          }}
+        >
+          Schedule
+        </button>
+
+        {/* new: auth controls */}
           {user ? (
             <div
               ref={userMenuRef}
@@ -315,7 +339,7 @@ export default function Header() {
           ) : (
             <button onClick={() => setShowAuth(true)}>Login / Signup</button>
           )}
-        </Nav>
+
 
         {/* hamburger */}
         <Burger

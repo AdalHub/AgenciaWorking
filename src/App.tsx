@@ -15,6 +15,8 @@ import TermsOfService from './pages/TermsOfService';
 import Account from './pages/Account';
 import MySchedule from './pages/MySchedule';
 import IntercomMessenger from './components/IntercomMessenger';
+import BlogListPage from './pages/BlogList';
+import BlogDetailPage from './pages/BlogDetail';
 
 export default function App() {
   return (
@@ -36,6 +38,8 @@ export default function App() {
         <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/account" element={<Account />} />
         <Route path="/my-schedule" element={<MySchedule />} />
+        <Route path="/blog" element={<BlogListPage />} />
+        <Route path="/blog/:id" element={<BlogDetailPage />} />
       </Routes>
     </BrowserRouter>
   );

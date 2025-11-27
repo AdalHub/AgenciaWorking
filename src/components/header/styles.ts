@@ -27,6 +27,10 @@ export const Nav = styled.nav`
   display: flex;
   gap: 1.25rem;
   align-items: center;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  min-width: 0;
+  overflow: visible;
 
   @media (max-width: 899px) {
     display: none;
@@ -42,6 +46,9 @@ export const MenuItem = styled(Link)<{
   font-weight: 500;
   text-decoration: none;
   color: ${({ $scrolled }) => ($scrolled ? '#fff' : '#0f172a')};
+  flex-shrink: 0;
+  white-space: nowrap;
+  display: inline-block;
 
   ${({ $hassub }) =>
     $hassub &&

@@ -10,8 +10,9 @@ import AdminPanel from '../components/Admin/AdminPanel';
 import Services from '../components/Admin/Services';
 import ForgotPassword from '../components/Admin/ForgotPassword';
 import Calendar from '../components/Admin/Calendar';
+import Blogs from '../components/Admin/Blogs';
 
-type AdminTab = 'jobs' | 'services' | 'calendar';
+type AdminTab = 'jobs' | 'services' | 'calendar' | 'blogs';
 
 // Hook to detect mobile screen size
 function useIsMobile() {
@@ -256,6 +257,22 @@ export default function AdminPage() {
               >
                 Calendar
               </button>
+              <button
+                onClick={() => setTab('blogs')}
+                style={{
+                  padding: isMobile ? '8px 12px' : '6px 14px',
+                  borderRadius: 999,
+                  border: 'none',
+                  background: tab === 'blogs' ? '#111' : '#e7e8ec',
+                  color: tab === 'blogs' ? '#fff' : '#111',
+                  cursor: 'pointer',
+                  fontSize: isMobile ? '0.875rem' : '1rem',
+                  whiteSpace: 'nowrap',
+                  flex: isMobile ? '1 1 auto' : '0 0 auto',
+                }}
+              >
+                Post Blog
+              </button>
             </div>
 
             {tab === 'jobs' ? (
@@ -264,9 +281,12 @@ export default function AdminPage() {
             ) : tab === 'services' ? (
               // our new one
               <Services />
-            ) : (
+            ) : tab === 'calendar' ? (
               // calendar view
               <Calendar />
+            ) : (
+              // blogs view
+              <Blogs />
             )}
           </div>
         )}
