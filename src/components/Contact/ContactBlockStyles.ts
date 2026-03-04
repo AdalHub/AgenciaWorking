@@ -44,6 +44,15 @@ export const Details = styled.address`
     font-family: ${({ theme }) => theme.fonts.body};
     font-size: 1rem;
   }
+
+  a {
+    color: ${({ theme }) => theme.colors.primary};
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
 `;
 
 /* --- RIGHT COLUMN: FORM ---------------------------------------------- */
