@@ -28,9 +28,6 @@ send_email.php
 send_email.php
 send_email.php
 
-api/*
-api/config.php
-api/config.php
-api/config.php
-api/.htaccess
+# Backend lives in separate repo: AgenciaWorking_backend
+api/
 
