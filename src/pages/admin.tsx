@@ -1,5 +1,6 @@
 // src/pages/admin.tsx
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../components/header/header';
 import Footer from '../components/Footer/Footer';
 
@@ -32,6 +33,7 @@ function useIsMobile() {
 }
 
 export default function AdminPage() {
+  const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [tab, setTab] = useState<AdminTab>('jobs');
@@ -272,6 +274,38 @@ export default function AdminPage() {
                 }}
               >
                 Post Blog
+              </button>
+              <button
+                onClick={() => navigate('/admin/studies')}
+                style={{
+                  padding: isMobile ? '8px 12px' : '6px 14px',
+                  borderRadius: 999,
+                  border: 'none',
+                  background: '#e7e8ec',
+                  color: '#111',
+                  cursor: 'pointer',
+                  fontSize: isMobile ? '0.875rem' : '1rem',
+                  whiteSpace: 'nowrap',
+                  flex: isMobile ? '1 1 auto' : '0 0 auto',
+                }}
+              >
+                Estudios
+              </button>
+              <button
+                onClick={() => navigate('/admin/email-queue')}
+                style={{
+                  padding: isMobile ? '8px 12px' : '6px 14px',
+                  borderRadius: 999,
+                  border: 'none',
+                  background: '#e7e8ec',
+                  color: '#111',
+                  cursor: 'pointer',
+                  fontSize: isMobile ? '0.875rem' : '1rem',
+                  whiteSpace: 'nowrap',
+                  flex: isMobile ? '1 1 auto' : '0 0 auto',
+                }}
+              >
+                Cola de correo
               </button>
             </div>
 

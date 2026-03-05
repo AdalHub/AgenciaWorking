@@ -23,12 +23,15 @@ import logo from '../../assets/header_logo.jpg';
 import logoInverse from '../../../public/header_logo_inverse.png';
 import services from '../ServicesGrid/data';
 import AuthModal from '../Public/AuthModal';
+import StudyCodeModal from '../Public/StudyCodeModal';
 
 type PublicUser = {
   id: number;
   email: string;
   name?: string;
   phone?: string;
+  account_type?: string;
+  is_profile_complete?: boolean;
 } | null;
 
 /* top-level links */
@@ -56,6 +59,8 @@ export default function Header() {
   /* ————— user auth (public user) ————— */
   const [user, setUser] = useState<PublicUser>(null);
   const [showAuth, setShowAuth] = useState(false);
+  const [authAccountContext, setAuthAccountContext] = useState<'default' | 'company'>('default');
+  const [showStudyCodeModal, setShowStudyCodeModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -184,6 +189,47 @@ export default function Header() {
             }}
           >
             Schedule
+          </button>
+
+          {/* Employers / Empresas — outlined, opens auth with company context */}
+          <button
+            onClick={() => {
+              setAuthAccountContext('company');
+              setShowAuth(true);
+            }}
+            style={{
+              background: 'transparent',
+              color: scrolled ? '#fff' : '#0f172a',
+              border: `2px solid ${scrolled ? '#fff' : '#0f172a'}`,
+              borderRadius: 6,
+              padding: '6px 12px',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            Employers / Empresas
+          </button>
+
+          {/* Ingresar a mi Estudio — solid green */}
+          <button
+            onClick={() => setShowStudyCodeModal(true)}
+            style={{
+              background: '#16a34a',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              padding: '6px 12px',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            Ingresar a mi Estudio
           </button>
 
           {/* auth controls */}
@@ -325,7 +371,14 @@ export default function Header() {
             )}
           </div>
         ) : (
-          <button onClick={() => setShowAuth(true)}>Login / Signup</button>
+          <button
+            onClick={() => {
+              setAuthAccountContext('default');
+              setShowAuth(true);
+            }}
+          >
+            Login / Signup
+          </button>
         )}
         </div>
 
@@ -408,6 +461,27 @@ export default function Header() {
               Schedule
             </MobileLink>
 
+            {/* mobile: employers / study */}
+            <button
+              onClick={() => {
+                setAuthAccountContext('company');
+                setShowAuth(true);
+                setMobileOpen(false);
+              }}
+              style={{ marginTop: '0.5rem', background: 'none', border: '1px solid currentColor', padding: '8px 12px', borderRadius: 6 }}
+            >
+              Employers / Empresas
+            </button>
+            <button
+              onClick={() => {
+                setShowStudyCodeModal(true);
+                setMobileOpen(false);
+              }}
+              style={{ marginTop: '0.5rem', background: '#16a34a', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6 }}
+            >
+              Ingresar a mi Estudio
+            </button>
+
             {/* mobile: auth */}
             {user ? (
               <>
@@ -437,6 +511,7 @@ export default function Header() {
             ) : (
               <button
                 onClick={() => {
+                  setAuthAccountContext('default');
                   setShowAuth(true);
                   setMobileOpen(false);
                 }}
@@ -471,12 +546,17 @@ export default function Header() {
 
       {showAuth && (
         <AuthModal
+          accountContext={authAccountContext}
           onClose={() => setShowAuth(false)}
           onAuthSuccess={(u) => {
             setUser(u);
             setShowAuth(false);
           }}
         />
+      )}
+
+      {showStudyCodeModal && (
+        <StudyCodeModal onClose={() => setShowStudyCodeModal(false)} />
       )}
 
       <style>

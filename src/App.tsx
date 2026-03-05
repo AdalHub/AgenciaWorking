@@ -17,6 +17,12 @@ import MySchedule from './pages/MySchedule';
 import IntercomMessenger from './components/IntercomMessenger';
 import BlogListPage from './pages/BlogList';
 import BlogDetailPage from './pages/BlogDetail';
+import EmpresaOnboarding from './pages/EmpresaOnboarding';
+import EmpresaDashboard from './pages/EmpresaDashboard';
+import EstudioPage from './pages/EstudioPage';
+import AdminStudiesPage from './pages/AdminStudiesPage';
+import AdminStudyDetailPage from './pages/AdminStudyDetailPage';
+import AdminEmailQueuePage from './pages/AdminEmailQueuePage';
 
 export default function App() {
   return (
@@ -40,6 +46,12 @@ export default function App() {
         <Route path="/my-schedule" element={<MySchedule />} />
         <Route path="/blog" element={<BlogListPage />} />
         <Route path="/blog/:id" element={<BlogDetailPage />} />
+        <Route path="/empresa/onboarding" element={<EmpresaOnboarding />} />
+        <Route path="/empresa/dashboard" element={<EmpresaDashboard />} />
+        <Route path="/estudio" element={<EstudioPage />} />
+        <Route path="/admin/studies" element={<AdminStudiesPage />} />
+        <Route path="/admin/studies/:id" element={<AdminStudyDetailPage />} />
+        <Route path="/admin/email-queue" element={<AdminEmailQueuePage />} />
       </Routes>
     </BrowserRouter>
   );

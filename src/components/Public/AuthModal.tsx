@@ -1,5 +1,6 @@
 // src/components/Public/AuthModal.tsx
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ForgotPassword from './ForgotPassword';
 
 const GOOGLE_CLIENT_ID = '249999009032-3tvnrjvsr52akh1e363l456mt0pa8fds.apps.googleusercontent.com';
@@ -9,9 +10,12 @@ type PublicUser = {
   email: string;
   name?: string;
   phone?: string;
+  account_type?: string;
+  is_profile_complete?: boolean;
 };
 
 interface Props {
+  accountContext?: 'default' | 'company';
   onClose: () => void;
   onAuthSuccess: (user: PublicUser) => void;
 }
@@ -29,7 +33,8 @@ declare global {
   }
 }
 
-export default function AuthModal({ onClose, onAuthSuccess }: Props) {
+export default function AuthModal({ accountContext = 'default', onClose, onAuthSuccess }: Props) {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,7 +43,38 @@ export default function AuthModal({ onClose, onAuthSuccess }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [companyLoginNotCompanyError, setCompanyLoginNotCompanyError] = useState(false);
+  const [lastLoginUser, setLastLoginUser] = useState<PublicUser | null>(null);
   const googleButtonRef = useRef<HTMLDivElement>(null);
+
+  const finishCompanySignup = async (user: PublicUser) => {
+    try {
+      const res = await fetch('/api/user_auth.php?action=set_account_type', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ account_type: 'company' }),
+      });
+      const data = await res.json();
+      if (data.user) {
+        onAuthSuccess(data.user);
+      } else {
+        onAuthSuccess(user);
+      }
+      onClose();
+      navigate('/empresa/onboarding');
+    } catch (err) {
+      onAuthSuccess(user);
+      onClose();
+      navigate('/empresa/onboarding');
+    }
+  };
+
+  const finishCompanyLogin = (user: PublicUser) => {
+    onAuthSuccess(user);
+    onClose();
+    navigate('/empresa/dashboard');
+  };
 
   // Initialize Google Sign-In
   useEffect(() => {
@@ -48,6 +84,7 @@ export default function AuthModal({ onClose, onAuthSuccess }: Props) {
           client_id: GOOGLE_CLIENT_ID,
           callback: async (response: any) => {
             setError(null);
+            setCompanyLoginNotCompanyError(false);
             setLoading(true);
             try {
               const res = await fetch('/api/auth/google', {
@@ -60,7 +97,13 @@ export default function AuthModal({ onClose, onAuthSuccess }: Props) {
               if (!res.ok) {
                 setError(data.error || 'Google login failed');
               } else {
-                onAuthSuccess(data.user);
+                const u = data.user as PublicUser;
+                if (accountContext === 'company') {
+                  await finishCompanySignup(u);
+                } else {
+                  onAuthSuccess(u);
+                  onClose();
+                }
               }
             } catch (err) {
               console.error(err);
@@ -80,7 +123,6 @@ export default function AuthModal({ onClose, onAuthSuccess }: Props) {
       }
     };
 
-    // Wait for Google script to load
     if (window.google) {
       initGoogleSignIn();
     } else {
@@ -92,11 +134,12 @@ export default function AuthModal({ onClose, onAuthSuccess }: Props) {
       }, 100);
       return () => clearInterval(checkGoogle);
     }
-  }, [onAuthSuccess]);
+  }, [onAuthSuccess, accountContext]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setCompanyLoginNotCompanyError(false);
     setLoading(true);
     try {
       const body: any = { email, password };
@@ -113,8 +156,24 @@ export default function AuthModal({ onClose, onAuthSuccess }: Props) {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || 'Failed');
+        setLoading(false);
+        return;
+      }
+      const u = data.user as PublicUser;
+        if (accountContext === 'company') {
+        if (mode === 'signup') {
+          await finishCompanySignup(u);
+        } else {
+          if (u.account_type !== 'company') {
+            setLastLoginUser(u);
+            setCompanyLoginNotCompanyError(true);
+          } else {
+            finishCompanyLogin(u);
+          }
+        }
       } else {
-        onAuthSuccess(data.user);
+        onAuthSuccess(u);
+        onClose();
       }
     } catch (err) {
       console.error(err);
@@ -152,10 +211,25 @@ export default function AuthModal({ onClose, onAuthSuccess }: Props) {
           <button onClick={onClose}>✕</button>
         </div>
 
+        {accountContext === 'company' && mode === 'signup' && (
+          <div
+            style={{
+              marginBottom: 12,
+              padding: '10px 12px',
+              background: '#dbeafe',
+              color: '#1e40af',
+              borderRadius: 8,
+              fontSize: '0.9rem',
+            }}
+          >
+            Estás creando una cuenta empresarial
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
           <button
             type="button"
-            onClick={() => setMode('login')}
+            onClick={() => { setMode('login'); setCompanyLoginNotCompanyError(false); }}
             style={{
               flex: 1,
               background: mode === 'login' ? '#1d4ed8' : '#e5e7eb',
@@ -169,7 +243,7 @@ export default function AuthModal({ onClose, onAuthSuccess }: Props) {
           </button>
           <button
             type="button"
-            onClick={() => setMode('signup')}
+            onClick={() => { setMode('signup'); setCompanyLoginNotCompanyError(false); }}
             style={{
               flex: 1,
               background: mode === 'signup' ? '#1d4ed8' : '#e5e7eb',
@@ -314,6 +388,21 @@ export default function AuthModal({ onClose, onAuthSuccess }: Props) {
           )}
 
           {error && <div style={{ color: 'red', fontSize: 13 }}>{error}</div>}
+          {companyLoginNotCompanyError && (
+            <div style={{ color: '#b45309', fontSize: 13 }}>
+              Esta cuenta no está registrada como cuenta empresarial. ¿Deseas acceder como usuario regular?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  if (lastLoginUser) onAuthSuccess(lastLoginUser);
+                  onClose();
+                }}
+                style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+              >
+                Cerrar y continuar
+              </button>
+            </div>
+          )}
 
           <button type="submit" disabled={loading}>
             {loading ? 'Please wait…' : mode === 'login' ? 'Login' : 'Create account'}
