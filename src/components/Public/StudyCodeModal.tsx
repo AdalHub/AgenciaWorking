@@ -24,10 +24,35 @@ export default function StudyCodeModal({ onClose }: Props) {
       setError('Ingresa tu código único.');
       return;
     }
-    // If user entered only digits, treat as public study ID and open public link
+    // If user entered only digits, treat as study ID: public study → open public link; private → ask for real code
     if (/^\d+$/.test(trimmed)) {
-      onClose();
-      navigate(`/estudio/publico?estudio=${trimmed}`);
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `/api/studies.php?action=get_public_study_invitation&study_id=${encodeURIComponent(trimmed)}`,
+          { credentials: 'include' }
+        );
+        if (res.status === 403) {
+          setError('Este estudio es privado. Ingresa el código único que te enviamos por correo (no el número de estudio).');
+          setLoading(false);
+          return;
+        }
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.unique_code) {
+            onClose();
+            navigate(`/estudio?codigo=${encodeURIComponent(data.unique_code)}`, { replace: true });
+          } else {
+            onClose();
+            navigate(`/estudio/publico?estudio=${trimmed}`);
+          }
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        setError('No se pudo verificar el estudio. Intenta con tu código único.');
+      }
+      setLoading(false);
       return;
     }
     setLoading(true);
