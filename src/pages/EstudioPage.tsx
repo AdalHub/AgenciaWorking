@@ -64,6 +64,80 @@ const SECTIONS = [
   'Documentos',
 ];
 
+// Country names in Spanish (ISO 3166-1) for nacionalidad dropdown
+const COUNTRY_NAMES_ES = [
+  'Afganistán', 'Albania', 'Alemania', 'Andorra', 'Angola', 'Antigua y Barbuda', 'Arabia Saudita', 'Argelia', 'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaiyán', 'Bahamas', 'Bangladés', 'Barbados', 'Baréin', 'Bélgica', 'Belice', 'Benín', 'Bielorrusia', 'Bolivia', 'Bosnia y Herzegovina', 'Botsuana', 'Brasil', 'Brunéi', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Bután', 'Cabo Verde', 'Camboya', 'Camerún', 'Canadá', 'Catar', 'Chad', 'Chequia', 'Chile', 'China', 'Chipre', 'Colombia', 'Comoras', 'Corea del Norte', 'Corea del Sur', 'Costa de Marfil', 'Costa Rica', 'Croacia', 'Cuba', 'Dinamarca', 'Dominica', 'Ecuador', 'Egipto', 'El Salvador', 'Emiratos Árabes Unidos', 'Eritrea', 'Eslovaquia', 'Eslovenia', 'España', 'Estados Unidos', 'Estonia', 'Esuatini', 'Etiopía', 'Filipinas', 'Finlandia', 'Fiyi', 'Francia', 'Gabón', 'Gambia', 'Georgia', 'Ghana', 'Granada', 'Grecia', 'Guatemala', 'Guinea', 'Guinea-Bisáu', 'Guinea Ecuatorial', 'Guyana', 'Haití', 'Honduras', 'Hungría', 'India', 'Indonesia', 'Irak', 'Irán', 'Irlanda', 'Islandia', 'Islas Marshall', 'Islas Salomón', 'Israel', 'Italia', 'Jamaica', 'Japón', 'Jordania', 'Kazajistán', 'Kenia', 'Kirguistán', 'Kiribati', 'Kosovo', 'Kuwait', 'Laos', 'Lesoto', 'Letonia', 'Líbano', 'Liberia', 'Libia', 'Liechtenstein', 'Lituania', 'Luxemburgo', 'Macedonia del Norte', 'Madagascar', 'Malasia', 'Malaui', 'Maldivas', 'Malí', 'Malta', 'Marruecos', 'Mauricio', 'Mauritania', 'México', 'Micronesia', 'Moldavia', 'Mónaco', 'Mongolia', 'Montenegro', 'Mozambique', 'Birmania', 'Namibia', 'Nauru', 'Nepal', 'Nicaragua', 'Níger', 'Nigeria', 'Noruega', 'Nueva Zelanda', 'Omán', 'Países Bajos', 'Pakistán', 'Palaos', 'Palestina', 'Panamá', 'Papúa Nueva Guinea', 'Paraguay', 'Perú', 'Polonia', 'Portugal', 'Reino Unido', 'República Centroafricana', 'República del Congo', 'República Democrática del Congo', 'República Dominicana', 'Ruanda', 'Rumanía', 'Rusia', 'Samoa', 'San Cristóbal y Nieves', 'San Marino', 'San Vicente y las Granadinas', 'Santa Lucía', 'Santo Tomé y Príncipe', 'Senegal', 'Serbia', 'Seychelles', 'Sierra Leona', 'Singapur', 'Siria', 'Somalia', 'Sri Lanka', 'Sudáfrica', 'Sudán', 'Sudán del Sur', 'Suecia', 'Suiza', 'Surinam', 'Tailandia', 'Tanzania', 'Tayikistán', 'Timor Oriental', 'Togo', 'Tonga', 'Trinidad y Tobago', 'Túnez', 'Turkmenistán', 'Turquía', 'Tuvalu', 'Ucrania', 'Uganda', 'Uruguay', 'Uzbekistán', 'Vanuatu', 'Vaticano', 'Venezuela', 'Vietnam', 'Yemen', 'Yibuti', 'Zambia', 'Zimbabue',
+].sort((a, b) => a.localeCompare(b, 'es'));
+
+function CountrySelect({ value, onChange, placeholder = 'Buscar país...' }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const filtered = (query.trim()
+    ? COUNTRY_NAMES_ES.filter((c) => c.toLowerCase().includes(query.trim().toLowerCase()))
+    : COUNTRY_NAMES_ES
+  ).slice(0, 100);
+  const displayValue = open ? query : value;
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <input
+        type="text"
+        value={displayValue}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder={placeholder}
+        style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
+      />
+      {open && (
+        <ul
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: '100%',
+            margin: 0,
+            padding: 0,
+            listStyle: 'none',
+            maxHeight: 220,
+            overflowY: 'auto',
+            background: '#fff',
+            border: '1px solid #e5e7eb',
+            borderRadius: 8,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            zIndex: 50,
+          }}
+        >
+          {filtered.length === 0 ? (
+            <li style={{ padding: 12, color: '#6b7280' }}>No hay coincidencias</li>
+          ) : (
+            filtered.map((c) => (
+              <li
+                key={c}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onChange(c);
+                  setQuery('');
+                  setOpen(false);
+                }}
+                style={{
+                  padding: '10px 12px',
+                  cursor: 'pointer',
+                  borderBottom: '1px solid #f3f4f6',
+                }}
+              >
+                {c}
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function EstudioPage() {
   const [searchParams] = useSearchParams();
   const codigo = searchParams.get('codigo') ?? '';
@@ -211,7 +285,7 @@ export default function EstudioPage() {
       const keys = Object.keys(lab).filter((k) => k.endsWith('_empresa_nombre'));
       const n = Math.max(1, keys.length);
       for (let i = 0; i < n; i++) {
-        total += 2;
+        total += 3;
         if ((lab[`${i}_empresa_nombre`] ?? '').trim()) filled++;
         if ((lab[`${i}_puesto`] ?? '').trim()) filled++;
         if ((lab[`${i}_fecha_inicio_lab`] ?? '').trim()) filled++;
@@ -264,7 +338,7 @@ export default function EstudioPage() {
         const keys = Object.keys(lab).filter((k) => k.endsWith('_empresa_nombre'));
         const n = Math.max(1, keys.length);
         for (let i = 0; i < n; i++) {
-          total += 2;
+          total += 3;
           if ((lab[`${i}_empresa_nombre`] ?? '').trim()) filled++;
           if ((lab[`${i}_puesto`] ?? '').trim()) filled++;
           if ((lab[`${i}_fecha_inicio_lab`] ?? '').trim()) filled++;
@@ -372,7 +446,26 @@ export default function EstudioPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ unique_code: codigo, document_type: documentType, file_path: url, file_size: file.size }),
-        }).then((r) => r.json()).then(() => url);
+        }).then(async (r) => {
+          const text = await r.text();
+          if (!r.ok) {
+            let msg = r.status === 500 ? 'Error al guardar el documento. Intenta de nuevo.' : `Error ${r.status}`;
+            try {
+              const j = JSON.parse(text);
+              if (j?.error) msg = j.error;
+            } catch {
+              // use default msg
+            }
+            throw new Error(msg);
+          }
+          if (!text.trim()) throw new Error('Respuesta vacía del servidor');
+          try {
+            JSON.parse(text);
+          } catch {
+            throw new Error('Error al procesar la respuesta del servidor');
+          }
+          return url;
+        });
       });
   };
 
@@ -500,7 +593,7 @@ export default function EstudioPage() {
               <div><label style={{ display: 'block', marginBottom: 4 }}>CURP *</label><input type="text" maxLength={18} value={getField(sec, 'curp')} onChange={(e) => updateField(sec, 'curp', e.target.value.toUpperCase())} style={{ width: '100%', padding: 8, boxSizing: 'border-box', textTransform: 'uppercase' }} /></div>
               <div><label style={{ display: 'block', marginBottom: 4 }}>Fecha de nacimiento *</label><input type="date" value={getField(sec, 'fecha_nacimiento')} onChange={(e) => updateField(sec, 'fecha_nacimiento', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
               <div><label style={{ display: 'block', marginBottom: 4 }}>Lugar de nacimiento *</label><input type="text" value={getField(sec, 'lugar_nacimiento')} onChange={(e) => updateField(sec, 'lugar_nacimiento', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Nacionalidad *</label><input type="text" value={getField(sec, 'nacionalidad') || 'Mexicana'} onChange={(e) => updateField(sec, 'nacionalidad', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
+              <div><label style={{ display: 'block', marginBottom: 4 }}>Nacionalidad *</label><CountrySelect value={getField(sec, 'nacionalidad') || ''} onChange={(v) => updateField(sec, 'nacionalidad', v)} placeholder="Buscar país..." /></div>
               <div><label style={{ display: 'block', marginBottom: 4 }}>Estado civil *</label><select value={getField(sec, 'estado_civil')} onChange={(e) => updateField(sec, 'estado_civil', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}><option value="">Selecciona</option>{['Soltero/a', 'Casado/a', 'Unión libre', 'Divorciado/a', 'Viudo/a'].map((o) => (<option key={o} value={o}>{o}</option>))}</select></div>
               <div><label style={{ display: 'block', marginBottom: 4 }}>Número de dependientes económicos</label><input type="number" min={0} value={getField(sec, 'dependientes_economicos')} onChange={(e) => updateField(sec, 'dependientes_economicos', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
             </div>
@@ -702,11 +795,11 @@ function SectionReferencias({ formData, section, updateField, getField }: { form
 }
 
 const DOC_TYPES = [
-  { key: 'ine_identificacion', label: 'INE / Identificación oficial *' },
-  { key: 'curp_documento', label: 'CURP (documento) *' },
-  { key: 'comprobante_domicilio', label: 'Comprobante de domicilio *' },
-  { key: 'ultimo_recibo_nomina', label: 'Último recibo de nómina' },
-  { key: 'otros_documentos', label: 'Otros documentos (opcional)' },
+  { key: 'ine_identificacion', label: 'INE / Identificación oficial *', format: 'PDF, JPG o PNG. Máx. 5 MB' },
+  { key: 'curp_documento', label: 'CURP (documento) *', format: 'PDF, JPG o PNG. Máx. 5 MB' },
+  { key: 'comprobante_domicilio', label: 'Comprobante de domicilio *', format: 'PDF, JPG o PNG. Máx. 5 MB' },
+  { key: 'ultimo_recibo_nomina', label: 'Último recibo de nómina', format: 'PDF, JPG o PNG. Máx. 5 MB' },
+  { key: 'otros_documentos', label: 'Otros documentos (opcional)', format: 'PDF, JPG o PNG. Máx. 5 MB' },
 ];
 
 function SectionDocumentos({ getField, updateField, section, uploadFile }: { getField: (s: string, k: string) => string; updateField: (s: string, k: string, v: string) => void; section: string; codigo?: string; uploadFile: (file: File, docType: string) => Promise<string> }) {
@@ -714,27 +807,35 @@ function SectionDocumentos({ getField, updateField, section, uploadFile }: { get
 
   const handleUpload = (docType: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || file.size > 5 * 1024 * 1024) return;
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('El archivo no debe superar 5 MB.');
+      return;
+    }
     setUploading(docType);
     uploadFile(file, docType)
       .then((url) => updateField(section, docType, url))
+      .catch((err) => alert(err?.message || 'Error al subir el documento. Intenta de nuevo.'))
       .finally(() => setUploading(null));
     e.target.value = '';
   };
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
-      {DOC_TYPES.map(({ key, label }) => {
+      {DOC_TYPES.map(({ key, label, format }) => {
         const value = getField(section, key);
         const isUploaded = (value ?? '').trim() !== '';
         return (
-          <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <span style={{ flex: '1 1 200px' }}>{label}</span>
-            <span style={{ padding: '4px 8px', borderRadius: 6, background: isUploaded ? '#d1fae5' : '#f3f4f6', fontSize: 12 }}>{isUploaded ? 'Subido' : 'Pendiente'}</span>
-            <label style={{ cursor: 'pointer' }}>
-              <input type="file" accept=".pdf,.jpg,.png" style={{ display: 'none' }} onChange={(e) => handleUpload(key, e)} disabled={!!uploading} />
-              <span style={{ padding: '6px 12px', background: '#1d4ed8', color: '#fff', borderRadius: 6, fontSize: 14 }}>{uploading === key ? 'Subiendo...' : 'Subir'}</span>
-            </label>
+          <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <span style={{ flex: '1 1 200px' }}>{label}</span>
+              <span style={{ padding: '4px 8px', borderRadius: 6, background: isUploaded ? '#d1fae5' : '#f3f4f6', fontSize: 12 }}>{isUploaded ? 'Subido' : 'Pendiente'}</span>
+              <label style={{ cursor: 'pointer' }}>
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: 'none' }} onChange={(e) => handleUpload(key, e)} disabled={!!uploading} />
+                <span style={{ padding: '6px 12px', background: '#1d4ed8', color: '#fff', borderRadius: 6, fontSize: 14 }}>{uploading === key ? 'Subiendo...' : 'Subir'}</span>
+              </label>
+            </div>
+            <span style={{ fontSize: 12, color: '#6b7280' }}>Formato: {format}</span>
           </div>
         );
       })}
