@@ -1,11 +1,12 @@
 // App.tsx
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Contact from './pages/contact.tsx';
 import Career from './pages/career';
 import DetailTemplate from './components/DetailTemplate/DetailTemplate';
 import ScrollToTop from './ScrollToTop.tsx';
-import AdminPage from './pages/admin';
+import AdminLayout from './components/Admin/AdminLayout';
+import AdminTabContent from './pages/admin';
 import ScheduleList from './components/Public/ScheduleList';
 import ServiceDetail from './components/Public/ServiceDetail';
 import PaymentSuccess from './components/Public/PaymentSuccess';
@@ -20,6 +21,7 @@ import BlogDetailPage from './pages/BlogDetail';
 import EmpresaOnboarding from './pages/EmpresaOnboarding';
 import EmpresaDashboard from './pages/EmpresaDashboard';
 import EstudioPage from './pages/EstudioPage';
+import EstudioPublicoPage from './pages/EstudioPublicoPage';
 import AdminStudiesPage from './pages/AdminStudiesPage';
 import AdminStudyDetailPage from './pages/AdminStudyDetailPage';
 import AdminEmailQueuePage from './pages/AdminEmailQueuePage';
@@ -35,7 +37,16 @@ export default function App() {
         <Route path="/services/:slug" element={<DetailTemplate />} />
         <Route path="/about-us" element={<DetailTemplate />} />
         <Route path="/career" element={<Career />} />
-        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="/admin/jobs" replace />} />
+          <Route path="jobs" element={<AdminTabContent tab="jobs" />} />
+          <Route path="services" element={<AdminTabContent tab="services" />} />
+          <Route path="calendar" element={<AdminTabContent tab="calendar" />} />
+          <Route path="blogs" element={<AdminTabContent tab="blogs" />} />
+          <Route path="studies" element={<AdminStudiesPage />} />
+          <Route path="studies/:id" element={<AdminStudyDetailPage />} />
+          <Route path="email-queue" element={<AdminEmailQueuePage />} />
+        </Route>
         <Route path="/schedule" element={<ScheduleList />} />
         <Route path="/schedule/:id" element={<ServiceDetail />} />
         <Route path="/payment/success" element={<PaymentSuccess />} />
@@ -49,9 +60,7 @@ export default function App() {
         <Route path="/empresa/onboarding" element={<EmpresaOnboarding />} />
         <Route path="/empresa/dashboard" element={<EmpresaDashboard />} />
         <Route path="/estudio" element={<EstudioPage />} />
-        <Route path="/admin/studies" element={<AdminStudiesPage />} />
-        <Route path="/admin/studies/:id" element={<AdminStudyDetailPage />} />
-        <Route path="/admin/email-queue" element={<AdminEmailQueuePage />} />
+        <Route path="/estudio/publico" element={<EstudioPublicoPage />} />
       </Routes>
     </BrowserRouter>
   );

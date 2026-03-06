@@ -24,6 +24,12 @@ export default function StudyCodeModal({ onClose }: Props) {
       setError('Ingresa tu código único.');
       return;
     }
+    // If user entered only digits, treat as public study ID and open public link
+    if (/^\d+$/.test(trimmed)) {
+      onClose();
+      navigate(`/estudio/publico?estudio=${trimmed}`);
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch(
@@ -96,7 +102,7 @@ export default function StudyCodeModal({ onClose }: Props) {
           <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem' }}>✕</button>
         </div>
         <p style={{ margin: '0 0 16px', color: '#6b7280', fontSize: '0.9rem' }}>
-          Ingresa el código único que recibiste por correo
+          Ingresa el código único que recibiste por correo. Si tu estudio es público, puedes ingresar el número de estudio (ej. 2).
         </p>
 
         <form onSubmit={handleAcceder} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

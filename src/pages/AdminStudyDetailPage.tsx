@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Header from '../components/header/header';
-import Footer from '../components/Footer/Footer';
 
 const STATUS_LABELS: Record<string, string> = {
   pendiente_captura: 'Pendiente captura',
@@ -301,32 +299,18 @@ export default function AdminStudyDetailPage() {
 
   if (checking || !isAdmin) {
     if (!checking && !isAdmin) navigate('/admin');
-    return (
-      <>
-        <Header />
-        <main style={{ minHeight: '65vh', paddingTop: 80, textAlign: 'center' }}><p>Comprobando…</p></main>
-        <Footer />
-      </>
-    );
+    return <p style={{ textAlign: 'center', padding: 24 }}>Comprobando…</p>;
   }
 
   if (loading || !study) {
-    return (
-      <>
-        <Header />
-        <main style={{ minHeight: '65vh', paddingTop: 80, textAlign: 'center' }}><p>Cargando…</p></main>
-        <Footer />
-      </>
-    );
+    return <p style={{ textAlign: 'center', padding: 24 }}>Cargando…</p>;
   }
 
   const statusStyle = STATUS_COLORS[study.status] || { bg: '#f3f4f6', text: '#374151' };
 
   return (
     <>
-      <Header />
-      <main style={{ minHeight: '65vh', paddingTop: 80, paddingBottom: 48 }}>
-        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 20px', display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+        <div style={{ maxWidth: 1400, width: '100%', boxSizing: 'border-box', display: 'flex', gap: 24, alignItems: 'flex-start' }}>
           {/* Two columns: list (30%) + detail (70%) */}
           <div style={{ flex: 1, minWidth: 0, display: 'flex', gap: 24 }}>
             {/* Left: candidate list */}
@@ -510,7 +494,6 @@ export default function AdminStudyDetailPage() {
         <div style={{ marginBottom: 24 }}>
           <button onClick={() => navigate('/admin/studies')} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline' }}>← Volver a estudios</button>
         </div>
-      </main>
 
       {/* Close study confirmation */}
       {showCloseConfirm && (
@@ -541,8 +524,6 @@ export default function AdminStudyDetailPage() {
           </div>
         </div>
       )}
-
-      <Footer />
     </>
   );
 }

@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Header from '../components/header/header';
-import Footer from '../components/Footer/Footer';
 import AdminNewStudyModal from '../components/Admin/AdminNewStudyModal';
 
 const STATUS_LABELS: Record<string, string> = {
@@ -34,8 +32,6 @@ type Study = {
 
 export default function AdminStudiesPage() {
   const navigate = useNavigate();
-  const [checking, setChecking] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [studies, setStudies] = useState<Study[]>([]);
   const [loading, setLoading] = useState(true);
   const [mainTab, setMainTab] = useState<'all' | 'ongoing'>('all');
@@ -55,19 +51,6 @@ export default function AdminStudiesPage() {
   const [invitations, setInvitations] = useState<any[]>([]);
   const [drawerLoading, setDrawerLoading] = useState(false);
 
-  const checkAdmin = async () => {
-    try {
-      const res = await fetch('/api/auth.php?action=me', { credentials: 'include' });
-      const data = await res.json();
-      if (res.ok && (data.user || data.username)) setIsAdmin(true);
-      else setIsAdmin(false);
-    } catch {
-      setIsAdmin(false);
-    } finally {
-      setChecking(false);
-    }
-  };
-
   const loadStudies = async () => {
     setLoading(true);
     try {
@@ -82,12 +65,8 @@ export default function AdminStudiesPage() {
   };
 
   useEffect(() => {
-    checkAdmin();
+    loadStudies();
   }, []);
-
-  useEffect(() => {
-    if (isAdmin) loadStudies();
-  }, [isAdmin]);
 
   useEffect(() => {
     if (drawerStudyId) {
@@ -100,21 +79,6 @@ export default function AdminStudiesPage() {
         .finally(() => setDrawerLoading(false));
     }
   }, [drawerStudyId]);
-
-  if (checking) {
-    return (
-      <>
-        <Header />
-        <main style={{ minHeight: '65vh', paddingTop: 80, textAlign: 'center' }}><p>Comprobando sesión…</p></main>
-        <Footer />
-      </>
-    );
-  }
-
-  if (!isAdmin) {
-    navigate('/admin');
-    return null;
-  }
 
   const filteredAll = studies.filter((s) => {
     if (search && !s.company_name.toLowerCase().includes(search.toLowerCase())) return false;
@@ -155,19 +119,7 @@ export default function AdminStudiesPage() {
 
   return (
     <>
-      <Header />
-      <main style={{ minHeight: '65vh', paddingTop: 80, paddingBottom: 48 }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
-          {/* Admin menu (same as admin.tsx) */}
-          <h2 style={{ marginBottom: 12 }}>Admin</h2>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
-            <button onClick={() => navigate('/admin')} style={{ padding: '6px 14px', borderRadius: 999, border: 'none', background: '#e7e8ec', color: '#111', cursor: 'pointer' }}>Job postings</button>
-            <button onClick={() => navigate('/admin')} style={{ padding: '6px 14px', borderRadius: 999, border: 'none', background: '#e7e8ec', color: '#111', cursor: 'pointer' }}>Services & scheduling</button>
-            <button onClick={() => navigate('/admin')} style={{ padding: '6px 14px', borderRadius: 999, border: 'none', background: '#e7e8ec', color: '#111', cursor: 'pointer' }}>Calendar</button>
-            <button onClick={() => navigate('/admin')} style={{ padding: '6px 14px', borderRadius: 999, border: 'none', background: '#e7e8ec', color: '#111', cursor: 'pointer' }}>Post Blog</button>
-            <button style={{ padding: '6px 14px', borderRadius: 999, border: 'none', background: '#111', color: '#fff', cursor: 'default' }}>Estudios</button>
-          </div>
-
+        <div style={{ maxWidth: 1200, width: '100%', boxSizing: 'border-box' }}>
           {/* Top bar */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
             <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Estudios Socioeconómicos</h1>
@@ -280,7 +232,6 @@ export default function AdminStudiesPage() {
             </div>
           )}
         </div>
-      </main>
 
       {/* PDF drawer */}
       {drawerStudyId !== null && (
@@ -327,8 +278,6 @@ export default function AdminStudiesPage() {
           onSuccess={() => { loadStudies(); setToast('Estudio creado correctamente'); }}
         />
       )}
-
-      <Footer />
     </>
   );
 }

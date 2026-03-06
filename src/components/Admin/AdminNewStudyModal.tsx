@@ -6,17 +6,20 @@ type CandidateRow = { name: string; email: string; phone: string };
 function parseCSV(text: string): CandidateRow[] {
   const rows: CandidateRow[] = [];
   const lines = text.trim().split(/\r?\n/);
-  const header = lines[0]?.toLowerCase() ?? '';
-  const nameIdx = header.includes('nombre') ? 0 : (header.includes('name') ? 0 : 0);
-  const emailIdx = header.includes('correo') ? 1 : (header.includes('email') ? 1 : 1);
-  const phoneIdx = header.includes('telefono') || header.includes('teléfono') ? 2 : 2;
-  const start = header.includes('nombre') || header.includes('correo') || header.includes('nombre') ? 1 : 0;
+  if (lines.length === 0) return rows;
+  const first = lines[0]?.toLowerCase() ?? '';
+  const hasHeader = first.includes('nombre') || first.includes('correo') || first.includes('email') || first.includes('name');
+  const start = hasHeader ? 1 : 0;
   for (let i = start; i < lines.length; i++) {
     const parts = lines[i].split(',').map((p) => p.trim().replace(/^["']|["']$/g, ''));
-    const name = parts[nameIdx] ?? '';
-    const email = parts[emailIdx] ?? '';
-    const phone = parts[phoneIdx] ?? '';
-    if (email) rows.push({ name, email, phone });
+    if (parts.length === 1 && isValidEmail(parts[0])) {
+      rows.push({ name: '', email: parts[0], phone: '' });
+    } else {
+      const name = parts[0] ?? '';
+      const email = parts[1] ?? '';
+      const phone = parts[2] ?? '';
+      if (email) rows.push({ name, email, phone });
+    }
   }
   return rows;
 }
@@ -28,6 +31,10 @@ function parseManual(text: string): CandidateRow[] {
     const t = line.trim();
     if (!t) continue;
     const parts = t.split(',').map((p) => p.trim());
+    if (parts.length === 1) {
+      if (isValidEmail(parts[0])) rows.push({ name: '', email: parts[0], phone: '' });
+      continue;
+    }
     const name = parts[0] ?? '';
     const email = parts[1] ?? '';
     const phone = parts[2] ?? '';
@@ -77,7 +84,22 @@ export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
     setCandidates(rows);
   };
 
-  const handleCreatePrivate = async () => {
+  const handleCreatePrivate = async (candidateList?: CandidateRow[]) => {
+    const list = candidateList ?? candidates;
+    if (list.length === 0) {
+      setError('Agrega al menos un candidato. Pega el CSV o ingresa datos manualmente y haz clic en "Crear estudio y enviar correos".');
+      return;
+    }
+    const validationErrors = list.map((c, i) => {
+      const msg: string[] = [];
+      if (!c.email) msg.push('Falta correo');
+      else if (!isValidEmail(c.email)) msg.push('Correo inválido');
+      return { row: i + 1, msg };
+    }).filter((e) => e.msg.length > 0);
+    if (validationErrors.length > 0) {
+      setError(`Revisa los datos: ${validationErrors.map((e) => `Fila ${e.row}: ${e.msg.join(', ')}`).join('; ')}`);
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
@@ -100,7 +122,7 @@ export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
       expiresAt.setDate(expiresAt.getDate() + 30);
       const expiresStr = expiresAt.toISOString().slice(0, 19) + 'Z';
 
-      for (const c of candidates) {
+      for (const c of list) {
         const r = await fetch('/api/studies.php?action=create_invitation', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -130,7 +152,7 @@ export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
         throw new Error(d.error || 'Error al enviar correos');
       }
 
-      setToast(`Estudio creado y correos enviados a ${candidates.length} candidatos`);
+      setToast(`Estudio creado y correos enviados a ${list.length} candidatos`);
       setTimeout(() => {
         onSuccess();
         onClose();
@@ -361,7 +383,7 @@ export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
 
             {candidates.length > 0 && (
               <>
-                <p style={{ marginTop: 16, fontWeight: 600 }}>{candidates.length} candidatos encontrados</p>
+                <p style={{ marginTop: 16, fontWeight: 600 }}>{candidates.length} candidatos en vista previa</p>
                 {validationErrors.length > 0 && <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 8 }}>Revisa: {validationErrors.map((e) => `Fila ${e.row}: ${e.msg.join(', ')}`).join('; ')}</div>}
                 <div style={{ overflowX: 'auto', marginBottom: 16, maxHeight: 200, overflowY: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
@@ -377,9 +399,33 @@ export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
                     </tbody>
                   </table>
                 </div>
-                <button type="button" onClick={handleCreatePrivate} disabled={loading || validationErrors.length > 0} style={{ padding: '12px 24px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, cursor: loading || validationErrors.length > 0 ? 'not-allowed' : 'pointer', fontWeight: 600 }}>{loading ? 'Enviando…' : 'Generar y enviar correos'}</button>
               </>
             )}
+
+            <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  const text = manualTab === 'csv' ? csvText : manualText;
+                  if (!text.trim()) {
+                    setError('Pega el contenido CSV o ingresa candidatos (uno por línea: nombre, correo, teléfono).');
+                    return;
+                  }
+                  const parsed = manualTab === 'csv' ? parseCSV(text) : parseManual(text);
+                  if (parsed.length === 0) {
+                    setError('No se encontraron candidatos con correo. Usa el formato: nombre, correo@ejemplo.com, teléfono');
+                    return;
+                  }
+                  setCandidates(parsed);
+                  setError(null);
+                  handleCreatePrivate(parsed);
+                }}
+                disabled={loading || !(csvText.trim() || manualText.trim())}
+                style={{ padding: '12px 24px', background: (csvText.trim() || manualText.trim()) && !loading ? '#16a34a' : '#9ca3af', color: '#fff', border: 'none', borderRadius: 8, cursor: loading || !(csvText.trim() || manualText.trim()) ? 'not-allowed' : 'pointer', fontWeight: 600 }}
+              >
+                {loading ? 'Creando y enviando…' : 'Crear estudio y enviar correos'}
+              </button>
+            </div>
 
             <div style={{ marginTop: 16 }}>
               <button type="button" onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline' }}>← Anterior</button>

@@ -1,7 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Header from '../components/header/header';
-import Footer from '../components/Footer/Footer';
 
 type EmailRow = {
   id: number;
@@ -14,9 +11,6 @@ type EmailRow = {
 };
 
 export default function AdminEmailQueuePage() {
-  const navigate = useNavigate();
-  const [checking, setChecking] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [items, setItems] = useState<EmailRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -30,16 +24,6 @@ export default function AdminEmailQueuePage() {
   const perPage = 50;
 
   useEffect(() => {
-    fetch('/api/auth.php?action=me', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((d) => {
-        setIsAdmin(!!(d.user || d.username));
-      })
-      .finally(() => setChecking(false));
-  }, []);
-
-  useEffect(() => {
-    if (!isAdmin) return;
     setLoading(true);
     const params = new URLSearchParams({ page: String(page) });
     if (statusFilter) params.set('status', statusFilter);
@@ -55,7 +39,7 @@ export default function AdminEmailQueuePage() {
         }
       })
       .finally(() => setLoading(false));
-  }, [isAdmin, page, statusFilter, refreshKey]);
+  }, [page, statusFilter, refreshKey]);
 
   const handleRetry = (id: number) => {
     setRetrying(id);
@@ -114,31 +98,11 @@ export default function AdminEmailQueuePage() {
     return <span style={{ padding: '4px 8px', borderRadius: 6, background: s.bg, color: s.text, fontSize: 12 }}>{status}</span>;
   };
 
-  if (checking) {
-    return (
-      <>
-        <Header />
-        <main style={{ minHeight: '65vh', paddingTop: 80, textAlign: 'center' }}><p>Comprobando…</p></main>
-        <Footer />
-      </>
-    );
-  }
-
-  if (!isAdmin) {
-    navigate('/admin');
-    return null;
-  }
-
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
   return (
     <>
-      <Header />
-      <main style={{ minHeight: '65vh', paddingTop: 80, paddingBottom: 48 }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto', padding: '0 20px' }}>
-          <div style={{ marginBottom: 16 }}>
-            <button onClick={() => navigate('/admin')} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline' }}>← Admin</button>
-          </div>
+        <div style={{ maxWidth: 1000, width: '100%', boxSizing: 'border-box' }}>
           <h1 style={{ marginBottom: 16 }}>Cola de correo</h1>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
             <label>
@@ -200,9 +164,7 @@ export default function AdminEmailQueuePage() {
             </div>
           )}
         </div>
-      </main>
       {toast && <div style={{ position: 'fixed', bottom: 24, right: 24, padding: 12, background: '#111', color: '#fff', borderRadius: 8 }}>{toast}</div>}
-      <Footer />
     </>
   );
 }
