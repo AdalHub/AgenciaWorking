@@ -390,6 +390,21 @@ export default function EstudioPage() {
       .finally(() => setSaving(false));
   }, [codigo, invitation, formData]);
 
+  // Auto-save form data as user fills (debounced) so data is persisted even if they don't click "Guardar"
+  useEffect(() => {
+    if (!codigo || !invitation || !privacyAccepted || invitation.status === 'completed') return;
+    const fields = buildBatchFields();
+    if (fields.length === 0) return;
+    const t = setTimeout(() => {
+      fetch(`${API}/studies.php?action=save_form_data_batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ unique_code: codigo, fields }),
+      }).catch(() => {});
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [codigo, invitation, privacyAccepted, formData]);
+
   const handlePrivacyAccept = useCallback(() => {
     if (!codigo || !privacyCheck1 || !privacyCheck2) return;
     setPrivacySubmitting(true);
@@ -415,7 +430,14 @@ export default function EstudioPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ unique_code: codigo, fields }),
     })
-      .then((r) => r.json())
+      .then(async (r) => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error((data as { error?: string })?.error || 'Error al guardar');
+        if ((data as { error?: string }).error) throw new Error((data as { error: string }).error);
+        const saved = (data as { saved_count?: number }).saved_count ?? 0;
+        if (fields.length > 0 && saved === 0) throw new Error('No se pudieron guardar los datos. Intenta de nuevo.');
+        return data;
+      })
       .then(() =>
         fetch(`${API}/studies.php?action=update_invitation`, {
           method: 'POST',
@@ -430,6 +452,9 @@ export default function EstudioPage() {
       .then(() => {
         setShowFinalConfirm(false);
         setCompleted(true);
+      })
+      .catch((err) => {
+        alert(err?.message || 'Error al enviar. Intenta de nuevo.');
       })
       .finally(() => setSubmitting(false));
   }, [codigo, invitation, formData]);

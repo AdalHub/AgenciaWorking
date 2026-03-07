@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { jsPDF } from 'jspdf';
 
 const STATUS_LABELS: Record<string, string> = {
   pendiente_captura: 'Pendiente captura',
@@ -17,7 +18,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   cancelado: { bg: '#fee2e2', text: '#991b1b' },
 };
 
-const PREFERRED_SECTIONS = ['Datos Personales', 'Contacto', 'Domicilio', 'Académico', 'Laboral', 'Económico', 'Referencias', 'Documentos'];
+const PREFERRED_SECTIONS = ['Datos Personales', 'Datos de Contacto', 'Domicilio Actual', 'Historial Académico', 'Historial Laboral', 'Situación Económica', 'Referencias Familiares', 'Documentos'];
 
 function sectionTabs(formData: FormDataBySection): string[] {
   const keys = Object.keys(formData);
@@ -51,6 +52,91 @@ function completionPct(formData: FormDataBySection): number {
   return total === 0 ? 0 : Math.round((filled / total) * 100);
 }
 
+function openPrintCandidateData(inv: Invitation, formData: FormDataBySection, companyName?: string) {
+  const sections = sectionTabs(formData);
+  const lines: string[] = [
+    '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Estudio socioeconómico</title>',
+    '<style>body{font-family:system-ui,sans-serif;max-width:800px;margin:24px auto;padding:0 16px;color:#111;}',
+    'h1{font-size:1.25rem;margin:0 0 8px;} .meta{color:#6b7280;font-size:14px;margin-bottom:24px;}',
+    'section{margin-bottom:24px;break-inside:avoid;} h2{font-size:1rem;margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid #e5e7eb;}',
+    '.row{display:flex;gap:12px;margin:6px 0;} .key{min-width:200px;font-weight:500;} .val{flex:1;}',
+    '@media print{.no-print{display:none;} body{margin:16px;}}</style></head><body>',
+  ];
+  lines.push('<p class="no-print" style="margin-bottom:16px;"><button onclick="window.print()" style="padding:10px 20px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;cursor:pointer;">Imprimir o Guardar como PDF</button></p>');
+  lines.push(`<h1>Estudio socioeconómico</h1>`);
+  lines.push(`<div class="meta">${companyName ? `Empresa: ${escapeHtml(companyName)} · ` : ''}Candidato: ${escapeHtml(inv.candidate_name?.trim() || '—')} · ${escapeHtml(inv.candidate_email || '—')} · Estado: ${inv.status}</div>`);
+  for (const sec of sections) {
+    const data = formData[sec] || {};
+    const entries = Object.entries(data).filter(([, v]) => v != null && String(v).trim() !== '');
+    if (entries.length === 0) continue;
+    lines.push(`<section><h2>${escapeHtml(sec)}</h2>`);
+    for (const [k, v] of entries) {
+      lines.push(`<div class="row"><span class="key">${escapeHtml(formatFieldLabel(k))}</span><span class="val">${escapeHtml(String(v))}</span></div>`);
+    }
+    lines.push('</section>');
+  }
+  lines.push('</body></html>');
+  const w = window.open('', '_blank');
+  if (w) {
+    w.document.write(lines.join(''));
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 300);
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function formatFieldLabel(key: string): string {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function downloadCandidatePdf(inv: Invitation, formData: FormDataBySection, companyName?: string) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const margin = 20;
+  let y = margin;
+  const lineHeight = 7;
+  const sectionGap = 4;
+
+  doc.setFontSize(16);
+  doc.text('Estudio socioeconómico', margin, y);
+  y += lineHeight + 2;
+  doc.setFontSize(10);
+  doc.text([companyName ? `Empresa: ${companyName}` : '', `Candidato: ${inv.candidate_name?.trim() || '—'} · ${inv.candidate_email || '—'}`, `Estado: ${inv.status}`].filter(Boolean).join(' · '), margin, y);
+  y += lineHeight + sectionGap;
+
+  const sections = sectionTabs(formData);
+  for (const sec of sections) {
+    const data = formData[sec] || {};
+    const entries = Object.entries(data).filter(([, v]) => v != null && String(v).trim() !== '');
+    if (entries.length === 0) continue;
+    if (y > 270) { doc.addPage(); y = margin; }
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text(sec, margin, y);
+    y += lineHeight;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    for (const [k, v] of entries) {
+      if (y > 275) { doc.addPage(); y = margin; }
+      const label = formatFieldLabel(k) + ': ';
+      const value = String(v);
+      const lines = doc.splitTextToSize(label + value, 170);
+      doc.text(lines, margin, y);
+      y += lineHeight * lines.length;
+    }
+    y += sectionGap;
+  }
+
+  doc.save(`Estudio-invitacion-${inv.id}.pdf`);
+}
+
 export default function AdminStudyDetailPage() {
   const { id: studyIdParam } = useParams<{ id: string }>();
   const studyId = studyIdParam ? parseInt(studyIdParam, 10) : 0;
@@ -63,6 +149,7 @@ export default function AdminStudyDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selectedInvId, setSelectedInvId] = useState<number | null>(null);
   const [formData, setFormData] = useState<FormDataBySection>({});
+  const [formDataLoading, setFormDataLoading] = useState(false);
   const [detailTab, setDetailTab] = useState(0);
   const [, setConclusion] = useState<any>(null);
   const [, setDomiciliary] = useState<any>(null);
@@ -86,6 +173,7 @@ export default function AdminStudyDetailPage() {
   const [extendReason, setExtendReason] = useState('');
   const [extendSaving, setExtendSaving] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [seedingDemo, setSeedingDemo] = useState(false);
 
   useEffect(() => {
     fetch('/api/auth.php?action=me', { credentials: 'include' })
@@ -122,25 +210,30 @@ export default function AdminStudyDetailPage() {
   useEffect(() => {
     if (!selectedInvId) {
       setFormData({});
+      setFormDataLoading(false);
       setConclusion(null);
       setDomiciliary(null);
       return;
     }
+    setFormDataLoading(true);
+    const formUrl = `/api/studies.php?action=get_form_data&invitation_id=${selectedInvId}`;
+    const concUrl = `/api/studies.php?action=get_conclusion&invitation_id=${selectedInvId}`;
+    const domUrl = `/api/studies.php?action=get_domiciliary&invitation_id=${selectedInvId}`;
     Promise.all([
-      fetch(`/api/studies.php?action=get_form_data&invitation_id=${selectedInvId}`, { credentials: 'include' }).then((r) => r.json()),
-      isAdmin ? fetch(`/api/studies.php?action=get_conclusion&invitation_id=${selectedInvId}`, { credentials: 'include' }).then((r) => r.json()) : Promise.resolve(null),
-      isAdmin ? fetch(`/api/studies.php?action=get_domiciliary&invitation_id=${selectedInvId}`, { credentials: 'include' }).then((r) => r.json()) : Promise.resolve(null),
+      fetch(formUrl, { credentials: 'include' }).then(async (r) => (r.ok ? r.json().catch(() => ({})) : {})),
+      isAdmin ? fetch(concUrl, { credentials: 'include' }).then(async (r) => (r.ok ? r.json().catch(() => null) : null)) : Promise.resolve(null),
+      isAdmin ? fetch(domUrl, { credentials: 'include' }).then(async (r) => (r.ok ? r.json().catch(() => null) : null)) : Promise.resolve(null),
     ]).then(([formRes, concRes, domRes]) => {
       setFormData(typeof formRes === 'object' && formRes !== null && !formRes.error ? formRes : {});
-      setConclusion(concRes && !concRes.error ? concRes : null);
-      setDomiciliary(domRes && !domRes.error ? domRes : null);
+      setConclusion(concRes && !concRes?.error ? concRes : null);
+      setDomiciliary(domRes && !domRes?.error ? domRes : null);
       if (concRes && concRes.analyst_notes != null) setConcNotes(concRes.analyst_notes);
       if (concRes && concRes.verdict) setConcVerdict(concRes.verdict);
       if (domRes && domRes.photo_url != null) setDomPhotoUrl(domRes.photo_url);
       if (domRes && domRes.visit_date) setDomVisitDate(domRes.visit_date.slice(0, 10));
       if (domRes && domRes.visit_type) setDomVisitType(domRes.visit_type === 'referenciada' ? 'referenciada' : 'presencial');
       if (domRes && domRes.analyst_notes != null) setDomNotes(domRes.analyst_notes);
-    });
+    }).finally(() => setFormDataLoading(false));
   }, [selectedInvId, isAdmin]);
 
   const selectedInv = invitations.find((i) => i.id === selectedInvId);
@@ -297,6 +390,27 @@ export default function AdminStudyDetailPage() {
     }
   };
 
+  const handleSeedDemo = () => {
+    setSeedingDemo(true);
+    fetch(`/api/studies.php?action=seed_study_demo&study_id=${studyId}`, { method: 'POST', credentials: 'include' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.ok) {
+          setToast(d.message || 'Estudio de prueba rellenado. Recarga la lista de candidatos.');
+          return fetch(`/api/studies.php?action=list_invitations&study_id=${studyId}`, { credentials: 'include' }).then((r) => r.json());
+        }
+        setToast(d.error || 'Error al rellenar');
+      })
+      .then((invRes) => {
+        if (invRes?.invitations) {
+          setInvitations(invRes.invitations);
+          const firstCompleted = invRes.invitations.find((i: Invitation) => i.status === 'completed');
+          if (firstCompleted) setSelectedInvId(firstCompleted.id);
+        }
+      })
+      .finally(() => setSeedingDemo(false));
+  };
+
   if (checking || !isAdmin) {
     if (!checking && !isAdmin) navigate('/admin');
     return <p style={{ textAlign: 'center', padding: 24 }}>Comprobando…</p>;
@@ -365,6 +479,24 @@ export default function AdminStudyDetailPage() {
                       </span>
                     )}
                     <span style={{ fontSize: 12, color: '#6b7280' }}>Vence: {formatDate(selectedInv.code_expires_at)}</span>
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => downloadCandidatePdf(selectedInv, formData, study?.company_name)}
+                        disabled={formDataLoading || Object.keys(formData).length === 0}
+                        style={{ padding: '8px 14px', background: '#059669', color: '#fff', border: 'none', borderRadius: 8, cursor: formDataLoading ? 'not-allowed' : 'pointer', fontSize: 13 }}
+                      >
+                        Descargar PDF
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openPrintCandidateData(selectedInv, formData, study?.company_name)}
+                        disabled={formDataLoading || Object.keys(formData).length === 0}
+                        style={{ padding: '8px 14px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 8, cursor: formDataLoading ? 'not-allowed' : 'pointer', fontSize: 13 }}
+                      >
+                        Ver en pantalla / Imprimir
+                      </button>
+                    </div>
                   </div>
 
                   {(() => {
@@ -381,14 +513,18 @@ export default function AdminStudyDetailPage() {
                     );
                   })()}
                   <div style={{ height: 6, background: '#e5e7eb', borderRadius: 3, marginBottom: 16 }}>
-                    <div style={{ height: '100%', width: `${pct}%`, background: '#16a34a', borderRadius: 3 }} />
+                    <div style={{ height: '100%', width: formDataLoading ? '0%' : `${pct}%`, background: '#16a34a', borderRadius: 3 }} />
                   </div>
-                  <p style={{ margin: '0 0 12px', fontSize: 13 }}>{pct}% completado</p>
+                  <p style={{ margin: '0 0 12px', fontSize: 13 }}>
+                    {formDataLoading ? 'Cargando datos…' : Object.keys(formData).length === 0 ? 'Sin datos del formulario' : `${pct}% completado`}
+                  </p>
 
                   <div style={{ marginBottom: 24 }}>
-                    {(() => {
+                    {formDataLoading ? (
+                      <p style={{ color: '#6b7280' }}>Cargando…</p>
+                    ) : (() => {
                       const tabs = sectionTabs(formData);
-                      if (tabs.length === 0) return null;
+                      if (tabs.length === 0) return <p style={{ color: '#9ca3af' }}>No hay datos del candidato aún.</p>;
                       const sectionKey = tabs[detailTab] || tabs[0];
                       const sectionData = formData[sectionKey] || {};
                       const entries = Object.entries(sectionData);
@@ -397,7 +533,7 @@ export default function AdminStudyDetailPage() {
                         <div style={{ display: 'grid', gap: 8 }}>
                           {entries.map(([k, v]) => (
                             <div key={k} style={{ display: 'flex', gap: 8 }}>
-                              <span style={{ fontWeight: 500, minWidth: 140 }}>{k}:</span>
+                              <span style={{ fontWeight: 500, minWidth: 140 }}>{formatFieldLabel(k)}:</span>
                               <span>{v != null && String(v).trim() !== '' ? String(v) : '—'}</span>
                             </div>
                           ))}
@@ -470,6 +606,13 @@ export default function AdminStudyDetailPage() {
                   <option key={k} value={k}>{v}</option>
                 ))}
               </select>
+              <button
+                onClick={handleSeedDemo}
+                disabled={seedingDemo}
+                style={{ width: '100%', padding: 10, background: '#f59e0b', color: '#fff', border: 'none', borderRadius: 8, cursor: seedingDemo ? 'not-allowed' : 'pointer', marginBottom: 10, fontSize: 13 }}
+              >
+                {seedingDemo ? 'Rellenando…' : 'Rellenar estudio de prueba (demo)'}
+              </button>
               <button
                 onClick={() => setShowCloseConfirm(true)}
                 disabled={study.status === 'concluido' || !canCloseStudy}
