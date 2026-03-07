@@ -20,6 +20,18 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 
 const PREFERRED_SECTIONS = ['Datos Personales', 'Datos de Contacto', 'Domicilio Actual', 'Historial Académico', 'Historial Laboral', 'Situación Económica', 'Referencias Familiares', 'Documentos'];
 
+/** Document type keys that store file paths; show download button in admin. */
+const DOCUMENT_FIELD_KEYS = ['ine_identificacion', 'curp_documento', 'comprobante_domicilio', 'ultimo_recibo_nomina', 'otros_documentos'];
+
+/** Build API URL to download document (streams file with correct Content-Type and filename). */
+function documentDownloadApiUrl(filePath: string): string {
+  const v = (filePath || '').trim();
+  if (!v || /^https?:\/\//i.test(v)) return '';
+  // Backend expects path relative to api/ (e.g. uploads/filename.pdf)
+  const path = v.startsWith('uploads/') ? v : `uploads/${v.replace(/^\/+/, '')}`;
+  return `/api/studies.php?action=download_document&file_path=${encodeURIComponent(path)}`;
+}
+
 function sectionTabs(formData: FormDataBySection): string[] {
   const keys = Object.keys(formData);
   const ordered = PREFERRED_SECTIONS.filter((s) => keys.some((k) => k.toLowerCase() === s.toLowerCase() || k === s));
@@ -529,14 +541,35 @@ export default function AdminStudyDetailPage() {
                       const sectionData = formData[sectionKey] || {};
                       const entries = Object.entries(sectionData);
                       if (entries.length === 0) return <p style={{ color: '#9ca3af' }}>—</p>;
+                      const isDocumentosSection = sectionKey.toLowerCase() === 'documentos';
                       return (
-                        <div style={{ display: 'grid', gap: 8 }}>
-                          {entries.map(([k, v]) => (
-                            <div key={k} style={{ display: 'flex', gap: 8 }}>
-                              <span style={{ fontWeight: 500, minWidth: 140 }}>{formatFieldLabel(k)}:</span>
-                              <span>{v != null && String(v).trim() !== '' ? String(v) : '—'}</span>
-                            </div>
-                          ))}
+                        <div style={{ display: 'grid', gap: 12 }}>
+                          {entries.map(([k, v]) => {
+                            const valueStr = v != null && String(v).trim() !== '' ? String(v) : '';
+                            const isDocField = isDocumentosSection && DOCUMENT_FIELD_KEYS.includes(k);
+                            const downloadUrl = isDocField && valueStr ? documentDownloadApiUrl(valueStr) : '';
+                            return (
+                              <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                                <span style={{ fontWeight: 500, minWidth: 180 }}>{formatFieldLabel(k)}:</span>
+                                {downloadUrl ? (
+                                  <>
+                                    <span style={{ color: '#6b7280', fontSize: 13 }}>{valueStr.replace(/^.*[/\\]/, '')}</span>
+                                    <a
+                                      href={downloadUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      download
+                                      style={{ padding: '6px 12px', background: '#059669', color: '#fff', borderRadius: 6, textDecoration: 'none', fontSize: 13 }}
+                                    >
+                                      Descargar
+                                    </a>
+                                  </>
+                                ) : (
+                                  <span>{valueStr || '—'}</span>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       );
                     })()}
