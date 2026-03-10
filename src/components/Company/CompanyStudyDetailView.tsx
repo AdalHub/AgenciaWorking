@@ -65,6 +65,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
   const [detailTab, setDetailTab] = useState(0);
   const [verdict, setVerdict] = useState<string | null>(null);
   const [pdfAvailable, setPdfAvailable] = useState(false);
+  const [finalPdfAvailable, setFinalPdfAvailable] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
@@ -84,6 +85,18 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
       })
       .finally(() => setLoading(false));
   }, [studyId, tokenParam, token, navigate]);
+
+  // When study is concluded, check if the study-level final PDF is available
+  useEffect(() => {
+    if (!studyId || !study || study.status !== 'concluido') {
+      setFinalPdfAvailable(false);
+      return;
+    }
+    fetch(`${API}/studies.php?action=pdf_status_study&study_id=${studyId}${tokenParam}`, creds)
+      .then((r) => r.json())
+      .then((data) => setFinalPdfAvailable(!!(data && data.available)))
+      .catch(() => setFinalPdfAvailable(false));
+  }, [studyId, study?.status, tokenParam]);
 
   useEffect(() => {
     if (!selectedInvId) {
@@ -131,6 +144,27 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
       });
   };
 
+  const handleDownloadFinalPdf = () => {
+    if (!studyId) return;
+    const url = `${API}/studies.php?action=download_study_final_pdf&study_id=${studyId}${token ? '&token=' + encodeURIComponent(token) : ''}`;
+    fetch(url, creds)
+      .then((r) => {
+        if (r.status === 404 || !r.ok) {
+          const ct = r.headers.get('content-type');
+          if (ct && ct.includes('application/json')) return r.json().then((d: { error?: string }) => setToast(d.error || 'El PDF final no está disponible'));
+          setToast('El PDF final no está disponible');
+          return;
+        }
+        return r.blob().then((blob) => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `estudio-${studyId}-final.pdf`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+        });
+      });
+  };
+
   if (loading || !study) {
     return (
       <main style={{ minHeight: '60vh', padding: 24, textAlign: 'center' }}>
@@ -143,9 +177,16 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
     <main style={{ minHeight: '65vh', paddingTop: 24, paddingBottom: 48 }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
         {backLink != null && <div style={{ marginBottom: 16 }}>{backLink}</div>}
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
           <h2 style={{ margin: '0 0 4px' }}>{study.company_name}{study.format_version ? ` · ${study.format_version}` : ''}</h2>
           <span style={{ padding: '4px 8px', borderRadius: 6, background: statusStyle.bg, color: statusStyle.text, fontSize: 12 }}>{STATUS_LABELS[study.status]}</span>
+          {study.status === 'concluido' && (
+            finalPdfAvailable ? (
+              <button type="button" onClick={handleDownloadFinalPdf} style={{ padding: '8px 16px', background: '#059669', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}>Descargar PDF final del estudio</button>
+            ) : (
+              <span style={{ padding: '8px 12px', background: '#f3f4f6', color: '#6b7280', borderRadius: 6, fontSize: 13 }}>PDF final en preparación…</span>
+            )
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: 24 }}>

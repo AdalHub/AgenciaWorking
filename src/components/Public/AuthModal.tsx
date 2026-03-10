@@ -47,37 +47,19 @@ export default function AuthModal({ accountContext = 'default', onClose, onAuthS
   const [lastLoginUser, setLastLoginUser] = useState<PublicUser | null>(null);
   const googleButtonRef = useRef<HTMLDivElement>(null);
 
-  const finishCompanySignup = async (user: PublicUser) => {
-    try {
-      const res = await fetch('/api/user_auth.php?action=set_account_type', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ account_type: 'company' }),
-      });
-      const data = await res.json();
-      if (data.user) {
-        onAuthSuccess(data.user);
-      } else {
-        onAuthSuccess(user);
-      }
-      onClose();
-      navigate('/empresa/onboarding');
-    } catch (err) {
-      onAuthSuccess(user);
-      onClose();
-      navigate('/empresa/onboarding');
-    }
-  };
-
   const finishCompanyLogin = (user: PublicUser) => {
     onAuthSuccess(user);
     onClose();
     navigate('/empresa/dashboard');
   };
 
+  useEffect(() => {
+    if (accountContext === 'company') setMode('login');
+  }, [accountContext]);
+
   // Initialize Google Sign-In
   useEffect(() => {
+    if (accountContext === 'company') return;
     const initGoogleSignIn = () => {
       if (window.google && googleButtonRef.current) {
         window.google.accounts.id.initialize({
@@ -98,12 +80,8 @@ export default function AuthModal({ accountContext = 'default', onClose, onAuthS
                 setError(data.error || 'Google login failed');
               } else {
                 const u = data.user as PublicUser;
-                if (accountContext === 'company') {
-                  await finishCompanySignup(u);
-                } else {
-                  onAuthSuccess(u);
-                  onClose();
-                }
+                onAuthSuccess(u);
+                onClose();
               }
             } catch (err) {
               console.error(err);
@@ -143,11 +121,12 @@ export default function AuthModal({ accountContext = 'default', onClose, onAuthS
     setLoading(true);
     try {
       const body: any = { email, password };
-      if (mode === 'signup') {
+      if (mode === 'signup' && accountContext !== 'company') {
         body.name = name;
         body.phone = phone;
       }
-      const res = await fetch(`/api/user_auth.php?action=${mode}`, {
+      const action = accountContext === 'company' ? 'login' : mode;
+      const res = await fetch(`/api/user_auth.php?action=${action}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -160,16 +139,12 @@ export default function AuthModal({ accountContext = 'default', onClose, onAuthS
         return;
       }
       const u = data.user as PublicUser;
-        if (accountContext === 'company') {
-        if (mode === 'signup') {
-          await finishCompanySignup(u);
+      if (accountContext === 'company') {
+        if (u.account_type !== 'company') {
+          setLastLoginUser(u);
+          setCompanyLoginNotCompanyError(true);
         } else {
-          if (u.account_type !== 'company') {
-            setLastLoginUser(u);
-            setCompanyLoginNotCompanyError(true);
-          } else {
-            finishCompanyLogin(u);
-          }
+          finishCompanyLogin(u);
         }
       } else {
         onAuthSuccess(u);
@@ -211,7 +186,7 @@ export default function AuthModal({ accountContext = 'default', onClose, onAuthS
           <button onClick={onClose}>✕</button>
         </div>
 
-        {accountContext === 'company' && mode === 'signup' && (
+        {accountContext === 'company' && (
           <div
             style={{
               marginBottom: 12,
@@ -222,7 +197,7 @@ export default function AuthModal({ accountContext = 'default', onClose, onAuthS
               fontSize: '0.9rem',
             }}
           >
-            Estás creando una cuenta empresarial
+            Acceso empresa: inicia sesión con el correo invitado por Agencia. Si es tu primera vez, activa tu cuenta desde el enlace de invitación.
           </div>
         )}
 
@@ -241,45 +216,51 @@ export default function AuthModal({ accountContext = 'default', onClose, onAuthS
           >
             Login
           </button>
-          <button
-            type="button"
-            onClick={() => { setMode('signup'); setCompanyLoginNotCompanyError(false); }}
-            style={{
-              flex: 1,
-              background: mode === 'signup' ? '#1d4ed8' : '#e5e7eb',
-              color: mode === 'signup' ? '#fff' : '#111827',
-              border: 'none',
-              borderRadius: 6,
-              padding: '4px 0',
-            }}
-          >
-            Signup
-          </button>
+          {accountContext !== 'company' && (
+            <button
+              type="button"
+              onClick={() => { setMode('signup'); setCompanyLoginNotCompanyError(false); }}
+              style={{
+                flex: 1,
+                background: mode === 'signup' ? '#1d4ed8' : '#e5e7eb',
+                color: mode === 'signup' ? '#fff' : '#111827',
+                border: 'none',
+                borderRadius: 6,
+                padding: '4px 0',
+              }}
+            >
+              Signup
+            </button>
+          )}
         </div>
 
         {/* Google Sign-In Button */}
-        <div 
-          ref={googleButtonRef}
-          style={{ 
-            marginBottom: 16,
-            display: 'flex',
-            justifyContent: 'center',
-          }}
-        />
+        {accountContext !== 'company' && (
+          <>
+            <div
+              ref={googleButtonRef}
+              style={{
+                marginBottom: 16,
+                display: 'flex',
+                justifyContent: 'center',
+              }}
+            />
 
-        <div style={{ 
-          textAlign: 'center', 
-          marginBottom: 16,
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'center',
-        }}>
-          <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
-          <span style={{ padding: '0 12px', fontSize: '0.875rem', color: '#6b7280' }}>
-            or continue with email
-          </span>
-          <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
-        </div>
+            <div style={{
+              textAlign: 'center',
+              marginBottom: 16,
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+            }}>
+              <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
+              <span style={{ padding: '0 12px', fontSize: '0.875rem', color: '#6b7280' }}>
+                or continue with email
+              </span>
+              <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
+            </div>
+          </>
+        )}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <input
@@ -390,16 +371,18 @@ export default function AuthModal({ accountContext = 'default', onClose, onAuthS
           {error && <div style={{ color: 'red', fontSize: 13 }}>{error}</div>}
           {companyLoginNotCompanyError && (
             <div style={{ color: '#b45309', fontSize: 13 }}>
-              Esta cuenta no está registrada como cuenta empresarial. ¿Deseas acceder como usuario regular?{' '}
+              Esta cuenta no está registrada como cuenta empresarial activa. Revisa el correo de invitación o contacta a Agencia.{' '}
               <button
                 type="button"
                 onClick={() => {
-                  if (lastLoginUser) onAuthSuccess(lastLoginUser);
-                  onClose();
+                  if (accountContext !== 'company' && lastLoginUser) {
+                    onAuthSuccess(lastLoginUser);
+                  }
+                  if (accountContext !== 'company') onClose();
                 }}
                 style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
               >
-                Cerrar y continuar
+                Entendido
               </button>
             </div>
           )}

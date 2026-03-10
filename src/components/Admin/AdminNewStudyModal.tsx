@@ -256,7 +256,7 @@ export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
                 placeholder="Nombre de la empresa"
                 style={{ width: '100%', padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: 8, boxSizing: 'border-box' }}
               />
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#6b7280' }}>No es necesario que la empresa tenga una cuenta registrada</p>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#6b7280' }}>Si agregas correo de empresa se enviará una invitación de activación automáticamente.</p>
             </div>
 
             <div style={{ marginBottom: 16 }}>

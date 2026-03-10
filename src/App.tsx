@@ -20,8 +20,11 @@ import BlogListPage from './pages/BlogList';
 import BlogDetailPage from './pages/BlogDetail';
 import EmpresaOnboarding from './pages/EmpresaOnboarding';
 import EmpresaDashboard from './pages/EmpresaDashboard';
+import EmpresaSetupPage from './pages/EmpresaSetupPage.tsx';
+import EmpresaResetPasswordPage from './pages/EmpresaResetPasswordPage.tsx';
 import EstudioPage from './pages/EstudioPage';
 import EstudioPublicoPage from './pages/EstudioPublicoPage';
+import EstudiosViewPage from './pages/EstudiosViewPage';
 import AdminStudiesPage from './pages/AdminStudiesPage';
 import AdminStudyDetailPage from './pages/AdminStudyDetailPage';
 import AdminEmailQueuePage from './pages/AdminEmailQueuePage';
@@ -59,8 +62,12 @@ export default function App() {
         <Route path="/blog/:id" element={<BlogDetailPage />} />
         <Route path="/empresa/onboarding" element={<EmpresaOnboarding />} />
         <Route path="/empresa/dashboard" element={<EmpresaDashboard />} />
+        <Route path="/empresa/setup" element={<EmpresaSetupPage />} />
+        <Route path="/empresa/reset-password" element={<EmpresaResetPasswordPage />} />
+        <Route path="/reset-password" element={<EmpresaResetPasswordPage />} />
         <Route path="/estudio" element={<EstudioPage />} />
         <Route path="/estudio/publico" element={<EstudioPublicoPage />} />
+        <Route path="/estudios/view" element={<EstudiosViewPage />} />
       </Routes>
     </BrowserRouter>
   );

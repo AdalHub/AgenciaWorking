@@ -186,6 +186,9 @@ export default function AdminStudyDetailPage() {
   const [extendSaving, setExtendSaving] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [seedingDemo, setSeedingDemo] = useState(false);
+  const [resendingCompanyInvite, setResendingCompanyInvite] = useState(false);
+  const [sendingCompanyReset, setSendingCompanyReset] = useState(false);
+  const [downloadFinalPdfLoading, setDownloadFinalPdfLoading] = useState(false);
 
   useEffect(() => {
     fetch('/api/auth.php?action=me', { credentials: 'include' })
@@ -285,10 +288,31 @@ export default function AdminStudyDetailPage() {
         else {
           setStudy((s) => (s ? { ...s, status: 'concluido', concluded_at: d.concluded_at, deletion_scheduled_at: d.deletion_scheduled_at } : null));
           setShowCloseConfirm(false);
-          setToast('Estudio cerrado correctamente');
+          setToast(d.pdf_generated ? 'Estudio cerrado correctamente. PDF final generado.' : 'Estudio cerrado. Si el PDF final no aparece, haz clic en "Descargar PDF final del estudio" para generarlo.');
         }
       })
       .finally(() => setStatusChanging(false));
+  };
+
+  const handleDownloadStudyFinalPdf = () => {
+    if (!studyId) return;
+    setDownloadFinalPdfLoading(true);
+    fetch(`/api/studies.php?action=download_study_final_pdf&study_id=${studyId}`, { credentials: 'include' })
+      .then((r) => {
+        if (!r.ok) {
+          if (r.headers.get('content-type')?.includes('application/json')) return r.json().then((d: { error?: string }) => setToast(d.error || 'PDF no disponible'));
+          setToast('PDF final no disponible');
+          return;
+        }
+        return r.blob().then((blob) => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `estudio-${studyId}-final.pdf`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+        });
+      })
+      .finally(() => setDownloadFinalPdfLoading(false));
   };
 
   const handleVerdictToggle = () => {
@@ -421,6 +445,50 @@ export default function AdminStudyDetailPage() {
         }
       })
       .finally(() => setSeedingDemo(false));
+  };
+
+  const handleResendCompanyInvite = () => {
+    if (!studyId) return;
+    setResendingCompanyInvite(true);
+    fetch('/api/studies.php?action=resend_company_invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ study_id: studyId }),
+    })
+      .then(async (r) => {
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          setToast(d.error || 'No se pudo reenviar la invitación');
+          return;
+        }
+        setToast('Invitación de empresa reenviada correctamente');
+      })
+      .finally(() => setResendingCompanyInvite(false));
+  };
+
+  const handleSendCompanyReset = () => {
+    const email = String(study?.invited_company_email || '').trim();
+    if (!email) {
+      setToast('Este estudio no tiene correo de empresa configurado.');
+      return;
+    }
+    setSendingCompanyReset(true);
+    fetch('/api/user_auth.php?action=admin-trigger-reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email }),
+    })
+      .then(async (r) => {
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          setToast(d.error || 'No se pudo enviar el reset de contraseña');
+          return;
+        }
+        setToast('Correo de reset de contraseña enviado a la empresa');
+      })
+      .finally(() => setSendingCompanyReset(false));
   };
 
   if (checking || !isAdmin) {
@@ -646,6 +714,24 @@ export default function AdminStudyDetailPage() {
               >
                 {seedingDemo ? 'Rellenando…' : 'Rellenar estudio de prueba (demo)'}
               </button>
+              {study.invited_company_email && (
+                <button
+                  onClick={handleResendCompanyInvite}
+                  disabled={resendingCompanyInvite}
+                  style={{ width: '100%', padding: 10, background: '#0ea5e9', color: '#fff', border: 'none', borderRadius: 8, cursor: resendingCompanyInvite ? 'not-allowed' : 'pointer', marginBottom: 10, fontSize: 13 }}
+                >
+                  {resendingCompanyInvite ? 'Reenviando invitación…' : 'Reenviar invitación empresa'}
+                </button>
+              )}
+              {study.invited_company_email && (
+                <button
+                  onClick={handleSendCompanyReset}
+                  disabled={sendingCompanyReset}
+                  style={{ width: '100%', padding: 10, background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, cursor: sendingCompanyReset ? 'not-allowed' : 'pointer', marginBottom: 10, fontSize: 13 }}
+                >
+                  {sendingCompanyReset ? 'Enviando reset…' : 'Enviar reset contraseña empresa'}
+                </button>
+              )}
               <button
                 onClick={() => setShowCloseConfirm(true)}
                 disabled={study.status === 'concluido' || !canCloseStudy}
@@ -653,6 +739,16 @@ export default function AdminStudyDetailPage() {
               >
                 Cerrar estudio / Generar PDF
               </button>
+              {study.status === 'concluido' && (
+                <button
+                  type="button"
+                  onClick={handleDownloadStudyFinalPdf}
+                  disabled={downloadFinalPdfLoading}
+                  style={{ width: '100%', padding: 10, background: '#059669', color: '#fff', border: 'none', borderRadius: 8, cursor: downloadFinalPdfLoading ? 'not-allowed' : 'pointer', marginBottom: 10, fontSize: 13 }}
+                >
+                  {downloadFinalPdfLoading ? 'Descargando…' : 'Descargar PDF final del estudio'}
+                </button>
+              )}
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                   <input type="checkbox" checked={!!study.show_verdict_to_company} onChange={handleVerdictToggle} />

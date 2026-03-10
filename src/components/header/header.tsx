@@ -63,6 +63,7 @@ export default function Header() {
   const [showStudyCodeModal, setShowStudyCodeModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const isCompanyUser = !!user && user.account_type === 'company';
 
   const loadMe = async () => {
     try {
@@ -191,46 +192,70 @@ export default function Header() {
             Schedule
           </button>
 
-          {/* Employers / Empresas — outlined, opens auth with company context */}
-          <button
-            onClick={() => {
-              setAuthAccountContext('company');
-              setShowAuth(true);
-            }}
-            style={{
-              background: 'transparent',
-              color: scrolled ? '#fff' : '#0f172a',
-              border: `2px solid ${scrolled ? '#fff' : '#0f172a'}`,
-              borderRadius: 6,
-              padding: '6px 12px',
-              cursor: 'pointer',
-              fontSize: '0.9rem',
-              fontWeight: 500,
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
-          >
-            Employers / Empresas
-          </button>
+          {!isCompanyUser && (
+            <>
+              {/* Employers / Empresas — outlined, opens auth with company context */}
+              <button
+                onClick={() => {
+                  setAuthAccountContext('company');
+                  setShowAuth(true);
+                }}
+                style={{
+                  background: 'transparent',
+                  color: scrolled ? '#fff' : '#0f172a',
+                  border: `2px solid ${scrolled ? '#fff' : '#0f172a'}`,
+                  borderRadius: 6,
+                  padding: '6px 12px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  fontWeight: 500,
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                Employers / Empresas
+              </button>
 
-          {/* Ingresar a mi Estudio — solid green */}
-          <button
-            onClick={() => setShowStudyCodeModal(true)}
-            style={{
-              background: '#16a34a',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 6,
-              padding: '6px 12px',
-              cursor: 'pointer',
-              fontSize: '0.9rem',
-              fontWeight: 500,
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
-          >
-            Ingresar a mi Estudio
-          </button>
+              {/* Ingresar a mi Estudio — solid green */}
+              <button
+                onClick={() => setShowStudyCodeModal(true)}
+                style={{
+                  background: '#16a34a',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '6px 12px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  fontWeight: 500,
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                Ingresar a mi Estudio
+              </button>
+            </>
+          )}
+
+          {isCompanyUser && (
+            <button
+              onClick={() => navigate('/empresa/dashboard')}
+              style={{
+                background: location.pathname.startsWith('/empresa/dashboard') ? '#1d4ed8' : '#eff6ff',
+                color: location.pathname.startsWith('/empresa/dashboard') ? '#fff' : '#1d4ed8',
+                border: 'none',
+                borderRadius: 6,
+                padding: '6px 12px',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: 500,
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              Dashboard
+            </button>
+          )}
 
           {/* auth controls */}
           {user ? (
@@ -292,7 +317,7 @@ export default function Header() {
               >
                 <button
                   onClick={() => {
-                    navigate('/account');
+                    navigate(isCompanyUser ? '/empresa/dashboard' : '/account');
                     setShowUserMenu(false);
                   }}
                   style={{
@@ -313,11 +338,11 @@ export default function Header() {
                     e.currentTarget.style.background = 'none';
                   }}
                 >
-                  Account
+                  {isCompanyUser ? 'Dashboard' : 'Account'}
                 </button>
                 <button
                   onClick={() => {
-                    navigate('/my-schedule');
+                    navigate(isCompanyUser ? '/empresa/onboarding' : '/my-schedule');
                     setShowUserMenu(false);
                   }}
                   style={{
@@ -339,7 +364,7 @@ export default function Header() {
                     e.currentTarget.style.background = 'none';
                   }}
                 >
-                  My Schedule
+                  {isCompanyUser ? 'Perfil de empresa' : 'My Schedule'}
                 </button>
                 <button
                   onClick={() => {
@@ -376,6 +401,7 @@ export default function Header() {
               setAuthAccountContext('default');
               setShowAuth(true);
             }}
+            style={{ display: isCompanyUser ? 'none' : undefined }}
           >
             Login / Signup
           </button>
@@ -461,43 +487,69 @@ export default function Header() {
               Schedule
             </MobileLink>
 
-            {/* mobile: employers / study */}
-            <button
-              onClick={() => {
-                setAuthAccountContext('company');
-                setShowAuth(true);
-                setMobileOpen(false);
-              }}
-              style={{ marginTop: '0.5rem', background: 'none', border: '1px solid currentColor', padding: '8px 12px', borderRadius: 6 }}
-            >
-              Employers / Empresas
-            </button>
-            <button
-              onClick={() => {
-                setShowStudyCodeModal(true);
-                setMobileOpen(false);
-              }}
-              style={{ marginTop: '0.5rem', background: '#16a34a', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6 }}
-            >
-              Ingresar a mi Estudio
-            </button>
+            {!isCompanyUser && (
+              <>
+                {/* mobile: employers / study */}
+                <button
+                  onClick={() => {
+                    setAuthAccountContext('company');
+                    setShowAuth(true);
+                    setMobileOpen(false);
+                  }}
+                  style={{ marginTop: '0.5rem', background: 'none', border: '1px solid currentColor', padding: '8px 12px', borderRadius: 6 }}
+                >
+                  Employers / Empresas
+                </button>
+                <button
+                  onClick={() => {
+                    setShowStudyCodeModal(true);
+                    setMobileOpen(false);
+                  }}
+                  style={{ marginTop: '0.5rem', background: '#16a34a', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6 }}
+                >
+                  Ingresar a mi Estudio
+                </button>
+              </>
+            )}
+
+            {isCompanyUser && (
+              <>
+                <MobileLink
+                  to="/empresa/dashboard"
+                  onClick={() => setMobileOpen(false)}
+                  style={{ marginTop: '0.5rem' }}
+                >
+                  Dashboard
+                </MobileLink>
+                <MobileLink
+                  to="/empresa/onboarding"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Perfil de empresa
+                </MobileLink>
+              </>
+            )}
 
             {/* mobile: auth */}
             {user ? (
               <>
-                <MobileLink
-                  to="/account"
-                  onClick={() => setMobileOpen(false)}
-                  style={{ marginTop: '1rem' }}
-                >
-                  Account
-                </MobileLink>
-                <MobileLink
-                  to="/my-schedule"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  My Schedule
-                </MobileLink>
+                {!isCompanyUser && (
+                  <>
+                    <MobileLink
+                      to="/account"
+                      onClick={() => setMobileOpen(false)}
+                      style={{ marginTop: '1rem' }}
+                    >
+                      Account
+                    </MobileLink>
+                    <MobileLink
+                      to="/my-schedule"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      My Schedule
+                    </MobileLink>
+                  </>
+                )}
                 <button
                   onClick={() => {
                     handleLogout();
