@@ -22,6 +22,18 @@ export const Logo = styled.img`
   flex-shrink: 0;
 `;
 
+/* Hide on mobile — show only in burger menu */
+export const DesktopOnly = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+
+  @media (max-width: 899px) {
+    display: none;
+  }
+`;
+
 /* ───────────────── DESKTOP NAV ───────────────── */
 export const Nav = styled.nav`
   display: flex;

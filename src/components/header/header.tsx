@@ -5,6 +5,7 @@ import {
   Wrapper,
   Logo,
   Nav,
+  DesktopOnly,
   MenuItem,
   Burger,
   Overlay,
@@ -24,6 +25,7 @@ import logoInverse from '../../../public/header_logo_inverse.png';
 import services from '../ServicesGrid/data';
 import AuthModal from '../Public/AuthModal';
 import StudyCodeModal from '../Public/StudyCodeModal';
+import LoginGatewayModal from '../Public/LoginGatewayModal';
 
 type PublicUser = {
   id: number;
@@ -61,9 +63,32 @@ export default function Header() {
   const [showAuth, setShowAuth] = useState(false);
   const [authAccountContext, setAuthAccountContext] = useState<'default' | 'company'>('default');
   const [showStudyCodeModal, setShowStudyCodeModal] = useState(false);
+  const [showLoginGateway, setShowLoginGateway] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const isCompanyUser = !!user && user.account_type === 'company';
+
+  const openLoginGateway = () => {
+    setShowAuth(false);
+    setShowStudyCodeModal(false);
+    setShowUserMenu(false);
+    setShowLoginGateway(true);
+  };
+
+  const openAuth = (context: 'default' | 'company') => {
+    setShowLoginGateway(false);
+    setShowStudyCodeModal(false);
+    setShowUserMenu(false);
+    setAuthAccountContext(context);
+    setShowAuth(true);
+  };
+
+  const openStudyCode = () => {
+    setShowLoginGateway(false);
+    setShowAuth(false);
+    setShowUserMenu(false);
+    setShowStudyCodeModal(true);
+  };
 
   const loadMe = async () => {
     try {
@@ -171,78 +196,15 @@ export default function Header() {
             ))}
           </Nav>
 
-          {/* Schedule button */}
-          <button
-            onClick={() => navigate('/schedule')}
-            style={{
-              background: location.pathname.startsWith('/schedule')
-                ? '#1d4ed8'
-                : '#eff6ff',
-              color: location.pathname.startsWith('/schedule') ? '#fff' : '#1d4ed8',
-              border: 'none',
-              borderRadius: 6,
-              padding: '6px 12px',
-              cursor: 'pointer',
-              fontSize: '0.9rem',
-              fontWeight: 500,
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
-          >
-            Schedule
-          </button>
-
-          {!isCompanyUser && (
-            <>
-              {/* Employers / Empresas — outlined, opens auth with company context */}
-              <button
-                onClick={() => {
-                  setAuthAccountContext('company');
-                  setShowAuth(true);
-                }}
-                style={{
-                  background: 'transparent',
-                  color: scrolled ? '#fff' : '#0f172a',
-                  border: `2px solid ${scrolled ? '#fff' : '#0f172a'}`,
-                  borderRadius: 6,
-                  padding: '6px 12px',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem',
-                  fontWeight: 500,
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                }}
-              >
-                Employers / Empresas
-              </button>
-
-              {/* Ingresar a mi Estudio — solid green */}
-              <button
-                onClick={() => setShowStudyCodeModal(true)}
-                style={{
-                  background: '#16a34a',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 6,
-                  padding: '6px 12px',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem',
-                  fontWeight: 500,
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                }}
-              >
-                Ingresar a mi Estudio
-              </button>
-            </>
-          )}
-
-          {isCompanyUser && (
+          <DesktopOnly>
+            {/* Schedule button */}
             <button
-              onClick={() => navigate('/empresa/dashboard')}
+              onClick={() => navigate('/schedule')}
               style={{
-                background: location.pathname.startsWith('/empresa/dashboard') ? '#1d4ed8' : '#eff6ff',
-                color: location.pathname.startsWith('/empresa/dashboard') ? '#fff' : '#1d4ed8',
+                background: location.pathname.startsWith('/schedule')
+                  ? '#1d4ed8'
+                  : '#eff6ff',
+                color: location.pathname.startsWith('/schedule') ? '#fff' : '#1d4ed8',
                 border: 'none',
                 borderRadius: 6,
                 padding: '6px 12px',
@@ -253,12 +215,31 @@ export default function Header() {
                 flexShrink: 0,
               }}
             >
-              Dashboard
+              Schedule
             </button>
-          )}
 
-          {/* auth controls */}
-          {user ? (
+            {isCompanyUser && (
+              <button
+                onClick={() => navigate('/empresa/dashboard')}
+                style={{
+                  background: location.pathname.startsWith('/empresa/dashboard') ? '#1d4ed8' : '#eff6ff',
+                  color: location.pathname.startsWith('/empresa/dashboard') ? '#fff' : '#1d4ed8',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '6px 12px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  fontWeight: 500,
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                Dashboard
+              </button>
+            )}
+
+            {/* auth controls */}
+            {user ? (
           <div
             ref={userMenuRef}
             style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
@@ -397,15 +378,25 @@ export default function Header() {
           </div>
         ) : (
           <button
-            onClick={() => {
-              setAuthAccountContext('default');
-              setShowAuth(true);
+            onClick={openLoginGateway}
+            style={{
+              display: isCompanyUser ? 'none' : undefined,
+              background: 'transparent',
+              color: scrolled ? '#fff' : '#0f172a',
+              border: 'none',
+              borderRadius: 6,
+              padding: '6px 12px',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
             }}
-            style={{ display: isCompanyUser ? 'none' : undefined }}
           >
             Login / Signup
           </button>
         )}
+          </DesktopOnly>
         </div>
 
         {/* hamburger */}
@@ -487,31 +478,6 @@ export default function Header() {
               Schedule
             </MobileLink>
 
-            {!isCompanyUser && (
-              <>
-                {/* mobile: employers / study */}
-                <button
-                  onClick={() => {
-                    setAuthAccountContext('company');
-                    setShowAuth(true);
-                    setMobileOpen(false);
-                  }}
-                  style={{ marginTop: '0.5rem', background: 'none', border: '1px solid currentColor', padding: '8px 12px', borderRadius: 6 }}
-                >
-                  Employers / Empresas
-                </button>
-                <button
-                  onClick={() => {
-                    setShowStudyCodeModal(true);
-                    setMobileOpen(false);
-                  }}
-                  style={{ marginTop: '0.5rem', background: '#16a34a', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6 }}
-                >
-                  Ingresar a mi Estudio
-                </button>
-              </>
-            )}
-
             {isCompanyUser && (
               <>
                 <MobileLink
@@ -563,8 +529,7 @@ export default function Header() {
             ) : (
               <button
                 onClick={() => {
-                  setAuthAccountContext('default');
-                  setShowAuth(true);
+                  openLoginGateway();
                   setMobileOpen(false);
                 }}
                 style={{ marginTop: '1rem' }}
@@ -595,6 +560,15 @@ export default function Header() {
           </Panel>
         </PanelWrap>
       </Overlay>
+
+      {showLoginGateway && (
+        <LoginGatewayModal
+          onClose={() => setShowLoginGateway(false)}
+          onForCustomers={() => { setShowLoginGateway(false); openAuth('default'); }}
+          onForCompanies={() => { setShowLoginGateway(false); openAuth('company'); }}
+          onIngresarEstudio={() => { setShowLoginGateway(false); openStudyCode(); }}
+        />
+      )}
 
       {showAuth && (
         <AuthModal

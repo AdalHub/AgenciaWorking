@@ -168,6 +168,7 @@ export default function AuthModal({ accountContext = 'default', onClose, onAuthS
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 100,
+        animation: 'awFadeIn 180ms ease-out both',
       }}
     >
       <div
@@ -177,13 +178,37 @@ export default function AuthModal({ accountContext = 'default', onClose, onAuthS
           padding: 20,
           width: 'min(400px, 92vw)',
           boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+          animation: 'awModalIn 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
           <h3 style={{ margin: 0 }}>
             {mode === 'login' ? 'Login' : 'Create account'}
           </h3>
-          <button onClick={onClose}>✕</button>
+          <button
+            onClick={onClose}
+            type="button"
+            aria-label="Close"
+            style={{
+              width: 32,
+              height: 32,
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              padding: 0,
+              display: 'grid',
+              placeItems: 'center',
+            }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M6 6L18 18M18 6L6 18"
+                stroke="#000"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
         </div>
 
         {accountContext === 'company' && (
@@ -201,22 +226,22 @@ export default function AuthModal({ accountContext = 'default', onClose, onAuthS
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-          <button
-            type="button"
-            onClick={() => { setMode('login'); setCompanyLoginNotCompanyError(false); }}
-            style={{
-              flex: 1,
-              background: mode === 'login' ? '#1d4ed8' : '#e5e7eb',
-              color: mode === 'login' ? '#fff' : '#111827',
-              border: 'none',
-              borderRadius: 6,
-              padding: '4px 0',
-            }}
-          >
-            Login
-          </button>
-          {accountContext !== 'company' && (
+        {accountContext !== 'company' && (
+          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+            <button
+              type="button"
+              onClick={() => { setMode('login'); setCompanyLoginNotCompanyError(false); }}
+              style={{
+                flex: 1,
+                background: mode === 'login' ? '#1d4ed8' : '#e5e7eb',
+                color: mode === 'login' ? '#fff' : '#111827',
+                border: 'none',
+                borderRadius: 6,
+                padding: '4px 0',
+              }}
+            >
+              Login
+            </button>
             <button
               type="button"
               onClick={() => { setMode('signup'); setCompanyLoginNotCompanyError(false); }}
@@ -231,8 +256,8 @@ export default function AuthModal({ accountContext = 'default', onClose, onAuthS
             >
               Signup
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Google Sign-In Button */}
         {accountContext !== 'company' && (
@@ -387,7 +412,20 @@ export default function AuthModal({ accountContext = 'default', onClose, onAuthS
             </div>
           )}
 
-          <button type="submit" disabled={loading}>
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              padding: '0.75rem 1rem',
+              background: loading ? '#93c5fd' : '#1d4ed8',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: '1rem',
+              fontWeight: 600,
+              cursor: loading ? 'not-allowed' : 'pointer',
+            }}
+          >
             {loading ? 'Please wait…' : mode === 'login' ? 'Login' : 'Create account'}
           </button>
           
@@ -422,6 +460,21 @@ export default function AuthModal({ accountContext = 'default', onClose, onAuthS
           }}
         />
       )}
+      <style>
+        {`
+          @keyframes awFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes awModalIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            * { animation: none !important; transition: none !important; }
+          }
+        `}
+      </style>
     </div>
   );
 }

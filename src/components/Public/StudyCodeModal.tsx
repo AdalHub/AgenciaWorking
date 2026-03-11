@@ -111,6 +111,7 @@ export default function StudyCodeModal({ onClose }: Props) {
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 100,
+        animation: 'awFadeIn 180ms ease-out both',
       }}
     >
       <div
@@ -120,11 +121,35 @@ export default function StudyCodeModal({ onClose }: Props) {
           padding: 24,
           width: 'min(400px, 92vw)',
           boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+          animation: 'awModalIn 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Acceder a mi Estudio</h3>
-          <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem' }}>✕</button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              width: 32,
+              height: 32,
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              padding: 0,
+              display: 'grid',
+              placeItems: 'center',
+            }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M6 6L18 18M18 6L6 18"
+                stroke="#000"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
         </div>
         <p style={{ margin: '0 0 16px', color: '#6b7280', fontSize: '0.9rem' }}>
           Ingresa el código único que recibiste por correo. Si tu estudio es público, puedes ingresar el número de estudio (ej. 2).
@@ -221,6 +246,21 @@ export default function StudyCodeModal({ onClose }: Props) {
           </div>
         )}
       </div>
+      <style>
+        {`
+          @keyframes awFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes awModalIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            * { animation: none !important; transition: none !important; }
+          }
+        `}
+      </style>
     </div>
   );
 }
