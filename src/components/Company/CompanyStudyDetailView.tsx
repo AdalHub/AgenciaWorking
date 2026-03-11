@@ -176,7 +176,11 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
   return (
     <main style={{ minHeight: '65vh', paddingTop: 24, paddingBottom: 48 }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
-        {backLink != null && <div style={{ marginBottom: 16 }}>{backLink}</div>}
+        {backLink != null && (
+          <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'flex-end' }}>
+            {backLink}
+          </div>
+        )}
         <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
           <h2 style={{ margin: '0 0 4px' }}>{study.company_name}{study.format_version ? ` · ${study.format_version}` : ''}</h2>
           <span style={{ padding: '4px 8px', borderRadius: 6, background: statusStyle.bg, color: statusStyle.text, fontSize: 12 }}>{STATUS_LABELS[study.status]}</span>

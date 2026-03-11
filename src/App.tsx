@@ -20,6 +20,7 @@ import BlogListPage from './pages/BlogList';
 import BlogDetailPage from './pages/BlogDetail';
 import EmpresaOnboarding from './pages/EmpresaOnboarding';
 import EmpresaDashboard from './pages/EmpresaDashboard';
+import EmpresaStudyDetailPage from './pages/EmpresaStudyDetailPage.tsx';
 import EmpresaSetupPage from './pages/EmpresaSetupPage.tsx';
 import EmpresaResetPasswordPage from './pages/EmpresaResetPasswordPage.tsx';
 import EstudioPage from './pages/EstudioPage';
@@ -62,6 +63,7 @@ export default function App() {
         <Route path="/blog/:id" element={<BlogDetailPage />} />
         <Route path="/empresa/onboarding" element={<EmpresaOnboarding />} />
         <Route path="/empresa/dashboard" element={<EmpresaDashboard />} />
+        <Route path="/empresa/studies/:id" element={<EmpresaStudyDetailPage />} />
         <Route path="/empresa/setup" element={<EmpresaSetupPage />} />
         <Route path="/empresa/reset-password" element={<EmpresaResetPasswordPage />} />
         <Route path="/reset-password" element={<EmpresaResetPasswordPage />} />

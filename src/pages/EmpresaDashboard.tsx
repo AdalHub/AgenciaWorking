@@ -235,25 +235,39 @@ export default function EmpresaDashboard() {
                             </td>
                             <td style={{ padding: 10 }}>{formatDate(study.concluded_at)}</td>
                             <td style={{ padding: 10 }}>
-                              {study.status === 'concluido' ? (
+                              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                                 <button
                                   type="button"
-                                  onClick={() => handleDownloadFinalPdf(study.id)}
-                                  disabled={downloadLoadingId === study.id}
+                                  onClick={() => navigate(`/empresa/studies/${study.id}`)}
                                   style={{
-                                    background: '#1d4ed8',
+                                    background: '#111827',
                                     color: '#fff',
                                     border: 'none',
                                     borderRadius: 6,
                                     padding: '8px 12px',
-                                    cursor: downloadLoadingId === study.id ? 'not-allowed' : 'pointer',
+                                    cursor: 'pointer',
                                   }}
                                 >
-                                  {downloadLoadingId === study.id ? 'Descargando...' : 'Descargar PDF'}
+                                  Ver candidatos
                                 </button>
-                              ) : (
-                                <span style={{ color: '#9ca3af', fontSize: 13 }}>Disponible al concluir</span>
-                              )}
+                                {study.status === 'concluido' ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDownloadFinalPdf(study.id)}
+                                    disabled={downloadLoadingId === study.id}
+                                    style={{
+                                      background: '#1d4ed8',
+                                      color: '#fff',
+                                      border: 'none',
+                                      borderRadius: 6,
+                                      padding: '8px 12px',
+                                      cursor: downloadLoadingId === study.id ? 'not-allowed' : 'pointer',
+                                    }}
+                                  >
+                                    {downloadLoadingId === study.id ? 'Descargando...' : 'Descargar PDF'}
+                                  </button>
+                                ) : null}
+                              </div>
                             </td>
                           </tr>
                         );

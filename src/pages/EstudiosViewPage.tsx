@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Footer from '../components/Footer/Footer';
 import CompanyStudyDetailView from '../components/Company/CompanyStudyDetailView';
 
@@ -13,6 +13,7 @@ type TokenValidation = {
 } | null;
 
 export default function EstudiosViewPage() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') ?? '';
 
@@ -147,10 +148,42 @@ export default function EstudiosViewPage() {
   if (verified && studyId != null) {
     return (
       <>
-        <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h1 style={{ margin: 0, fontSize: 18 }}>HR Capital Working — Vista de resultados</h1>
+        <div
+          style={{
+            background: '#fff',
+            borderBottom: '1px solid #e5e7eb',
+            padding: '18px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            rowGap: 8,
+            boxSizing: 'border-box',
+          }}
+        >
+          <h1 style={{ margin: 0, fontSize: 18, lineHeight: 1.2 }}>Agencia Working — Vista de resultados</h1>
         </div>
-        <CompanyStudyDetailView studyId={studyId} token={token} backLink={null} isMagicLink />
+        <CompanyStudyDetailView
+          studyId={studyId}
+          token={token}
+          backLink={
+            <button
+              type="button"
+              onClick={() => navigate('/empresa/dashboard')}
+              style={{
+                background: 'transparent',
+                border: '1px solid #e5e7eb',
+                borderRadius: 8,
+                padding: '8px 12px',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+            >
+              ← Back to dashboard
+            </button>
+          }
+          isMagicLink
+        />
         <Footer />
       </>
     );
