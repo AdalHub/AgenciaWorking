@@ -20,8 +20,8 @@ import {
   ServiceLink,
 } from './styles';
 
-import logo from '../../assets/header_logo.jpg';
-import logoInverse from '../../../public/header_logo_inverse.png';
+import logo from '../../assets/header_logo.png';
+import logoInverse from '../../assets/header_logo_inverse.png';
 import services from '../ServicesGrid/data';
 import AuthModal from '../Public/AuthModal';
 import StudyCodeModal from '../Public/StudyCodeModal';
@@ -166,12 +166,28 @@ export default function Header() {
   return (
     <>
       <Wrapper $scrolled={scrolled}>
-        <Logo
-          src={scrolled ? logoInverse : logo}
-          alt="Working Agencia"
+        <div
           onClick={() => navigate('/')}
-          style={{ cursor: 'pointer' }}
-        />
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+        >
+          <Logo
+            src={scrolled ? logoInverse : logo}
+            alt="Working Agencia"
+            style={{ display: 'block' }}
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1, alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '1.25rem', fontWeight: 700, color: scrolled ? '#fff' : '#03479A', letterSpacing: '0.02em' }}>Working</span>
+            <span style={{ fontSize: '1.25rem', fontWeight: 700, color: scrolled ? '#fff' : '#0082C6', letterSpacing: '0.02em' }}>
+              Agencia<span style={{ fontSize: '0.85em', fontWeight: 600, color: scrolled ? '#fff' : '#03479A', marginLeft: 2 }}>®</span>
+            </span>
+          </div>
+        </div>
 
         {/* Right side container: Nav + Schedule + Auth controls grouped together */}
         <div style={{

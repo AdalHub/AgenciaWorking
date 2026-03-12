@@ -15,7 +15,7 @@ import {
   Note,
   ContactRow,
 } from './styles';
-import logo from '../../assets/logo.png'; // Make sure to import your logo
+import logo from '../../assets/header_logo.png';
 import locationIcon from '../../../public/icons/location.svg'; // Import a location icon SVG
 
 export default function Footer() {
@@ -24,9 +24,17 @@ export default function Footer() {
       <FooterGrid>
         {/* Leftmost Column */}
         <MainColumn>
-          <LogoLink to="/">
-            <img src={logo} alt="Lego Logo" />
-          </LogoLink>
+          <div>
+            <LogoLink to="/">
+              <img src={logo} alt="Agencia Working" />
+            </LogoLink>
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1, alignItems: 'flex-start', marginTop: 6 }}>
+              <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#03479A', letterSpacing: '0.02em' }}>Working</span>
+              <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0082C6', letterSpacing: '0.02em' }}>
+                Agencia<span style={{ fontSize: '0.85em', fontWeight: 600, color: '#03479A', marginLeft: 2 }}>®</span>
+              </span>
+            </div>
+          </div>
           <MexicoLocation href="https://maps.app.goo.gl/rZowGhBoTGubGxaw9" target="_blank" rel="noopener noreferrer">
             <img src={locationIcon} alt="Location" style={{ width: '20px', height: '20px' }} />
             <span>Mexico</span>
