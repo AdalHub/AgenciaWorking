@@ -228,8 +228,23 @@ export default function AdminStudyDetailPage() {
       setFormDataLoading(false);
       setConclusion(null);
       setDomiciliary(null);
+      setConcNotes('');
+      setConcVerdict(null);
+      setDomPhotoUrl('');
+      setDomVisitDate('');
+      setDomVisitType('presencial');
+      setDomNotes('');
       return;
     }
+    // Clear domiciliary/conclusion form state immediately so we don't show previous candidate's data while loading
+    setConclusion(null);
+    setDomiciliary(null);
+    setConcNotes('');
+    setConcVerdict(null);
+    setDomPhotoUrl('');
+    setDomVisitDate('');
+    setDomVisitType('presencial');
+    setDomNotes('');
     setFormDataLoading(true);
     const formUrl = `/api/studies.php?action=get_form_data&invitation_id=${selectedInvId}`;
     const concUrl = `/api/studies.php?action=get_conclusion&invitation_id=${selectedInvId}`;
@@ -242,12 +257,13 @@ export default function AdminStudyDetailPage() {
       setFormData(typeof formRes === 'object' && formRes !== null && !formRes.error ? formRes : {});
       setConclusion(concRes && !concRes?.error ? concRes : null);
       setDomiciliary(domRes && !domRes?.error ? domRes : null);
-      if (concRes && concRes.analyst_notes != null) setConcNotes(concRes.analyst_notes);
-      if (concRes && concRes.verdict) setConcVerdict(concRes.verdict);
-      if (domRes && domRes.photo_url != null) setDomPhotoUrl(domRes.photo_url);
-      if (domRes && domRes.visit_date) setDomVisitDate(domRes.visit_date.slice(0, 10));
-      if (domRes && domRes.visit_type) setDomVisitType(domRes.visit_type === 'referenciada' ? 'referenciada' : 'presencial');
-      if (domRes && domRes.analyst_notes != null) setDomNotes(domRes.analyst_notes);
+      // Always set form fields from response so candidate with no data shows empty (not previous candidate's data)
+      setConcNotes(concRes?.analyst_notes ?? '');
+      setConcVerdict(concRes?.verdict ?? null);
+      setDomPhotoUrl(domRes?.photo_url ?? '');
+      setDomVisitDate(domRes?.visit_date ? String(domRes.visit_date).slice(0, 10) : '');
+      setDomVisitType(domRes?.visit_type === 'referenciada' ? 'referenciada' : 'presencial');
+      setDomNotes(domRes?.analyst_notes ?? '');
     }).finally(() => setFormDataLoading(false));
   }, [selectedInvId, isAdmin]);
 
