@@ -53,90 +53,19 @@ type Invitation = {
 
 type FormDataBySection = Record<string, Record<string, string>>;
 
+/** Actualización de estudio socioeconómico (Personal Activo) */
 const SECTIONS = [
-  'Datos Personales',
-  'Datos de Contacto',
-  'Domicilio Actual',
-  'Historial Académico',
-  'Historial Laboral',
-  'Situación Económica',
-  'Referencias Familiares',
-  'Documentos',
-];
-
-// Country names in Spanish (ISO 3166-1) for nacionalidad dropdown
-const COUNTRY_NAMES_ES = [
-  'Afganistán', 'Albania', 'Alemania', 'Andorra', 'Angola', 'Antigua y Barbuda', 'Arabia Saudita', 'Argelia', 'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaiyán', 'Bahamas', 'Bangladés', 'Barbados', 'Baréin', 'Bélgica', 'Belice', 'Benín', 'Bielorrusia', 'Bolivia', 'Bosnia y Herzegovina', 'Botsuana', 'Brasil', 'Brunéi', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Bután', 'Cabo Verde', 'Camboya', 'Camerún', 'Canadá', 'Catar', 'Chad', 'Chequia', 'Chile', 'China', 'Chipre', 'Colombia', 'Comoras', 'Corea del Norte', 'Corea del Sur', 'Costa de Marfil', 'Costa Rica', 'Croacia', 'Cuba', 'Dinamarca', 'Dominica', 'Ecuador', 'Egipto', 'El Salvador', 'Emiratos Árabes Unidos', 'Eritrea', 'Eslovaquia', 'Eslovenia', 'España', 'Estados Unidos', 'Estonia', 'Esuatini', 'Etiopía', 'Filipinas', 'Finlandia', 'Fiyi', 'Francia', 'Gabón', 'Gambia', 'Georgia', 'Ghana', 'Granada', 'Grecia', 'Guatemala', 'Guinea', 'Guinea-Bisáu', 'Guinea Ecuatorial', 'Guyana', 'Haití', 'Honduras', 'Hungría', 'India', 'Indonesia', 'Irak', 'Irán', 'Irlanda', 'Islandia', 'Islas Marshall', 'Islas Salomón', 'Israel', 'Italia', 'Jamaica', 'Japón', 'Jordania', 'Kazajistán', 'Kenia', 'Kirguistán', 'Kiribati', 'Kosovo', 'Kuwait', 'Laos', 'Lesoto', 'Letonia', 'Líbano', 'Liberia', 'Libia', 'Liechtenstein', 'Lituania', 'Luxemburgo', 'Macedonia del Norte', 'Madagascar', 'Malasia', 'Malaui', 'Maldivas', 'Malí', 'Malta', 'Marruecos', 'Mauricio', 'Mauritania', 'México', 'Micronesia', 'Moldavia', 'Mónaco', 'Mongolia', 'Montenegro', 'Mozambique', 'Birmania', 'Namibia', 'Nauru', 'Nepal', 'Nicaragua', 'Níger', 'Nigeria', 'Noruega', 'Nueva Zelanda', 'Omán', 'Países Bajos', 'Pakistán', 'Palaos', 'Palestina', 'Panamá', 'Papúa Nueva Guinea', 'Paraguay', 'Perú', 'Polonia', 'Portugal', 'Reino Unido', 'República Centroafricana', 'República del Congo', 'República Democrática del Congo', 'República Dominicana', 'Ruanda', 'Rumanía', 'Rusia', 'Samoa', 'San Cristóbal y Nieves', 'San Marino', 'San Vicente y las Granadinas', 'Santa Lucía', 'Santo Tomé y Príncipe', 'Senegal', 'Serbia', 'Seychelles', 'Sierra Leona', 'Singapur', 'Siria', 'Somalia', 'Sri Lanka', 'Sudáfrica', 'Sudán', 'Sudán del Sur', 'Suecia', 'Suiza', 'Surinam', 'Tailandia', 'Tanzania', 'Tayikistán', 'Timor Oriental', 'Togo', 'Tonga', 'Trinidad y Tobago', 'Túnez', 'Turkmenistán', 'Turquía', 'Tuvalu', 'Ucrania', 'Uganda', 'Uruguay', 'Uzbekistán', 'Vanuatu', 'Vaticano', 'Venezuela', 'Vietnam', 'Yemen', 'Yibuti', 'Zambia', 'Zimbabue',
-].sort((a, b) => a.localeCompare(b, 'es'));
-
-function CountrySelect({ value, onChange, placeholder = 'Buscar país...' }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const filtered = (query.trim()
-    ? COUNTRY_NAMES_ES.filter((c) => c.toLowerCase().includes(query.trim().toLowerCase()))
-    : COUNTRY_NAMES_ES
-  ).slice(0, 100);
-  const displayValue = open ? query : value;
-  return (
-    <div style={{ position: 'relative', width: '100%' }}>
-      <input
-        type="text"
-        value={displayValue}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
-        placeholder={placeholder}
-        style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
-      />
-      {open && (
-        <ul
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: '100%',
-            margin: 0,
-            padding: 0,
-            listStyle: 'none',
-            maxHeight: 220,
-            overflowY: 'auto',
-            background: '#fff',
-            border: '1px solid #e5e7eb',
-            borderRadius: 8,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            zIndex: 50,
-          }}
-        >
-          {filtered.length === 0 ? (
-            <li style={{ padding: 12, color: '#6b7280' }}>No hay coincidencias</li>
-          ) : (
-            filtered.map((c) => (
-              <li
-                key={c}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  onChange(c);
-                  setQuery('');
-                  setOpen(false);
-                }}
-                style={{
-                  padding: '10px 12px',
-                  cursor: 'pointer',
-                  borderBottom: '1px solid #f3f4f6',
-                }}
-              >
-                {c}
-              </li>
-            ))
-          )}
-        </ul>
-      )}
-    </div>
-  );
-}
+  'Formato Actualización',
+  'Autorización Actualización',
+  'Datos Generales e Identificación',
+  'Domicilio Actual Actualización',
+  'Situación Laboral Actual',
+  'Ingresos y Situación Económica',
+  'Escolaridad y Capacitación',
+  'Bienestar y Antecedentes Legales',
+  'Carta Penal Observaciones y Declaración',
+] as const;
+const SECTION_COUNT = SECTIONS.length;
 
 export default function EstudioPage() {
   const [searchParams] = useSearchParams();
@@ -158,6 +87,22 @@ export default function EstudioPage() {
   const [privacySubmitting, setPrivacySubmitting] = useState(false);
 
   const isInvitationCompleted = invitation?.status === 'completed';
+
+  // Success screen: user was scrolled down on long form — jump to top so header + message are visible
+  useEffect(() => {
+    if (!completed && !isInvitationCompleted) return;
+    const goTop = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    goTop();
+    const t = requestAnimationFrame(() => {
+      goTop();
+      setTimeout(goTop, 0);
+    });
+    return () => cancelAnimationFrame(t);
+  }, [completed, isInvitationCompleted]);
 
   // Load invitation by code
   useEffect(() => {
@@ -246,6 +191,29 @@ export default function EstudioPage() {
       .catch(() => {});
   }, [privacyAccepted, invitation?.id, codigo]);
 
+  useEffect(() => {
+    if (!privacyAccepted || !invitation) return;
+    const day = new Date().toISOString().slice(0, 10);
+    const s1 = 'Formato Actualización';
+    const s2 = 'Autorización Actualización';
+    setFormData((prev) => {
+      const next = { ...prev };
+      if (!next[s1]) next[s1] = {};
+      if (!next[s2]) next[s2] = {};
+      const c1 = { ...next[s1] };
+      const c2 = { ...next[s2] };
+      if (!c1.empresa?.trim() && invitation.study?.company_name) c1.empresa = invitation.study.company_name;
+      if (!c1.nombre_colaborador?.trim() && invitation.candidate_name) c1.nombre_colaborador = invitation.candidate_name;
+      if (!c1.fecha_actualizacion?.trim()) c1.fecha_actualizacion = day;
+      if (!c2.auth_fecha?.trim()) c2.auth_fecha = day;
+      if (!c2.auth_nombre_declaracion?.trim() && invitation.candidate_name) c2.auth_nombre_declaracion = invitation.candidate_name;
+      if (!c2.auth_nombre_firma?.trim() && invitation.candidate_name) c2.auth_nombre_firma = invitation.candidate_name;
+      next[s1] = c1;
+      next[s2] = c2;
+      return next;
+    });
+  }, [privacyAccepted, invitation?.id, invitation?.candidate_name, invitation?.study?.company_name]);
+
   const updateField = useCallback((section: string, key: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -260,54 +228,177 @@ export default function EstudioPage() {
     return formData[section]?.[key] ?? '';
   };
 
-  const getRequiredCount = (): { filled: number; total: number } => {
+  const countSectionProgress = (sec: string): { filled: number; total: number } => {
     let filled = 0;
     let total = 0;
-    const sec = SECTIONS[sectionIndex];
-    if (sec === 'Datos Personales') {
-      const keys = ['nombre_completo', 'curp', 'fecha_nacimiento', 'lugar_nacimiento', 'nacionalidad', 'estado_civil'];
-      keys.forEach((k) => { total++; if ((getField(sec, k) ?? '').trim()) filled++; });
-    } else if (sec === 'Datos de Contacto') {
-      ['correo_personal', 'telefono_movil'].forEach((k) => { total++; if ((getField(sec, k) ?? '').trim()) filled++; });
-    } else if (sec === 'Domicilio Actual') {
-      ['domicilio_calle', 'domicilio_colonia', 'domicilio_ciudad', 'domicilio_estado', 'domicilio_cp', 'tiempo_residencia', 'tipo_vivienda'].forEach((k) => { total++; if ((getField(sec, k) ?? '').trim()) filled++; });
-    } else if (sec === 'Historial Académico') {
-      const acad = formData[sec] || {};
-      const n = Math.max(1, Math.ceil(Object.keys(acad).filter((k) => k.startsWith('0_')).length / 6) || 1);
-      for (let i = 0; i < n; i++) {
-        total += 3;
-        if ((acad[`${i}_nivel_educativo`] ?? '').trim()) filled++;
-        if ((acad[`${i}_institucion`] ?? '').trim()) filled++;
-        if ((acad[`${i}_fecha_inicio_edu`] ?? '').trim()) filled++;
+    const req = (k: string) => {
+      total++;
+      if ((getField(sec, k) ?? '').trim()) filled++;
+    };
+    const reqYn = (k: string) => {
+      total++;
+      const v = getField(sec, k);
+      if (v === 'si' || v === 'no') filled++;
+    };
+    if (sec === 'Formato Actualización') {
+      ['empresa', 'nombre_colaborador', 'puesto_actual', 'fecha_ingreso_empresa', 'fecha_actualizacion'].forEach(req);
+    } else if (sec === 'Autorización Actualización') {
+      ['auth_nombre_declaracion', 'auth_nombre_firma', 'auth_firma_texto', 'auth_fecha'].forEach(req);
+    } else if (sec === 'Datos Generales e Identificación') {
+      reqYn('dg_estado_civil_cambio');
+      if (getField(sec, 'dg_estado_civil_cambio') === 'si') req('dg_estado_civil_actual');
+      reqYn('dg_tel_cambio');
+      if (getField(sec, 'dg_tel_cambio') === 'si') req('dg_tel_actual');
+      reqYn('dg_correo_cambio');
+      if (getField(sec, 'dg_correo_cambio') === 'si') req('dg_correo_actual');
+      reqYn('dg_dependientes');
+      if (getField(sec, 'dg_dependientes') === 'si') {
+        req('dg_num_dependientes');
+        total++;
+        const anyDep =
+          getField(sec, 'dg_dep_hijos') === '1' ||
+          getField(sec, 'dg_dep_conyuge') === '1' ||
+          getField(sec, 'dg_dep_padres') === '1' ||
+          getField(sec, 'dg_dep_otros') === '1';
+        if (anyDep) filled++;
+        if (getField(sec, 'dg_dep_otros') === '1') req('dg_dep_otros_texto');
       }
-    } else if (sec === 'Historial Laboral') {
-      const lab = formData[sec] || {};
-      const keys = Object.keys(lab).filter((k) => k.endsWith('_empresa_nombre'));
-      const n = Math.max(1, keys.length);
-      for (let i = 0; i < n; i++) {
-        total += 3;
-        if ((lab[`${i}_empresa_nombre`] ?? '').trim()) filled++;
-        if ((lab[`${i}_puesto`] ?? '').trim()) filled++;
-        if ((lab[`${i}_fecha_inicio_lab`] ?? '').trim()) filled++;
-        const actual = (lab[`${i}_empleo_actual`] ?? '') === '1' || (lab[`${i}_empleo_actual`] ?? '') === 'true';
-        if (!actual) { total++; if ((lab[`${i}_nombre_supervisor`] ?? '').trim()) filled++; }
+      reqYn('dg_id_cambio');
+      total++;
+      const idOk =
+        getField(sec, 'dg_id_ine') === '1' ||
+        getField(sec, 'dg_id_pasaporte') === '1' ||
+        (getField(sec, 'dg_id_otra') === '1' && (getField(sec, 'dg_id_otra_texto') ?? '').trim());
+      if (idOk) filled++;
+      if (getField(sec, 'dg_id_otra') === '1') req('dg_id_otra_texto');
+      req('dg_id_numero');
+      total++;
+      if ((getField(sec, 'identificacion_oficial_pdf') ?? '').trim()) filled++;
+    } else if (sec === 'Domicilio Actual Actualización') {
+      reqYn('dom_mismo_estudio');
+      if (getField(sec, 'dom_mismo_estudio') === 'no') {
+        req('dom_completo');
+        req('dom_fecha_cambio');
       }
-    } else if (sec === 'Situación Económica') {
-      ['ingreso_mensual', 'egresos_mensuales'].forEach((k) => { total++; if ((getField(sec, k) ?? '').trim()) filled++; });
-    } else if (sec === 'Referencias Familiares') {
-      const ref = formData[sec] || {};
-      const n = Math.max(2, Math.ceil(Object.keys(ref).filter((k) => k.endsWith('_ref_nombre')).length) || 2);
-      for (let i = 0; i < Math.min(n, 5); i++) {
-        total += 3;
-        if ((ref[`${i}_ref_nombre`] ?? '').trim()) filled++;
-        if ((ref[`${i}_ref_parentesco`] ?? '').trim()) filled++;
-        if ((ref[`${i}_ref_telefono`] ?? '').trim()) filled++;
+      total++;
+      const zonaOk =
+        ['residencial', 'popular', 'campestre', 'industrial', 'turistica'].includes(getField(sec, 'dom_zona')) ||
+        (getField(sec, 'dom_zona') === 'otro' && (getField(sec, 'dom_zona_otro') ?? '').trim());
+      if (zonaOk) filled++;
+      total++;
+      if (['casa', 'depto', 'condominio', 'infonavit'].includes(getField(sec, 'dom_tipo_vivienda'))) filled++;
+      total++;
+      const colOk =
+        ['privado', 'abierto', 'seguridad'].includes(getField(sec, 'dom_colonia')) ||
+        (getField(sec, 'dom_colonia') === 'otro' && (getField(sec, 'dom_colonia_otro') ?? '').trim());
+      if (colOk) filled++;
+      total++;
+      const actOk =
+        ['industrial', 'comercial', 'ejidal'].includes(getField(sec, 'dom_actividad')) ||
+        (getField(sec, 'dom_actividad') === 'otro' && (getField(sec, 'dom_actividad_otro') ?? '').trim());
+      if (actOk) filled++;
+      total++;
+      const anySrv =
+        getField(sec, 'dom_srv_agua') === '1' ||
+        getField(sec, 'dom_srv_luz') === '1' ||
+        getField(sec, 'dom_srv_alumbrado') === '1' ||
+        getField(sec, 'dom_srv_drenaje') === '1' ||
+        getField(sec, 'dom_srv_pavimento') === '1' ||
+        getField(sec, 'dom_srv_transporte') === '1' ||
+        getField(sec, 'dom_srv_verdes') === '1' ||
+        getField(sec, 'dom_srv_sin_verdes') === '1';
+      if (anySrv) filled++;
+      total++;
+      if (['publico', 'propio', 'empresa', 'pie', 'otro'].includes(getField(sec, 'dom_transporte'))) filled++;
+      total++;
+      if (['menos30', '30_60', 'mas60'].includes(getField(sec, 'dom_tiempo_traslado'))) filled++;
+      reqYn('dom_cambio_relevante');
+      if (getField(sec, 'dom_cambio_relevante') === 'si') req('dom_cambio_relevante_texto');
+      total++;
+      if (getField(sec, 'dom_visita') === 'autorizo' || getField(sec, 'dom_visita') === 'no_autorizo') filled++;
+      if (getField(sec, 'dom_visita') === 'autorizo') {
+        req('dom_visita_op1_fecha');
+        req('dom_visita_op1_hora');
+        req('dom_visita_op2_fecha');
+        req('dom_visita_op2_hora');
       }
-    } else if (sec === 'Documentos') {
-      ['ine_identificacion', 'curp_documento', 'comprobante_domicilio'].forEach((k) => { total++; if ((getField(sec, k) ?? '').trim()) filled++; });
+    } else if (sec === 'Situación Laboral Actual') {
+      req('sl_puesto');
+      req('sl_area');
+      req('sl_antiguedad');
+      reqYn('sl_cambios');
+      if (getField(sec, 'sl_cambios') === 'si') req('sl_cambios_texto');
+    } else if (sec === 'Ingresos y Situación Económica') {
+      total++;
+      if (['menos10k', '10_20', '20_30', '30_50', 'mas50'].includes(getField(sec, 'ie_rango'))) filled++;
+      total++;
+      const compNinguno = getField(sec, 'ie_comp_ninguno') === '1';
+      const anyComp =
+        compNinguno ||
+        getField(sec, 'ie_comp_renta') === '1' ||
+        getField(sec, 'ie_comp_hipo') === '1' ||
+        getField(sec, 'ie_comp_auto') === '1' ||
+        getField(sec, 'ie_comp_tc') === '1' ||
+        getField(sec, 'ie_comp_prestamo') === '1' ||
+        (getField(sec, 'ie_comp_otros_texto') ?? '').trim();
+      if (anyComp) filled++;
+      reqYn('ie_gastos_cambio');
+      if (getField(sec, 'ie_gastos_cambio') === 'si') req('ie_gastos_texto');
+      reqYn('ie_credito_problema');
+      if (getField(sec, 'ie_credito_problema') === 'si') {
+        total++;
+        const credDet =
+          getField(sec, 'ie_cred_atrasos') === '1' ||
+          getField(sec, 'ie_cred_reestructura') === '1' ||
+          getField(sec, 'ie_cred_liquidado') === '1' ||
+          (getField(sec, 'ie_cred_otro') === '1' && (getField(sec, 'ie_cred_otro_texto') ?? '').trim());
+        if (credDet) filled++;
+        if (getField(sec, 'ie_cred_otro') === '1') req('ie_cred_otro_texto');
+      }
+    } else if (sec === 'Escolaridad y Capacitación') {
+      reqYn('esc_nuevos');
+      if (getField(sec, 'esc_nuevos') === 'si') {
+        total++;
+        if (['si', 'no', 'tramite'].includes(getField(sec, 'esc_doc'))) filled++;
+        const n = Math.max(1, Math.min(20, parseInt(getField(sec, 'esc_num_rows') || '1', 10) || 1));
+        total++;
+        let okBlock = false;
+        for (let i = 0; i < n; i++) {
+          const curso = (getField(sec, `esc_${i}_curso`) ?? '').trim();
+          const inst = (getField(sec, `esc_${i}_inst`) ?? '').trim();
+          const anio = (getField(sec, `esc_${i}_anio`) ?? '').trim();
+          const pdf = (getField(sec, `esc_${i}_pdf`) ?? '').trim();
+          if (curso && inst && anio && pdf) okBlock = true;
+        }
+        if (okBlock) filled++;
+      }
+    } else if (sec === 'Bienestar y Antecedentes Legales') {
+      total++;
+      if (['no', 'ocasional', 'social'].includes(getField(sec, 'bw_alcohol'))) filled++;
+      total++;
+      if (['no', 'si'].includes(getField(sec, 'bw_tabaco'))) filled++;
+      reqYn('bw_condicion');
+      if (getField(sec, 'bw_condicion') === 'si') req('bw_condicion_texto');
+      reqYn('al_legal');
+      if (getField(sec, 'al_legal') === 'si') req('al_legal_texto');
+    } else if (sec === 'Carta Penal Observaciones y Declaración') {
+      total++;
+      if (getField(sec, 'cap_tramite') === 'autorizo' || getField(sec, 'cap_tramite') === 'no_autorizo') filled++;
+      if (getField(sec, 'cap_tramite') === 'autorizo') {
+        req('cap_doc_acta');
+        req('cap_doc_ine');
+        req('cap_doc_foto');
+        req('cap_doc_domicilio');
+      }
+      req('df_nombre');
+      req('df_firma');
+      req('df_fecha');
     }
     return { filled, total };
   };
+
+  const getRequiredCount = (): { filled: number; total: number } =>
+    countSectionProgress(SECTIONS[sectionIndex]);
 
   const currentSectionRequiredFilled = (): boolean => {
     const { filled, total } = getRequiredCount();
@@ -318,47 +409,9 @@ export default function EstudioPage() {
     let filled = 0;
     let total = 0;
     SECTIONS.forEach((sec) => {
-      if (sec === 'Datos Personales') {
-        ['nombre_completo', 'curp', 'fecha_nacimiento', 'lugar_nacimiento', 'nacionalidad', 'estado_civil'].forEach((k) => { total++; if ((getField(sec, k) ?? '').trim()) filled++; });
-      } else if (sec === 'Datos de Contacto') {
-        ['correo_personal', 'telefono_movil'].forEach((k) => { total++; if ((getField(sec, k) ?? '').trim()) filled++; });
-      } else if (sec === 'Domicilio Actual') {
-        ['domicilio_calle', 'domicilio_colonia', 'domicilio_ciudad', 'domicilio_estado', 'domicilio_cp', 'tiempo_residencia', 'tipo_vivienda'].forEach((k) => { total++; if ((getField(sec, k) ?? '').trim()) filled++; });
-      } else if (sec === 'Historial Académico') {
-        const acad = formData[sec] || {};
-        const n = Math.max(1, Math.ceil(Object.keys(acad).filter((k) => k.startsWith('0_')).length / 6) || 1);
-        for (let i = 0; i < n; i++) {
-          total += 3;
-          if ((acad[`${i}_nivel_educativo`] ?? '').trim()) filled++;
-          if ((acad[`${i}_institucion`] ?? '').trim()) filled++;
-          if ((acad[`${i}_fecha_inicio_edu`] ?? '').trim()) filled++;
-        }
-      } else if (sec === 'Historial Laboral') {
-        const lab = formData[sec] || {};
-        const keys = Object.keys(lab).filter((k) => k.endsWith('_empresa_nombre'));
-        const n = Math.max(1, keys.length);
-        for (let i = 0; i < n; i++) {
-          total += 3;
-          if ((lab[`${i}_empresa_nombre`] ?? '').trim()) filled++;
-          if ((lab[`${i}_puesto`] ?? '').trim()) filled++;
-          if ((lab[`${i}_fecha_inicio_lab`] ?? '').trim()) filled++;
-          const actual = (lab[`${i}_empleo_actual`] ?? '') === '1' || (lab[`${i}_empleo_actual`] ?? '') === 'true';
-          if (!actual) { total++; if ((lab[`${i}_nombre_supervisor`] ?? '').trim()) filled++; }
-        }
-      } else if (sec === 'Situación Económica') {
-        ['ingreso_mensual', 'egresos_mensuales'].forEach((k) => { total++; if ((getField(sec, k) ?? '').trim()) filled++; });
-      } else if (sec === 'Referencias Familiares') {
-        const ref = formData[sec] || {};
-        const n = Math.max(2, Math.ceil(Object.keys(ref).filter((k) => k.endsWith('_ref_nombre')).length) || 2);
-        for (let i = 0; i < Math.min(n, 5); i++) {
-          total += 3;
-          if ((ref[`${i}_ref_nombre`] ?? '').trim()) filled++;
-          if ((ref[`${i}_ref_parentesco`] ?? '').trim()) filled++;
-          if ((ref[`${i}_ref_telefono`] ?? '').trim()) filled++;
-        }
-      } else if (sec === 'Documentos') {
-        ['ine_identificacion', 'curp_documento', 'comprobante_domicilio'].forEach((k) => { total++; if ((getField(sec, k) ?? '').trim()) filled++; });
-      }
+      const c = countSectionProgress(sec);
+      filled += c.filled;
+      total += c.total;
     });
     return total === 0 ? 0 : Math.round((filled / total) * 100);
   };
@@ -494,12 +547,35 @@ export default function EstudioPage() {
       });
   };
 
-  const uploadOnly = (file: File): Promise<string> => {
-    const fd = new FormData();
-    fd.append('file', file);
-    return fetch(`${API}/upload.php`, { method: 'POST', body: fd })
-      .then((r) => r.json())
-      .then((data) => data?.url ?? '');
+  const uploadPdfIdentificacion = (file: File): Promise<string> => {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      return Promise.reject(new Error('Solo se permite archivo PDF.'));
+    }
+    if (file.size > 5 * 1024 * 1024) return Promise.reject(new Error('El PDF no debe superar 5 MB.'));
+    return uploadFile(file, 'identificacion_oficial_actualizacion');
+  };
+
+  const uploadPdfEscolaridad = (file: File, rowIndex: number): Promise<string> => {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      return Promise.reject(new Error('Solo se permite archivo PDF.'));
+    }
+    if (file.size > 5 * 1024 * 1024) return Promise.reject(new Error('El PDF no debe superar 5 MB.'));
+    return uploadFile(file, `escolaridad_actualizacion_${rowIndex}`);
+  };
+
+  /** Carta penal: acta/INE/domicilio = PDF; foto = PDF o JPG/PNG (foto suele venir del teléfono). Máx. 5 MB. */
+  const uploadCapFile = (file: File, kind: 'acta' | 'ine' | 'foto' | 'domicilio'): Promise<string> => {
+    const max = 5 * 1024 * 1024;
+    if (file.size > max) return Promise.reject(new Error('El archivo no debe superar 5 MB.'));
+    const pdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const image = /^image\/(jpeg|jpg|png|webp)$/i.test(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name);
+    if (kind === 'foto') {
+      if (!pdf && !image) return Promise.reject(new Error('Fotografía: suba JPG, PNG o PDF.'));
+    } else {
+      if (!pdf) return Promise.reject(new Error('Este documento debe ser PDF (escaneo legible).'));
+    }
+    const types = { acta: 'carta_penal_acta_nacimiento', ine: 'carta_penal_ine', foto: 'carta_penal_fotografia', domicilio: 'carta_penal_comprobante_domicilio' };
+    return uploadFile(file, types[kind]);
   };
 
   if (loading) {
@@ -603,7 +679,7 @@ export default function EstudioPage() {
           <div style={{ position: 'sticky', top: 72, zIndex: 10, background: '#fff', padding: '12px 0', borderBottom: '1px solid #e5e7eb', marginBottom: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
               <span style={{ fontWeight: 600 }}>{sec}</span>
-              <span style={{ fontSize: 14, color: '#6b7280' }}>Paso {sectionIndex + 1} de 8</span>
+              <span style={{ fontSize: 14, color: '#6b7280' }}>Paso {sectionIndex + 1} de {SECTION_COUNT}</span>
             </div>
             <div style={{ height: 6, background: '#e5e7eb', borderRadius: 3, marginTop: 8 }}>
               <div style={{ height: '100%', width: `${pct}%`, background: '#16a34a', borderRadius: 3 }} />
@@ -612,60 +688,89 @@ export default function EstudioPage() {
           </div>
 
           {/* Section content */}
-          {sec === 'Datos Personales' && (
-            <div style={{ display: 'grid', gap: 16 }}>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Nombre completo *</label><input type="text" value={getField(sec, 'nombre_completo')} onChange={(e) => updateField(sec, 'nombre_completo', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>CURP *</label><input type="text" maxLength={18} value={getField(sec, 'curp')} onChange={(e) => updateField(sec, 'curp', e.target.value.toUpperCase())} style={{ width: '100%', padding: 8, boxSizing: 'border-box', textTransform: 'uppercase' }} /></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Fecha de nacimiento *</label><input type="date" value={getField(sec, 'fecha_nacimiento')} onChange={(e) => updateField(sec, 'fecha_nacimiento', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Lugar de nacimiento *</label><input type="text" value={getField(sec, 'lugar_nacimiento')} onChange={(e) => updateField(sec, 'lugar_nacimiento', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Nacionalidad *</label><CountrySelect value={getField(sec, 'nacionalidad') || ''} onChange={(v) => updateField(sec, 'nacionalidad', v)} placeholder="Buscar país..." /></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Estado civil *</label><select value={getField(sec, 'estado_civil')} onChange={(e) => updateField(sec, 'estado_civil', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}><option value="">Selecciona</option>{['Soltero/a', 'Casado/a', 'Unión libre', 'Divorciado/a', 'Viudo/a'].map((o) => (<option key={o} value={o}>{o}</option>))}</select></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Número de dependientes económicos</label><input type="number" min={0} value={getField(sec, 'dependientes_economicos')} onChange={(e) => updateField(sec, 'dependientes_economicos', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
+          {sec === 'Formato Actualización' && (
+            <div style={{ display: 'grid', gap: 18 }}>
+              <h2 style={{ margin: '0 0 8px', fontSize: 18, color: '#111' }}>FORMATO DE ACTUALIZACIÓN DE ESTUDIO SOCIOECONÓMICO</h2>
+              <p style={{ margin: 0, fontSize: 14, color: '#64748b', fontWeight: 600 }}>(Personal Activo)</p>
+              <div><label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Empresa *</label><input type="text" value={getField(sec, 'empresa')} onChange={(e) => updateField(sec, 'empresa', e.target.value)} placeholder="Nombre de la empresa" style={{ width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' }} /></div>
+              <div><label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Nombre del colaborador *</label><input type="text" value={getField(sec, 'nombre_colaborador')} onChange={(e) => updateField(sec, 'nombre_colaborador', e.target.value)} style={{ width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' }} /></div>
+              <div><label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Puesto actual *</label><input type="text" value={getField(sec, 'puesto_actual')} onChange={(e) => updateField(sec, 'puesto_actual', e.target.value)} style={{ width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' }} /></div>
+              <div><label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Fecha de ingreso a la empresa *</label><input type="date" value={getField(sec, 'fecha_ingreso_empresa')} onChange={(e) => updateField(sec, 'fecha_ingreso_empresa', e.target.value)} style={{ width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' }} /></div>
+              <div><label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Fecha de actualización *</label><input type="date" value={getField(sec, 'fecha_actualizacion')} onChange={(e) => updateField(sec, 'fecha_actualizacion', e.target.value)} style={{ width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' }} /></div>
             </div>
           )}
 
-          {sec === 'Datos de Contacto' && (
-            <div style={{ display: 'grid', gap: 16 }}>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Correo electrónico personal *</label><input type="email" value={getField(sec, 'correo_personal')} onChange={(e) => updateField(sec, 'correo_personal', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Teléfono móvil *</label><input type="tel" value={getField(sec, 'telefono_movil')} onChange={(e) => updateField(sec, 'telefono_movil', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Teléfono alterno</label><input type="tel" value={getField(sec, 'telefono_alterno')} onChange={(e) => updateField(sec, 'telefono_alterno', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
+          {sec === 'Autorización Actualización' && (
+            <div style={{ display: 'grid', gap: 20 }}>
+              <h2 style={{ margin: 0, fontSize: 17, color: '#111', lineHeight: 1.35 }}>AUTORIZACIÓN PARA ACTUALIZACIÓN DE INFORMACIÓN SOCIOECONÓMICA</h2>
+              <p style={{ margin: 0, fontSize: 15, lineHeight: 1.65, color: '#334155' }}>
+                Yo,{' '}
+                <input
+                  type="text"
+                  value={getField(sec, 'auth_nombre_declaracion')}
+                  onChange={(e) => updateField(sec, 'auth_nombre_declaracion', e.target.value)}
+                  placeholder="Escriba su nombre completo"
+                  style={{ minWidth: 220, maxWidth: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 15 }}
+                />
+                , manifiesto que he sido informado(a) de que la información que proporcionaré será utilizada exclusivamente para la actualización de mi expediente laboral, como parte de los procesos internos de la empresa en la que actualmente laboro.
+              </p>
+              <p style={{ margin: 0, fontSize: 15, lineHeight: 1.65, color: '#334155' }}>
+                Autorizo a <strong>HR Capital Working, S.A. de C.V.</strong>, para recopilar, revisar y actualizar mis datos personales, laborales, económicos y documentales, únicamente con el propósito de mantener vigente mi estudio socioeconómico previamente realizado.
+              </p>
+              <p style={{ margin: 0, fontSize: 15, lineHeight: 1.65, color: '#334155' }}>
+                Entiendo que esta actualización no constituye un nuevo estudio de ingreso, no implica investigación retroactiva, no sustituye documentos oficiales emitidos por autoridad competente y no representa dictamen legal ni certificación.
+              </p>
+              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 20, display: 'grid', gap: 14 }}>
+                <div><label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Nombre del colaborador *</label><input type="text" value={getField(sec, 'auth_nombre_firma')} onChange={(e) => updateField(sec, 'auth_nombre_firma', e.target.value)} style={{ width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' }} /></div>
+                <div><label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Firma (escriba su nombre completo a modo de firma) *</label><input type="text" value={getField(sec, 'auth_firma_texto')} onChange={(e) => updateField(sec, 'auth_firma_texto', e.target.value)} placeholder="Firma manuscrita digital (nombre completo)" style={{ width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' }} /></div>
+                <div><label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Fecha *</label><input type="date" value={getField(sec, 'auth_fecha')} onChange={(e) => updateField(sec, 'auth_fecha', e.target.value)} style={{ width: '100%', maxWidth: 280, padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' }} /></div>
+              </div>
             </div>
           )}
 
-          {sec === 'Domicilio Actual' && (
-            <div style={{ display: 'grid', gap: 16 }}>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Calle y número *</label><input type="text" value={getField(sec, 'domicilio_calle')} onChange={(e) => updateField(sec, 'domicilio_calle', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Colonia *</label><input type="text" value={getField(sec, 'domicilio_colonia')} onChange={(e) => updateField(sec, 'domicilio_colonia', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Ciudad *</label><input type="text" value={getField(sec, 'domicilio_ciudad')} onChange={(e) => updateField(sec, 'domicilio_ciudad', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Estado *</label><input type="text" value={getField(sec, 'domicilio_estado')} onChange={(e) => updateField(sec, 'domicilio_estado', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Código postal *</label><input type="text" maxLength={5} value={getField(sec, 'domicilio_cp')} onChange={(e) => updateField(sec, 'domicilio_cp', e.target.value.replace(/\D/g, ''))} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Tiempo viviendo en este domicilio (ej. 2 años) *</label><input type="text" value={getField(sec, 'tiempo_residencia')} onChange={(e) => updateField(sec, 'tiempo_residencia', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Tipo de vivienda *</label><select value={getField(sec, 'tipo_vivienda')} onChange={(e) => updateField(sec, 'tipo_vivienda', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}><option value="">Selecciona</option>{['Propia', 'Rentada', 'Familiar', 'Otro'].map((o) => (<option key={o} value={o}>{o}</option>))}</select></div>
-              {getField(sec, 'tipo_vivienda') === 'Rentada' && <div><label style={{ display: 'block', marginBottom: 4 }}>Renta mensual (si aplica)</label><input type="number" value={getField(sec, 'renta_mensual')} onChange={(e) => updateField(sec, 'renta_mensual', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>}
-            </div>
+          {sec === 'Datos Generales e Identificación' && (
+            <SectionDatosGeneralesIdentificacion sec={sec} getField={getField} updateField={updateField} uploadPdfIdentificacion={uploadPdfIdentificacion} />
           )}
 
-          {sec === 'Historial Académico' && <SectionAcademico formData={formData} section={sec} updateField={updateField} getField={getField} uploadOnly={uploadOnly} />}
-          {sec === 'Historial Laboral' && <SectionLaboral formData={formData} section={sec} updateField={updateField} getField={getField} />}
-
-          {sec === 'Situación Económica' && (
-            <div style={{ display: 'grid', gap: 16 }}>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Ingreso mensual aproximado *</label><input type="number" value={getField(sec, 'ingreso_mensual')} onChange={(e) => updateField(sec, 'ingreso_mensual', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Egresos mensuales aproximados *</label><input type="number" value={getField(sec, 'egresos_mensuales')} onChange={(e) => updateField(sec, 'egresos_mensuales', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>¿Tienes ahorros?</label><select value={getField(sec, 'ahorros')} onChange={(e) => updateField(sec, 'ahorros', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}><option value="">Selecciona</option>{['Sí', 'No', 'Prefiero no decir'].map((o) => (<option key={o} value={o}>{o}</option>))}</select></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>¿Tienes deudas activas?</label><select value={getField(sec, 'deudas')} onChange={(e) => updateField(sec, 'deudas', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}><option value="">Selecciona</option>{['Sí', 'No', 'Prefiero no decir'].map((o) => (<option key={o} value={o}>{o}</option>))}</select></div>
-              {getField(sec, 'deudas') === 'Sí' && <div><label style={{ display: 'block', marginBottom: 4 }}>Monto aproximado de deudas</label><input type="number" value={getField(sec, 'monto_deudas')} onChange={(e) => updateField(sec, 'monto_deudas', e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>}
-            </div>
+          {sec === 'Domicilio Actual Actualización' && (
+            <SectionDomicilioActualActualizacion sec={sec} getField={getField} updateField={updateField} />
           )}
 
-          {sec === 'Referencias Familiares' && <SectionReferencias formData={formData} section={sec} updateField={updateField} getField={getField} />}
+          {sec === 'Situación Laboral Actual' && (
+            <SectionSituacionLaboral sec={sec} getField={getField} updateField={updateField} />
+          )}
 
-          {sec === 'Documentos' && <SectionDocumentos getField={getField} updateField={updateField} section={sec} codigo={codigo} uploadFile={uploadFile} />}
+          {sec === 'Ingresos y Situación Económica' && (
+            <SectionIngresosEconomicos sec={sec} getField={getField} updateField={updateField} />
+          )}
+
+          {sec === 'Escolaridad y Capacitación' && (
+            <SectionEscolaridadCapacitacion
+              sec={sec}
+              getField={getField}
+              updateField={updateField}
+              uploadPdfEscolaridad={uploadPdfEscolaridad}
+            />
+          )}
+
+          {sec === 'Bienestar y Antecedentes Legales' && (
+            <SectionBienestarAntecedentes sec={sec} getField={getField} updateField={updateField} />
+          )}
+
+          {sec === 'Carta Penal Observaciones y Declaración' && (
+            <SectionCartaObsDeclaracion
+              sec={sec}
+              getField={getField}
+              updateField={updateField}
+              uploadCapFile={uploadCapFile}
+              defaultNombre={invitation?.candidate_name ?? ''}
+            />
+          )}
 
           {/* Bottom nav */}
           <div style={{ position: 'sticky', bottom: 0, background: '#fff', padding: '16px 0', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <div>
-              {sectionIndex > 0 ? <button type="button" onClick={() => setSectionIndex((i) => i - 1)} style={{ padding: '8px 16px', background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer' }}>← Anterior</button> : null}
+              {sectionIndex > 0 ? <button type="button" onClick={() => setSectionIndex((i) => i - 1)} style={{ padding: '8px 16px', background: '#e2e8f0', border: '2px solid #64748b', color: '#0f172a', fontWeight: 600, borderRadius: 6, cursor: 'pointer' }}>← Anterior</button> : null}
             </div>
             <button type="button" onClick={handleSaveDraft} disabled={saving} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline' }}>{savedFeedback ? 'Guardado ✓' : 'Guardar y continuar después'}</button>
             <div>
@@ -685,7 +790,7 @@ export default function EstudioPage() {
             <h3 style={{ margin: '0 0 12px' }}>¿Listo para enviar?</h3>
             <p style={{ margin: 0, color: '#6b7280' }}>Una vez que envíes tu información no podrás modificarla. Asegúrate de que todo esté correcto.</p>
             <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-              <button onClick={() => setShowFinalConfirm(false)} style={{ padding: '8px 16px', background: '#f3f4f6', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Revisar información</button>
+              <button onClick={() => setShowFinalConfirm(false)} style={{ padding: '8px 16px', background: '#e2e8f0', border: '2px solid #64748b', color: '#0f172a', fontWeight: 600, borderRadius: 6, cursor: 'pointer' }}>Revisar información</button>
               <button onClick={handleFinalSubmit} disabled={submitting} style={{ padding: '8px 16px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Confirmar envío</button>
             </div>
           </div>
@@ -697,173 +802,920 @@ export default function EstudioPage() {
   );
 }
 
-function SectionAcademico({ formData, section, updateField, getField, uploadOnly }: { formData: FormDataBySection; section: string; updateField: (s: string, k: string, v: string) => void; getField: (s: string, k: string) => string; uploadOnly: (file: File) => Promise<string> }) {
-  const acad = formData[section] || {};
-  const n = Math.max(1, Math.ceil(Object.keys(acad).filter((k) => /^\d+_nivel_educativo/.test(k)).length) || 1);
-  const [count, setCount] = useState(n);
-  const [uploadingCert, setUploadingCert] = useState<number | null>(null);
-  const niveles = ['Primaria', 'Secundaria', 'Preparatoria/Bachillerato', 'Técnico', 'Licenciatura', 'Maestría', 'Doctorado', 'Otro'];
-
-  const handleCertUpload = (i: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f || f.size > 5 * 1024 * 1024) return;
-    setUploadingCert(i);
-    uploadOnly(f).then((url) => { updateField(section, `${i}_certificado_upload`, url); setUploadingCert(null); }).catch(() => setUploadingCert(null));
-    e.target.value = '';
-  };
-
+function ChoiceRow({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { key: string; label: string }[];
+}) {
   return (
-    <div style={{ display: 'grid', gap: 24 }}>
-      {Array.from({ length: count }, (_, i) => (
-        <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 16 }}>
-          <h4 style={{ margin: '0 0 12px' }}>Grado {i + 1}</h4>
-          <div style={{ display: 'grid', gap: 12 }}>
-            <div><label style={{ display: 'block', marginBottom: 4 }}>Nivel educativo *</label><select value={getField(section, `${i}_nivel_educativo`)} onChange={(e) => updateField(section, `${i}_nivel_educativo`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}><option value="">Selecciona</option>{niveles.map((o) => (<option key={o} value={o}>{o}</option>))}</select></div>
-            <div><label style={{ display: 'block', marginBottom: 4 }}>Institución educativa *</label><input type="text" value={getField(section, `${i}_institucion`)} onChange={(e) => updateField(section, `${i}_institucion`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}><div><label style={{ display: 'block', marginBottom: 4 }}>Fecha de inicio *</label><input type="date" value={getField(section, `${i}_fecha_inicio_edu`)} onChange={(e) => updateField(section, `${i}_fecha_inicio_edu`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div><div><label style={{ display: 'block', marginBottom: 4 }}>Fecha de término</label><input type="date" value={getField(section, `${i}_fecha_fin_edu`)} onChange={(e) => updateField(section, `${i}_fecha_fin_edu`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div></div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}><input type="checkbox" checked={(getField(section, `${i}_completado`) ?? '') === '1' || (getField(section, `${i}_completado`) ?? '') === 'true'} onChange={(e) => updateField(section, `${i}_completado`, e.target.checked ? '1' : '')} />Completado / Titulado</label>
-            <div><label style={{ display: 'block', marginBottom: 4 }}>Subir constancia o título (.pdf, .jpg, .png, máx 5MB)</label><input type="file" accept=".pdf,.jpg,.png" onChange={(e) => handleCertUpload(i, e)} disabled={uploadingCert !== null} /><span style={{ marginLeft: 8, fontSize: 12 }}>{getField(section, `${i}_certificado_upload`) ? 'Subido' : ''}</span></div>
-          </div>
-        </div>
-      ))}
-      {count < 10 && <button type="button" onClick={() => setCount((c) => c + 1)} style={{ padding: '8px 16px', background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer' }}>Agregar otro grado</button>}
+    <div style={{ marginBottom: 16 }}>
+      <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 14 }}>{label}</p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {options.map((o) => {
+          const on = value === o.key;
+          return (
+            <button
+              key={o.key}
+              type="button"
+              onClick={() => onChange(o.key)}
+              style={{
+                padding: '10px 16px',
+                borderRadius: 8,
+                border: on ? '2px solid #1e3a8a' : '2px solid #64748b',
+                background: on ? '#1e40af' : '#f1f5f9',
+                color: on ? '#ffffff' : '#0f172a',
+                cursor: 'pointer',
+                fontSize: 14,
+                fontWeight: on ? 700 : 600,
+              }}
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-function parseDate(s: string): number {
-  if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return NaN;
-  return new Date(s).getTime();
+function SectionDomicilioActualActualizacion({
+  sec,
+  getField,
+  updateField,
+}: {
+  sec: string;
+  getField: (s: string, k: string) => string;
+  updateField: (s: string, k: string, v: string) => void;
+}) {
+  const srv = (k: string) => getField(sec, k) === '1';
+  const setSrv = (k: string, checked: boolean) => updateField(sec, k, checked ? '1' : '');
+  return (
+    <div style={{ display: 'grid', gap: 20 }}>
+      <h2 style={{ margin: 0, fontSize: 17, color: '#111' }}>2. DOMICILIO ACTUAL</h2>
+
+      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <YnRow
+          label="¿Su domicilio actual es el mismo registrado en su estudio previo?"
+          value={getField(sec, 'dom_mismo_estudio')}
+          onChange={(v) => updateField(sec, 'dom_mismo_estudio', v)}
+        />
+        {getField(sec, 'dom_mismo_estudio') === 'no' && (
+          <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>
+            <div>
+              <label style={{ fontWeight: 600, fontSize: 13 }}>Domicilio actual completo *</label>
+              <textarea
+                value={getField(sec, 'dom_completo')}
+                onChange={(e) => updateField(sec, 'dom_completo', e.target.value)}
+                rows={3}
+                style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div>
+              <label style={{ fontWeight: 600, fontSize: 13 }}>Fecha del cambio de domicilio *</label>
+              <input
+                type="date"
+                value={getField(sec, 'dom_fecha_cambio')}
+                onChange={(e) => updateField(sec, 'dom_fecha_cambio', e.target.value)}
+                style={{ width: '100%', maxWidth: 280, marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <ChoiceRow
+        label="Zona de la vivienda (seleccione la que mejor describa)"
+        value={getField(sec, 'dom_zona')}
+        onChange={(v) => updateField(sec, 'dom_zona', v)}
+        options={[
+          { key: 'residencial', label: 'Residencial' },
+          { key: 'popular', label: 'Popular' },
+          { key: 'campestre', label: 'Campestre' },
+          { key: 'industrial', label: 'Industrial' },
+          { key: 'turistica', label: 'Turística' },
+          { key: 'otro', label: 'Otro' },
+        ]}
+      />
+      {getField(sec, 'dom_zona') === 'otro' && (
+        <input
+          type="text"
+          placeholder="Especifique zona"
+          value={getField(sec, 'dom_zona_otro')}
+          onChange={(e) => updateField(sec, 'dom_zona_otro', e.target.value)}
+          style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }}
+        />
+      )}
+
+      <ChoiceRow
+        label="Tipo de vivienda"
+        value={getField(sec, 'dom_tipo_vivienda')}
+        onChange={(v) => updateField(sec, 'dom_tipo_vivienda', v)}
+        options={[
+          { key: 'casa', label: 'Casa' },
+          { key: 'depto', label: 'Departamento' },
+          { key: 'condominio', label: 'Condominio' },
+          { key: 'infonavit', label: 'Unidad habitacional (Infonavit / Fovissste)' },
+        ]}
+      />
+
+      <ChoiceRow
+        label="Colonia / tipo de fraccionamiento"
+        value={getField(sec, 'dom_colonia')}
+        onChange={(v) => updateField(sec, 'dom_colonia', v)}
+        options={[
+          { key: 'privado', label: 'Privado' },
+          { key: 'abierto', label: 'Abierto' },
+          { key: 'seguridad', label: 'Con sistema de seguridad' },
+          { key: 'otro', label: 'Otro' },
+        ]}
+      />
+      {getField(sec, 'dom_colonia') === 'otro' && (
+        <input
+          type="text"
+          placeholder="Especifique"
+          value={getField(sec, 'dom_colonia_otro')}
+          onChange={(e) => updateField(sec, 'dom_colonia_otro', e.target.value)}
+          style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }}
+        />
+      )}
+
+      <ChoiceRow
+        label="Actividad vecinal predominante"
+        value={getField(sec, 'dom_actividad')}
+        onChange={(v) => updateField(sec, 'dom_actividad', v)}
+        options={[
+          { key: 'industrial', label: 'Industrial' },
+          { key: 'comercial', label: 'Comercial' },
+          { key: 'ejidal', label: 'Ejidal / Rural' },
+          { key: 'otro', label: 'Otro' },
+        ]}
+      />
+      {getField(sec, 'dom_actividad') === 'otro' && (
+        <input
+          type="text"
+          placeholder="Especifique"
+          value={getField(sec, 'dom_actividad_otro')}
+          onChange={(e) => updateField(sec, 'dom_actividad_otro', e.target.value)}
+          style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }}
+        />
+      )}
+
+      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <p style={{ margin: '0 0 10px', fontWeight: 600 }}>Servicios públicos de la zona (marque los que apliquen) *</p>
+        {[
+          ['dom_srv_agua', 'Agua'],
+          ['dom_srv_luz', 'Luz'],
+          ['dom_srv_alumbrado', 'Alumbrado público'],
+          ['dom_srv_drenaje', 'Drenaje'],
+          ['dom_srv_pavimento', 'Pavimentación'],
+          ['dom_srv_transporte', 'Transporte público'],
+          ['dom_srv_verdes', 'Áreas verdes'],
+          ['dom_srv_sin_verdes', 'Sin áreas verdes cercanas'],
+        ].map(([k, lab]) => (
+          <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'pointer' }}>
+            <input type="checkbox" checked={srv(k)} onChange={(e) => setSrv(k, e.target.checked)} />
+            {lab}
+          </label>
+        ))}
+      </div>
+
+      <h3 style={{ margin: '8px 0 0', fontSize: 15, color: '#334155' }}>2.2 Medios de transporte y traslado al trabajo</h3>
+      <ChoiceRow
+        label="Medio principal de transporte"
+        value={getField(sec, 'dom_transporte')}
+        onChange={(v) => updateField(sec, 'dom_transporte', v)}
+        options={[
+          { key: 'publico', label: 'Transporte público' },
+          { key: 'propio', label: 'Vehículo propio' },
+          { key: 'empresa', label: 'Transporte de la empresa' },
+          { key: 'pie', label: 'A pie' },
+          { key: 'otro', label: 'Otro' },
+        ]}
+      />
+      <ChoiceRow
+        label="Tiempo aproximado de traslado"
+        value={getField(sec, 'dom_tiempo_traslado')}
+        onChange={(v) => updateField(sec, 'dom_tiempo_traslado', v)}
+        options={[
+          { key: 'menos30', label: 'Menos de 30 min' },
+          { key: '30_60', label: '30–60 min' },
+          { key: 'mas60', label: 'Más de 60 min' },
+        ]}
+      />
+      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontWeight: 600, fontSize: 14 }}>¿Ha existido algún cambio relevante?</span>
+          <button type="button" onClick={() => updateField(sec, 'dom_cambio_relevante', 'si')} style={{ padding: '10px 20px', borderRadius: 8, border: getField(sec, 'dom_cambio_relevante') === 'si' ? '2px solid #1e3a8a' : '2px solid #64748b', background: getField(sec, 'dom_cambio_relevante') === 'si' ? '#1e40af' : '#f1f5f9', color: getField(sec, 'dom_cambio_relevante') === 'si' ? '#fff' : '#0f172a', fontWeight: 700, fontSize: 15 }}>Sí</button>
+          <button type="button" onClick={() => updateField(sec, 'dom_cambio_relevante', 'no')} style={{ padding: '10px 20px', borderRadius: 8, border: getField(sec, 'dom_cambio_relevante') === 'no' ? '2px solid #1e3a8a' : '2px solid #64748b', background: getField(sec, 'dom_cambio_relevante') === 'no' ? '#1e40af' : '#f1f5f9', color: getField(sec, 'dom_cambio_relevante') === 'no' ? '#fff' : '#0f172a', fontWeight: 700, fontSize: 15 }}>No</button>
+        </div>
+        {getField(sec, 'dom_cambio_relevante') === 'si' && (
+          <div style={{ marginTop: 10 }}>
+            <label style={{ fontWeight: 600, fontSize: 13 }}>Especifique *</label>
+            <input type="text" value={getField(sec, 'dom_cambio_relevante_texto')} onChange={(e) => updateField(sec, 'dom_cambio_relevante_texto', e.target.value)} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
+          </div>
+        )}
+      </div>
+
+      <p style={{ margin: 0, fontSize: 13, color: '#64748b', fontStyle: 'italic', lineHeight: 1.5 }}>
+        <strong>Nota importante:</strong> Esta información es de carácter declarativo y podrá ser complementada con la verificación domiciliaria, en caso de que haya sido autorizada por el evaluado.
+      </p>
+
+      <h3 style={{ margin: 0, fontSize: 15, color: '#334155' }}>2.3 Autorización para visita domiciliaria</h3>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+        <button
+          type="button"
+          onClick={() => updateField(sec, 'dom_visita', 'autorizo')}
+          style={{
+            padding: '10px 18px',
+            borderRadius: 8,
+            border: getField(sec, 'dom_visita') === 'autorizo' ? '2px solid #14532d' : '2px solid #64748b',
+            background: getField(sec, 'dom_visita') === 'autorizo' ? '#15803d' : '#f1f5f9',
+            color: getField(sec, 'dom_visita') === 'autorizo' ? '#ffffff' : '#0f172a',
+            fontWeight: 700,
+            fontSize: 14,
+            cursor: 'pointer',
+          }}
+        >
+          Autorizo
+        </button>
+        <button
+          type="button"
+          onClick={() => updateField(sec, 'dom_visita', 'no_autorizo')}
+          style={{
+            padding: '10px 18px',
+            borderRadius: 8,
+            border: getField(sec, 'dom_visita') === 'no_autorizo' ? '2px solid #7f1d1d' : '2px solid #64748b',
+            background: getField(sec, 'dom_visita') === 'no_autorizo' ? '#b91c1c' : '#f1f5f9',
+            color: getField(sec, 'dom_visita') === 'no_autorizo' ? '#ffffff' : '#0f172a',
+            fontWeight: 700,
+            fontSize: 14,
+            cursor: 'pointer',
+          }}
+        >
+          No autorizo
+        </button>
+      </div>
+      <p style={{ margin: 0, fontSize: 13, color: '#475569', lineHeight: 1.55 }}>
+        En caso de autorizar, manifiesto mi consentimiento para que se realice una visita domiciliaria con fines de actualización de mi expediente laboral, incluyendo la toma de una fotografía del exterior del domicilio, exclusivamente para fines administrativos.
+      </p>
+
+      {getField(sec, 'dom_visita') === 'autorizo' && (
+        <div style={{ padding: 16, background: '#f0fdf4', borderRadius: 10, border: '1px solid #86efac', display: 'grid', gap: 14 }}>
+          <p style={{ margin: 0, fontWeight: 700, color: '#14532d' }}>Disponibilidad para visita domiciliaria</p>
+          <p style={{ margin: 0, fontSize: 13 }}>Indique al menos dos opciones de fecha y horario:</p>
+          <div style={{ display: 'grid', gap: 10 }}>
+            <strong style={{ fontSize: 13 }}>Opción 1</strong>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600 }}>Fecha *</label>
+                <input type="date" value={getField(sec, 'dom_visita_op1_fecha')} onChange={(e) => updateField(sec, 'dom_visita_op1_fecha', e.target.value)} style={{ width: '100%', marginTop: 4, padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600 }}>Horario aproximado *</label>
+                <input type="text" placeholder="ej. 10:00–14:00" value={getField(sec, 'dom_visita_op1_hora')} onChange={(e) => updateField(sec, 'dom_visita_op1_hora', e.target.value)} style={{ width: '100%', marginTop: 4, padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+              </div>
+            </div>
+            <strong style={{ fontSize: 13 }}>Opción 2</strong>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600 }}>Fecha *</label>
+                <input type="date" value={getField(sec, 'dom_visita_op2_fecha')} onChange={(e) => updateField(sec, 'dom_visita_op2_fecha', e.target.value)} style={{ width: '100%', marginTop: 4, padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600 }}>Horario aproximado *</label>
+                <input type="text" placeholder="ej. Sábado mañana" value={getField(sec, 'dom_visita_op2_hora')} onChange={(e) => updateField(sec, 'dom_visita_op2_hora', e.target.value)} style={{ width: '100%', marginTop: 4, padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div>
+        <label style={{ fontWeight: 600, fontSize: 13 }}>Señas adicionales para ubicación del domicilio (opcional)</label>
+        <textarea
+          value={getField(sec, 'dom_senas_opcional')}
+          onChange={(e) => updateField(sec, 'dom_senas_opcional', e.target.value)}
+          rows={2}
+          style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }}
+        />
+      </div>
+    </div>
+  );
 }
 
-function SectionLaboral({ formData, section, updateField, getField }: { formData: FormDataBySection; section: string; updateField: (s: string, k: string, v: string) => void; getField: (s: string, k: string) => string }) {
-  const lab = formData[section] || {};
-  const n = Math.max(1, Math.ceil(Object.keys(lab).filter((k) => k.endsWith('_empresa_nombre')).length) || 1);
-  const [count, setCount] = useState(n);
-
-  const entries: { start: number; end: number; actual: boolean }[] = [];
-  for (let i = 0; i < count; i++) {
-    const start = parseDate(getField(section, `${i}_fecha_inicio_lab`));
-    const endStr = getField(section, `${i}_fecha_fin_lab`);
-    const actual = (getField(section, `${i}_empleo_actual`) ?? '') === '1' || (getField(section, `${i}_empleo_actual`) ?? '') === 'true';
-    const end = actual ? Date.now() : parseDate(endStr);
-    if (!isNaN(start)) entries.push({ start, end: isNaN(end) ? Date.now() : end, actual });
-  }
-  const now = Date.now();
-  const yearsCovered = entries.length ? (now - Math.min(...entries.map((e) => e.start))) / (365.25 * 24 * 60 * 60 * 1000) : 0;
-
-  let overlapWarning = false;
-  for (let a = 0; a < entries.length; a++) {
-    for (let b = a + 1; b < entries.length; b++) {
-      if (entries[a].actual || entries[b].actual) continue;
-      if (entries[a].start < entries[b].end && entries[b].start < entries[a].end) overlapWarning = true;
-    }
-  }
-
+function SectionSituacionLaboral({
+  sec,
+  getField,
+  updateField,
+}: {
+  sec: string;
+  getField: (s: string, k: string) => string;
+  updateField: (s: string, k: string, v: string) => void;
+}) {
   return (
-    <div style={{ display: 'grid', gap: 24 }}>
-      <p style={{ margin: '0 0 8px', fontSize: 13, color: '#6b7280' }}>Cubre al menos los últimos 10 años</p>
-      {entries.length > 0 && (
-        <p style={{ margin: 0, fontSize: 13 }}>
-          {yearsCovered >= 10 ? <span style={{ color: '#16a34a' }}>✓ Cobertura: {yearsCovered.toFixed(1)} años</span> : <span style={{ color: '#d97706' }}>⚠ Cobertura: {yearsCovered.toFixed(1)} años (recomendado 10+)</span>}
+    <div style={{ display: 'grid', gap: 18 }}>
+      <h2 style={{ margin: 0, fontSize: 17, color: '#111' }}>3. SITUACIÓN LABORAL ACTUAL</h2>
+      <div>
+        <label style={{ fontWeight: 600 }}>Puesto actual *</label>
+        <input type="text" value={getField(sec, 'sl_puesto')} onChange={(e) => updateField(sec, 'sl_puesto', e.target.value)} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
+      </div>
+      <div>
+        <label style={{ fontWeight: 600 }}>Área / Departamento *</label>
+        <input type="text" value={getField(sec, 'sl_area')} onChange={(e) => updateField(sec, 'sl_area', e.target.value)} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
+      </div>
+      <div>
+        <label style={{ fontWeight: 600 }}>Antigüedad en el puesto actual *</label>
+        <input type="text" placeholder="ej. 2 años, 6 meses" value={getField(sec, 'sl_antiguedad')} onChange={(e) => updateField(sec, 'sl_antiguedad', e.target.value)} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
+      </div>
+      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <YnRow label="¿Ha tenido cambios relevantes en su situación laboral?" value={getField(sec, 'sl_cambios')} onChange={(v) => updateField(sec, 'sl_cambios', v)} />
+        {getField(sec, 'sl_cambios') === 'si' && (
+          <div>
+            <label style={{ fontWeight: 600, fontSize: 13 }}>En caso afirmativo, describa brevemente *</label>
+            <textarea value={getField(sec, 'sl_cambios_texto')} onChange={(e) => updateField(sec, 'sl_cambios_texto', e.target.value)} rows={3} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SectionIngresosEconomicos({
+  sec,
+  getField,
+  updateField,
+}: {
+  sec: string;
+  getField: (s: string, k: string) => string;
+  updateField: (s: string, k: string, v: string) => void;
+}) {
+  const setComp = (key: string, on: boolean, exclusiveNinguno?: boolean) => {
+    if (exclusiveNinguno && key === 'ie_comp_ninguno' && on) {
+      ['ie_comp_renta', 'ie_comp_hipo', 'ie_comp_auto', 'ie_comp_tc', 'ie_comp_prestamo'].forEach((k) => updateField(sec, k, ''));
+      updateField(sec, 'ie_comp_otros_texto', '');
+    }
+    if (exclusiveNinguno && key !== 'ie_comp_ninguno' && on) {
+      updateField(sec, 'ie_comp_ninguno', '');
+    }
+    updateField(sec, key, on ? '1' : '');
+  };
+  return (
+    <div style={{ display: 'grid', gap: 20 }}>
+      <h2 style={{ margin: 0, fontSize: 17, color: '#111' }}>4. INGRESOS Y SITUACIÓN ECONÓMICA</h2>
+      <ChoiceRow
+        label="Rango aproximado de ingreso mensual actual *"
+        value={getField(sec, 'ie_rango')}
+        onChange={(v) => updateField(sec, 'ie_rango', v)}
+        options={[
+          { key: 'menos10k', label: 'Menos de $10,000' },
+          { key: '10_20', label: '$10,001 – $20,000' },
+          { key: '20_30', label: '$20,001 – $30,000' },
+          { key: '30_50', label: '$30,001 – $50,000' },
+          { key: 'mas50', label: 'Más de $50,000' },
+        ]}
+      />
+      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <p style={{ margin: '0 0 10px', fontWeight: 700 }}>4.1 Compromisos económicos relevantes</p>
+        <p style={{ margin: '0 0 8px', fontSize: 13 }}>Cuenta actualmente con: (marque lo que aplique; &quot;Ninguno&quot; excluye los demás) *</p>
+        {[
+          ['ie_comp_renta', 'Renta de vivienda'],
+          ['ie_comp_hipo', 'Crédito hipotecario'],
+          ['ie_comp_auto', 'Crédito automotriz'],
+          ['ie_comp_tc', 'Tarjetas de crédito'],
+          ['ie_comp_prestamo', 'Préstamos personales'],
+        ].map(([k, lab]) => (
+          <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'pointer' }}>
+            <input type="checkbox" checked={getField(sec, k) === '1'} onChange={(e) => setComp(k, e.target.checked, true)} />
+            {lab}
+          </label>
+        ))}
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={getField(sec, 'ie_comp_ninguno') === '1'}
+            onChange={(e) => setComp('ie_comp_ninguno', e.target.checked, true)}
+          />
+          Ninguno
+        </label>
+        <div style={{ marginTop: 10 }}>
+          <label style={{ fontWeight: 600, fontSize: 13 }}>Otros (opcional)</label>
+          <input type="text" value={getField(sec, 'ie_comp_otros_texto')} onChange={(e) => updateField(sec, 'ie_comp_otros_texto', e.target.value)} style={{ width: '100%', marginTop: 4, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
+        </div>
+      </div>
+      <div style={{ padding: 14, background: '#fff7ed', borderRadius: 10, border: '1px solid #fed7aa' }}>
+        <p style={{ margin: '0 0 8px', fontWeight: 700 }}>4.2 Observaciones del evaluado (obligatorio contestar)</p>
+        <YnRow label="¿Existen cambios relevantes en gastos o compromisos económicos?" value={getField(sec, 'ie_gastos_cambio')} onChange={(v) => updateField(sec, 'ie_gastos_cambio', v)} />
+        {getField(sec, 'ie_gastos_cambio') === 'si' && (
+          <div>
+            <label style={{ fontWeight: 600, fontSize: 13 }}>En caso afirmativo, especifique *</label>
+            <textarea value={getField(sec, 'ie_gastos_texto')} onChange={(e) => updateField(sec, 'ie_gastos_texto', e.target.value)} rows={2} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
+          </div>
+        )}
+      </div>
+      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <p style={{ margin: '0 0 8px', fontWeight: 700 }}>4.3 Situación crediticia (declarativa)</p>
+        <YnRow label="¿Ha tenido o tiene actualmente algún problema relevante con su historial crediticio (Buró de Crédito)?" value={getField(sec, 'ie_credito_problema')} onChange={(v) => updateField(sec, 'ie_credito_problema', v)} />
+        {getField(sec, 'ie_credito_problema') === 'si' && (
+          <div style={{ marginTop: 12 }}>
+            <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600 }}>En caso afirmativo, indique (marque lo que corresponda) *</p>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}><input type="checkbox" checked={getField(sec, 'ie_cred_atrasos') === '1'} onChange={(e) => updateField(sec, 'ie_cred_atrasos', e.target.checked ? '1' : '')} /> Atrasos de pago</label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}><input type="checkbox" checked={getField(sec, 'ie_cred_reestructura') === '1'} onChange={(e) => updateField(sec, 'ie_cred_reestructura', e.target.checked ? '1' : '')} /> Reestructura / convenio</label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}><input type="checkbox" checked={getField(sec, 'ie_cred_liquidado') === '1'} onChange={(e) => updateField(sec, 'ie_cred_liquidado', e.target.checked ? '1' : '')} /> Adeudo liquidado</label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}><input type="checkbox" checked={getField(sec, 'ie_cred_otro') === '1'} onChange={(e) => updateField(sec, 'ie_cred_otro', e.target.checked ? '1' : '')} /> Otro</label>
+            {getField(sec, 'ie_cred_otro') === '1' && (
+              <input type="text" placeholder="Especifique" value={getField(sec, 'ie_cred_otro_texto')} onChange={(e) => updateField(sec, 'ie_cred_otro_texto', e.target.value)} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
+            )}
+          </div>
+        )}
+        <p style={{ margin: '12px 0 0', fontSize: 12, color: '#64748b', fontStyle: 'italic' }}>
+          Esta información es de carácter declarativo y no implica consulta a sociedades de información crediticia.
         </p>
-      )}
-      {overlapWarning && (
-        <div style={{ padding: 12, background: '#fef3c7', borderRadius: 8, fontSize: 13 }}>Las fechas de estos empleos se superponen. Verifica que sean correctas.</div>
-      )}
-      {Array.from({ length: count }, (_, i) => {
-        const actual = (getField(section, `${i}_empleo_actual`) ?? '') === '1' || (getField(section, `${i}_empleo_actual`) ?? '') === 'true';
-        return (
-          <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 16 }}>
-            <h4 style={{ margin: '0 0 12px' }}>Empleo {i + 1}</h4>
-            <div style={{ display: 'grid', gap: 12 }}>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Nombre de la empresa *</label><input type="text" value={getField(section, `${i}_empresa_nombre`)} onChange={(e) => updateField(section, `${i}_empresa_nombre`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Puesto / Cargo *</label><input type="text" value={getField(section, `${i}_puesto`)} onChange={(e) => updateField(section, `${i}_puesto`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}><div><label style={{ display: 'block', marginBottom: 4 }}>Fecha de inicio *</label><input type="date" value={getField(section, `${i}_fecha_inicio_lab`)} onChange={(e) => updateField(section, `${i}_fecha_inicio_lab`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div><div style={{ display: actual ? 'none' : 'block' }}><label style={{ display: 'block', marginBottom: 4 }}>Fecha de término</label><input type="date" value={getField(section, `${i}_fecha_fin_lab`)} onChange={(e) => updateField(section, `${i}_fecha_fin_lab`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div></div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}><input type="checkbox" checked={actual} onChange={(e) => { updateField(section, `${i}_empleo_actual`, e.target.checked ? '1' : ''); if (e.target.checked) { updateField(section, `${i}_fecha_fin_lab`, ''); updateField(section, `${i}_motivo_salida`, ''); updateField(section, `${i}_nombre_supervisor`, ''); updateField(section, `${i}_telefono_supervisor`, ''); updateField(section, `${i}_correo_supervisor`, ''); } }} />Es mi empleo actual</label>
-              <div style={{ display: actual ? 'none' : 'block' }}><label style={{ display: 'block', marginBottom: 4 }}>Salario mensual (aproximado)</label><input type="number" value={getField(section, `${i}_salario`)} onChange={(e) => updateField(section, `${i}_salario`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              <div style={{ display: actual ? 'none' : 'block' }}><label style={{ display: 'block', marginBottom: 4 }}>Motivo de salida</label><input type="text" value={getField(section, `${i}_motivo_salida`)} onChange={(e) => updateField(section, `${i}_motivo_salida`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-              {actual ? <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>No se solicitarán referencias de tu empleo actual</p> : <div><label style={{ display: 'block', marginBottom: 4 }}>Nombre del supervisor *</label><input type="text" value={getField(section, `${i}_nombre_supervisor`)} onChange={(e) => updateField(section, `${i}_nombre_supervisor`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>}
-              <div style={{ display: actual ? 'none' : 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}><div><label style={{ display: 'block', marginBottom: 4 }}>Teléfono del supervisor</label><input type="tel" value={getField(section, `${i}_telefono_supervisor`)} onChange={(e) => updateField(section, `${i}_telefono_supervisor`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div><div><label style={{ display: 'block', marginBottom: 4 }}>Correo del supervisor</label><input type="email" value={getField(section, `${i}_correo_supervisor`)} onChange={(e) => updateField(section, `${i}_correo_supervisor`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div></div>
-              <div><label style={{ display: 'block', marginBottom: 4 }}>Observaciones</label><textarea value={getField(section, `${i}_observaciones_lab`)} onChange={(e) => updateField(section, `${i}_observaciones_lab`, e.target.value)} rows={2} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-            </div>
-          </div>
-        );
-      })}
-      {count < 15 && <button type="button" onClick={() => setCount((c) => c + 1)} style={{ padding: '8px 16px', background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer' }}>Agregar otro empleo</button>}
+      </div>
     </div>
   );
 }
 
-function SectionReferencias({ formData, section, updateField, getField }: { formData: FormDataBySection; section: string; updateField: (s: string, k: string, v: string) => void; getField: (s: string, k: string) => string }) {
-  const ref = formData[section] || {};
-  const n = Math.max(2, Math.min(5, Math.ceil(Object.keys(ref).filter((k) => k.endsWith('_ref_nombre')).length) || 2));
-  const [count, setCount] = useState(n);
+function SectionEscolaridadCapacitacion({
+  sec,
+  getField,
+  updateField,
+  uploadPdfEscolaridad,
+}: {
+  sec: string;
+  getField: (s: string, k: string) => string;
+  updateField: (s: string, k: string, v: string) => void;
+  uploadPdfEscolaridad: (f: File, i: number) => Promise<string>;
+}) {
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
+  const n = Math.max(1, Math.min(20, parseInt(getField(sec, 'esc_num_rows') || '1', 10) || 1));
+  const addRow = () => updateField(sec, 'esc_num_rows', String(Math.min(20, n + 1)));
+  const nuevosSi = getField(sec, 'esc_nuevos') === 'si';
+
+  return (
+    <div style={{ display: 'grid', gap: 20 }}>
+      <h2 style={{ margin: 0, fontSize: 17, color: '#111' }}>5. ESCOLARIDAD Y CAPACITACIÓN</h2>
+      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <YnRow label="¿Ha concluido nuevos estudios, cursos o certificaciones desde su ingreso?" value={getField(sec, 'esc_nuevos')} onChange={(v) => updateField(sec, 'esc_nuevos', v)} />
+      </div>
+      {nuevosSi && (
+        <>
+          <p style={{ margin: 0, fontWeight: 600 }}>En caso afirmativo, indique cada uno. Cada renglón completo requiere PDF de respaldo (máx. 5 MB). *</p>
+          {Array.from({ length: n }, (_, i) => (
+            <div key={i} style={{ padding: 16, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, display: 'grid', gap: 10 }}>
+              <strong style={{ fontSize: 13, color: '#475569' }}>Estudio / curso {i + 1}</strong>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600 }}>Estudio / Curso</label>
+                  <input type="text" value={getField(sec, `esc_${i}_curso`)} onChange={(e) => updateField(sec, `esc_${i}_curso`, e.target.value)} style={{ width: '100%', marginTop: 4, padding: 8, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600 }}>Institución</label>
+                  <input type="text" value={getField(sec, `esc_${i}_inst`)} onChange={(e) => updateField(sec, `esc_${i}_inst`, e.target.value)} style={{ width: '100%', marginTop: 4, padding: 8, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
+                </div>
+              </div>
+              <div style={{ maxWidth: 120 }}>
+                <label style={{ fontSize: 12, fontWeight: 600 }}>Año</label>
+                <input type="text" placeholder="AAAA" value={getField(sec, `esc_${i}_anio`)} onChange={(e) => updateField(sec, `esc_${i}_anio`, e.target.value)} style={{ width: '100%', marginTop: 4, padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600 }}>PDF comprobante *</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
+                  <label style={{ cursor: uploadingIdx === i ? 'wait' : 'pointer' }}>
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      style={{ display: 'none' }}
+                      disabled={uploadingIdx !== null}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        setUploadingIdx(i);
+                        uploadPdfEscolaridad(f, i)
+                          .then((url) => updateField(sec, `esc_${i}_pdf`, url))
+                          .catch((err) => alert(err?.message || 'Error al subir'))
+                          .finally(() => {
+                            setUploadingIdx(null);
+                            e.target.value = '';
+                          });
+                      }}
+                    />
+                    <span style={{ display: 'inline-block', padding: '8px 14px', background: uploadingIdx === i ? '#64748b' : '#1e40af', color: '#fff', borderRadius: 8, fontSize: 13, fontWeight: 700 }}>
+                      {uploadingIdx === i ? 'Subiendo…' : 'Adjuntar PDF'}
+                    </span>
+                  </label>
+                  {getField(sec, `esc_${i}_pdf`) ? <span style={{ color: '#16a34a', fontWeight: 600, fontSize: 13 }}>✓ PDF cargado</span> : null}
+                </div>
+              </div>
+            </div>
+          ))}
+          <button type="button" onClick={addRow} style={{ padding: '10px 16px', background: '#e2e8f0', border: '2px solid #475569', borderRadius: 8, cursor: 'pointer', fontWeight: 700, color: '#0f172a', fontSize: 14 }}>
+            + Agregar un estudio / curso más
+          </button>
+          <div style={{ padding: 14, background: '#eff6ff', borderRadius: 10, border: '1px solid #93c5fd' }}>
+            <p style={{ margin: '0 0 10px', fontWeight: 700 }}>Documentación académica *</p>
+            <p style={{ margin: '0 0 10px', fontSize: 13 }}>¿Cuenta con documentación que respalde la actualización de sus estudios?</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {[
+                ['si', 'Sí'],
+                ['no', 'No'],
+                ['tramite', 'En trámite'],
+              ].map(([k, lab]) => {
+                const on = getField(sec, 'esc_doc') === k;
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => updateField(sec, 'esc_doc', k)}
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: 8,
+                      border: on ? '2px solid #1e3a8a' : '2px solid #64748b',
+                      background: on ? '#1e40af' : '#f1f5f9',
+                      color: on ? '#ffffff' : '#0f172a',
+                      cursor: 'pointer',
+                      fontWeight: on ? 700 : 600,
+                      fontSize: 14,
+                    }}
+                  >
+                    {lab}
+                  </button>
+                );
+              })}
+            </div>
+            <p style={{ margin: '10px 0 0', fontSize: 12, color: '#64748b' }}>Complete al menos un renglón (curso, institución, año y PDF). Puede agregar más renglones según necesite.</p>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function SectionBienestarAntecedentes({
+  sec,
+  getField,
+  updateField,
+}: {
+  sec: string;
+  getField: (s: string, k: string) => string;
+  updateField: (s: string, k: string, v: string) => void;
+}) {
+  return (
+    <div style={{ display: 'grid', gap: 22 }}>
+      <h2 style={{ margin: 0, fontSize: 17, color: '#111' }}>6. CONDICIONES GENERALES DE BIENESTAR</h2>
+      <p style={{ margin: 0, fontSize: 13, color: '#475569' }}>
+        Con la finalidad de contar con información general para la integración de su expediente laboral, indique lo que corresponda:
+      </p>
+      <ChoiceRow label="Consumo de bebidas alcohólicas *" value={getField(sec, 'bw_alcohol')} onChange={(v) => updateField(sec, 'bw_alcohol', v)} options={[{ key: 'no', label: 'No' }, { key: 'ocasional', label: 'Ocasional' }, { key: 'social', label: 'Social' }]} />
+      <ChoiceRow label="Consumo de tabaco *" value={getField(sec, 'bw_tabaco')} onChange={(v) => updateField(sec, 'bw_tabaco', v)} options={[{ key: 'no', label: 'No' }, { key: 'si', label: 'Sí' }]} />
+      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <YnRow label="¿Existe alguna condición personal que considere relevante mencionar para efectos administrativos?" value={getField(sec, 'bw_condicion')} onChange={(v) => updateField(sec, 'bw_condicion', v)} />
+        {getField(sec, 'bw_condicion') === 'si' && (
+          <input type="text" placeholder="Describa brevemente (obligatorio si eligió Sí)" value={getField(sec, 'bw_condicion_texto')} onChange={(e) => updateField(sec, 'bw_condicion_texto', e.target.value)} style={{ width: '100%', marginTop: 8, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
+        )}
+      </div>
+      <p style={{ margin: 0, fontSize: 12, color: '#64748b', fontStyle: 'italic' }}>
+        La información proporcionada en esta sección es de carácter declarativo y no será utilizada para emitir juicios ni evaluaciones médicas o legales.
+      </p>
+
+      <hr style={{ border: 'none', borderTop: '2px solid #e2e8f0', margin: '8px 0' }} />
+
+      <h2 style={{ margin: 0, fontSize: 17, color: '#111' }}>7. ANTECEDENTES LEGALES (DECLARATIVO)</h2>
+      <div style={{ padding: 14, background: '#fef2f2', borderRadius: 10, border: '1px solid #fecaca' }}>
+        <YnRow label="¿Ha tenido o tiene actualmente algún antecedente legal que pudiera afectar su desempeño laboral?" value={getField(sec, 'al_legal')} onChange={(v) => updateField(sec, 'al_legal', v)} />
+        {getField(sec, 'al_legal') === 'si' && (
+          <div>
+            <label style={{ fontWeight: 600, fontSize: 13 }}>Indique de manera general *</label>
+            <textarea value={getField(sec, 'al_legal_texto')} onChange={(e) => updateField(sec, 'al_legal_texto', e.target.value)} rows={3} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SectionCartaObsDeclaracion({
+  sec,
+  getField,
+  updateField,
+  uploadCapFile,
+  defaultNombre,
+}: {
+  sec: string;
+  getField: (s: string, k: string) => string;
+  updateField: (s: string, k: string, v: string) => void;
+  uploadCapFile: (f: File, k: 'acta' | 'ine' | 'foto' | 'domicilio') => Promise<string>;
+  defaultNombre: string;
+}) {
+  const [up, setUp] = useState<string | null>(null);
+  useEffect(() => {
+    const day = new Date().toISOString().slice(0, 10);
+    if (!getField(sec, 'df_fecha').trim()) updateField(sec, 'df_fecha', day);
+    if (!getField(sec, 'df_nombre').trim() && defaultNombre.trim()) updateField(sec, 'df_nombre', defaultNombre.trim());
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- prefill once when opening
+  }, []);
+
+  const slot = (
+    label: string,
+    hint: string,
+    fieldKey: 'cap_doc_acta' | 'cap_doc_ine' | 'cap_doc_foto' | 'cap_doc_domicilio',
+    kind: 'acta' | 'ine' | 'foto' | 'domicilio',
+    accept: string
+  ) => (
+    <div style={{ padding: 14, background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+      <p style={{ margin: '0 0 4px', fontWeight: 700, fontSize: 14 }}>{label} *</p>
+      <p style={{ margin: '0 0 8px', fontSize: 12, color: '#64748b' }}>{hint}</p>
+      <label style={{ cursor: up === fieldKey ? 'wait' : 'pointer' }}>
+        <input
+          type="file"
+          accept={accept}
+          style={{ display: 'none' }}
+          disabled={up !== null}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (!f) return;
+            setUp(fieldKey);
+            uploadCapFile(f, kind)
+              .then((url) => updateField(sec, fieldKey, url))
+              .catch((err) => alert(err?.message || 'Error al subir'))
+              .finally(() => {
+                setUp(null);
+                e.target.value = '';
+              });
+          }}
+        />
+        <span style={{ display: 'inline-block', padding: '8px 14px', background: up === fieldKey ? '#64748b' : '#1e40af', color: '#fff', borderRadius: 8, fontSize: 13, fontWeight: 700 }}>
+          {up === fieldKey ? 'Subiendo…' : 'Seleccionar archivo'}
+        </span>
+      </label>
+      {getField(sec, fieldKey) ? (
+        <span style={{ marginLeft: 10, color: '#16a34a', fontWeight: 600, fontSize: 13 }}>✓ Recibido</span>
+      ) : null}
+    </div>
+  );
+
+  const autoriza = getField(sec, 'cap_tramite') === 'autorizo';
 
   return (
     <div style={{ display: 'grid', gap: 24 }}>
-      <p style={{ margin: 0, fontSize: 13 }}>Mínimo 2 referencias. Máximo 5.</p>
-      {Array.from({ length: count }, (_, i) => (
-        <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 16 }}>
-          <h4 style={{ margin: '0 0 12px' }}>Referencia {i + 1}</h4>
+      <h2 style={{ margin: 0, fontSize: 17, color: '#111' }}>8. CARTA DE NO ANTECEDENTES PENALES (SI APLICA)</h2>
+      <div style={{ padding: 16, background: '#f0fdf4', borderRadius: 10, border: '1px solid #86efac' }}>
+        <p style={{ margin: '0 0 12px', fontWeight: 700 }}>Autorización para trámite *</p>
+        <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 12, cursor: 'pointer' }}>
+          <input
+            type="radio"
+            name="cap_tramite"
+            checked={autoriza}
+            onChange={() => updateField(sec, 'cap_tramite', 'autorizo')}
+            style={{ marginTop: 4 }}
+          />
+          <span style={{ fontSize: 14, lineHeight: 1.5 }}>
+            Autorizo a <strong>HR Capital Working, S.A. de C.V.</strong> a gestionar ante la autoridad correspondiente el trámite de mi Carta de No Antecedentes Penales, utilizando para ello la información y documentación que proporciono.
+          </span>
+        </label>
+        <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 12, cursor: 'pointer' }}>
+          <input
+            type="radio"
+            name="cap_tramite"
+            checked={getField(sec, 'cap_tramite') === 'no_autorizo'}
+            onChange={() => updateField(sec, 'cap_tramite', 'no_autorizo')}
+            style={{ marginTop: 4 }}
+          />
+          <span style={{ fontSize: 14 }}>No autorizo el trámite.</span>
+        </label>
+        <p style={{ margin: 0, fontSize: 13, color: '#475569', fontStyle: 'italic' }}>
+          Entiendo que HR Capital Working actúa únicamente como gestor intermediario y no emite certificaciones legales.
+        </p>
+      </div>
+
+      {autoriza && (
+        <div style={{ padding: 16, background: '#eff6ff', borderRadius: 10, border: '1px solid #93c5fd' }}>
+          <p style={{ margin: '0 0 8px', fontWeight: 800, fontSize: 15 }}>Documentación requerida para el trámite</p>
+          <p style={{ margin: '0 0 6px', fontSize: 13, color: '#334155', lineHeight: 1.5 }}>
+            Suba archivos <strong>escaneados, legibles y completos</strong>. Acta, INE y comprobante: <strong>solo PDF</strong>.{' '}
+            <strong>Fotografía:</strong> puede subir <strong>JPG, PNG o PDF</strong> (lo habitual es una foto del celular en JPG/PNG; si ya la tiene en PDF también es válido). Máximo 5 MB por archivo.
+          </p>
+          <ul style={{ margin: '0 0 14px', paddingLeft: 18, fontSize: 13, color: '#475569' }}>
+            <li>Acta de nacimiento</li>
+            <li>Credencial para votar (INE)</li>
+            <li>Fotografía reciente, fondo blanco, hombros hacia arriba, sin lentes u objetos que cubran el rostro</li>
+            <li>Comprobante de domicilio (no mayor a 3 meses)</li>
+          </ul>
           <div style={{ display: 'grid', gap: 12 }}>
-            <div><label style={{ display: 'block', marginBottom: 4 }}>Nombre completo *</label><input type="text" value={getField(section, `${i}_ref_nombre`)} onChange={(e) => updateField(section, `${i}_ref_nombre`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-            <div><label style={{ display: 'block', marginBottom: 4 }}>Parentesco o relación *</label><input type="text" value={getField(section, `${i}_ref_parentesco`)} onChange={(e) => updateField(section, `${i}_ref_parentesco`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-            <div><label style={{ display: 'block', marginBottom: 4 }}>Teléfono *</label><input type="tel" value={getField(section, `${i}_ref_telefono`)} onChange={(e) => updateField(section, `${i}_ref_telefono`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
-            <div><label style={{ display: 'block', marginBottom: 4 }}>Años de conocerse</label><input type="number" value={getField(section, `${i}_ref_anos_conocido`)} onChange={(e) => updateField(section, `${i}_ref_anos_conocido`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} /></div>
+            {slot('Acta de nacimiento', 'PDF del acta legible.', 'cap_doc_acta', 'acta', '.pdf,application/pdf')}
+            {slot('Credencial INE', 'PDF por ambos lados si aplica.', 'cap_doc_ine', 'ine', '.pdf,application/pdf')}
+            {slot(
+              'Fotografía del ciudadano',
+              'JPG, PNG o PDF. Fondo blanco, de hombros hacia arriba.',
+              'cap_doc_foto',
+              'foto',
+              '.pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp'
+            )}
+            {slot('Comprobante de domicilio', 'PDF, no mayor a 3 meses.', 'cap_doc_domicilio', 'domicilio', '.pdf,application/pdf')}
           </div>
+          <p style={{ margin: '14px 0 0', fontSize: 12, color: '#64748b', fontStyle: 'italic' }}>
+            El trámite se realiza conforme a los lineamientos de la autoridad competente y a la documentación proporcionada por el evaluado.
+          </p>
         </div>
-      ))}
-      {count < 5 && <button type="button" onClick={() => setCount((c) => c + 1)} style={{ padding: '8px 16px', background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer' }}>Agregar otra referencia</button>}
+      )}
+
+      <hr style={{ border: 'none', borderTop: '2px solid #e5e7eb', margin: 0 }} />
+
+      <h2 style={{ margin: 0, fontSize: 17, color: '#111' }}>9. OBSERVACIONES O COMENTARIOS DEL COLABORADOR</h2>
+      <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>Opcional.</p>
+      <textarea
+        value={getField(sec, 'obs_comentarios')}
+        onChange={(e) => updateField(sec, 'obs_comentarios', e.target.value)}
+        rows={5}
+        placeholder="Escriba aquí cualquier comentario adicional…"
+        style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }}
+      />
+
+      <hr style={{ border: 'none', borderTop: '2px solid #e5e7eb', margin: 0 }} />
+
+      <h2 style={{ margin: 0, fontSize: 17, color: '#111' }}>10. DECLARACIÓN FINAL</h2>
+      <p style={{ margin: 0, fontSize: 14, color: '#334155', lineHeight: 1.6 }}>
+        Declaro que la información proporcionada es verídica y corresponde a mi situación actual, y que forma parte del proceso de actualización de mi expediente laboral.
+      </p>
+      <div style={{ display: 'grid', gap: 14, padding: 16, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <div>
+          <label style={{ fontWeight: 600 }}>Nombre *</label>
+          <input type="text" value={getField(sec, 'df_nombre')} onChange={(e) => updateField(sec, 'df_nombre', e.target.value)} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
+        </div>
+        <div>
+          <label style={{ fontWeight: 600 }}>Firma (escriba su nombre completo a modo de firma) *</label>
+          <input type="text" value={getField(sec, 'df_firma')} onChange={(e) => updateField(sec, 'df_firma', e.target.value)} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
+        </div>
+        <div>
+          <label style={{ fontWeight: 600 }}>Fecha *</label>
+          <input type="date" value={getField(sec, 'df_fecha')} onChange={(e) => updateField(sec, 'df_fecha', e.target.value)} style={{ width: '100%', maxWidth: 280, marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+        </div>
+      </div>
     </div>
   );
 }
 
-const DOC_TYPES = [
-  { key: 'ine_identificacion', label: 'INE / Identificación oficial *', format: 'PDF, JPG o PNG. Máx. 5 MB' },
-  { key: 'curp_documento', label: 'CURP (documento) *', format: 'PDF, JPG o PNG. Máx. 5 MB' },
-  { key: 'comprobante_domicilio', label: 'Comprobante de domicilio *', format: 'PDF, JPG o PNG. Máx. 5 MB' },
-  { key: 'ultimo_recibo_nomina', label: 'Último recibo de nómina', format: 'PDF, JPG o PNG. Máx. 5 MB' },
-  { key: 'otros_documentos', label: 'Otros documentos (opcional)', format: 'PDF, JPG o PNG. Máx. 5 MB' },
-];
-
-function SectionDocumentos({ getField, updateField, section, uploadFile }: { getField: (s: string, k: string) => string; updateField: (s: string, k: string, v: string) => void; section: string; codigo?: string; uploadFile: (file: File, docType: string) => Promise<string> }) {
-  const [uploading, setUploading] = useState<string | null>(null);
-
-  const handleUpload = (docType: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert('El archivo no debe superar 5 MB.');
-      return;
-    }
-    setUploading(docType);
-    uploadFile(file, docType)
-      .then((url) => updateField(section, docType, url))
-      .catch((err) => alert(err?.message || 'Error al subir el documento. Intenta de nuevo.'))
-      .finally(() => setUploading(null));
-    e.target.value = '';
+function YnRow({ label, value, onChange }: { label: string; value: string; onChange: (v: 'si' | 'no') => void }) {
+  const btn = (v: 'si' | 'no', text: string) => {
+    const on = value === v;
+    return (
+      <button
+        type="button"
+        onClick={() => onChange(v)}
+        style={{
+          padding: '10px 22px',
+          borderRadius: 8,
+          border: on ? '2px solid #1e3a8a' : '2px solid #64748b',
+          background: on ? '#1e40af' : '#f1f5f9',
+          color: on ? '#ffffff' : '#0f172a',
+          cursor: 'pointer',
+          fontWeight: on ? 700 : 600,
+          fontSize: 15,
+        }}
+      >
+        {text}
+      </button>
+    );
   };
-
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
-      {DOC_TYPES.map(({ key, label, format }) => {
-        const value = getField(section, key);
-        const isUploaded = (value ?? '').trim() !== '';
-        return (
-          <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <span style={{ flex: '1 1 200px' }}>{label}</span>
-              <span style={{ padding: '4px 8px', borderRadius: 6, background: isUploaded ? '#d1fae5' : '#f3f4f6', fontSize: 12 }}>{isUploaded ? 'Subido' : 'Pendiente'}</span>
-              <label style={{ cursor: 'pointer' }}>
-                <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: 'none' }} onChange={(e) => handleUpload(key, e)} disabled={!!uploading} />
-                <span style={{ padding: '6px 12px', background: '#1d4ed8', color: '#fff', borderRadius: 6, fontSize: 14 }}>{uploading === key ? 'Subiendo...' : 'Subir'}</span>
-              </label>
-            </div>
-            <span style={{ fontSize: 12, color: '#6b7280' }}>Formato: {format}</span>
+    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+      <span style={{ flex: '1 1 200px', fontWeight: 600, fontSize: 14, color: '#0f172a' }}>{label}</span>
+      <div style={{ display: 'flex', gap: 10 }}>
+        {btn('si', 'Sí')}
+        {btn('no', 'No')}
+      </div>
+    </div>
+  );
+}
+
+function SectionDatosGeneralesIdentificacion({
+  sec,
+  getField,
+  updateField,
+  uploadPdfIdentificacion,
+}: {
+  sec: string;
+  getField: (s: string, k: string) => string;
+  updateField: (s: string, k: string, v: string) => void;
+  uploadPdfIdentificacion: (f: File) => Promise<string>;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const handlePdf = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setUploading(true);
+    uploadPdfIdentificacion(f)
+      .then((url) => {
+        updateField(sec, 'identificacion_oficial_pdf', url);
+      })
+      .catch((err) => alert(err?.message || 'Error al subir el PDF.'))
+      .finally(() => {
+        setUploading(false);
+        e.target.value = '';
+      });
+  };
+  return (
+    <div style={{ display: 'grid', gap: 22 }}>
+      <h2 style={{ margin: 0, fontSize: 17, color: '#111' }}>1. DATOS GENERALES (ACTUALIZACIÓN)</h2>
+      <p style={{ margin: 0, fontSize: 14, color: '#64748b' }}>Indique si ha existido algún cambio desde su último estudio o ingreso:</p>
+
+      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <YnRow label="¿Cambio en estado civil?" value={getField(sec, 'dg_estado_civil_cambio')} onChange={(v) => updateField(sec, 'dg_estado_civil_cambio', v)} />
+        {getField(sec, 'dg_estado_civil_cambio') === 'si' && (
+          <div style={{ marginLeft: 8, marginBottom: 12 }}>
+            <label style={{ fontSize: 13, fontWeight: 600 }}>En caso afirmativo, indique el actual *</label>
+            <input type="text" value={getField(sec, 'dg_estado_civil_actual')} onChange={(e) => updateField(sec, 'dg_estado_civil_actual', e.target.value)} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
           </div>
-        );
-      })}
+        )}
+      </div>
+      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <YnRow label="¿Cambio en teléfono?" value={getField(sec, 'dg_tel_cambio')} onChange={(v) => updateField(sec, 'dg_tel_cambio', v)} />
+        {getField(sec, 'dg_tel_cambio') === 'si' && (
+          <div style={{ marginLeft: 8 }}>
+            <label style={{ fontSize: 13, fontWeight: 600 }}>Teléfono actual *</label>
+            <input type="tel" value={getField(sec, 'dg_tel_actual')} onChange={(e) => updateField(sec, 'dg_tel_actual', e.target.value)} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
+          </div>
+        )}
+      </div>
+      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <YnRow label="¿Cambio en correo electrónico?" value={getField(sec, 'dg_correo_cambio')} onChange={(v) => updateField(sec, 'dg_correo_cambio', v)} />
+        {getField(sec, 'dg_correo_cambio') === 'si' && (
+          <div style={{ marginLeft: 8 }}>
+            <label style={{ fontSize: 13, fontWeight: 600 }}>Correo actual *</label>
+            <input type="email" value={getField(sec, 'dg_correo_actual')} onChange={(e) => updateField(sec, 'dg_correo_actual', e.target.value)} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
+          </div>
+        )}
+      </div>
+
+      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <YnRow label="¿Cuenta actualmente con dependientes económicos?" value={getField(sec, 'dg_dependientes')} onChange={(v) => updateField(sec, 'dg_dependientes', v)} />
+        {getField(sec, 'dg_dependientes') === 'si' && (
+          <div style={{ marginTop: 12, display: 'grid', gap: 12 }}>
+            <div>
+              <label style={{ fontWeight: 600, fontSize: 13 }}>Número de dependientes *</label>
+              <input type="number" min={0} value={getField(sec, 'dg_num_dependientes')} onChange={(e) => updateField(sec, 'dg_num_dependientes', e.target.value)} style={{ width: 120, marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+            </div>
+            <div>
+              <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 13 }}>Tipo de dependientes (marque los que apliquen) *</p>
+              {[
+                ['dg_dep_hijos', 'Hijos'],
+                ['dg_dep_conyuge', 'Cónyuge / pareja'],
+                ['dg_dep_padres', 'Padres'],
+                ['dg_dep_otros', 'Otros (especifique)'],
+              ].map(([k, lab]) => (
+                <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={getField(sec, k) === '1'}
+                    onChange={(e) => updateField(sec, k, e.target.checked ? '1' : '')}
+                  />
+                  {lab}
+                </label>
+              ))}
+              {getField(sec, 'dg_dep_otros') === '1' && (
+                <input type="text" placeholder="Especifique otros" value={getField(sec, 'dg_dep_otros_texto')} onChange={(e) => updateField(sec, 'dg_dep_otros_texto', e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box', marginTop: 6 }} />
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+      <p style={{ margin: 0, fontSize: 12, color: '#64748b', fontStyle: 'italic' }}>Esta información se solicita únicamente para actualización del expediente laboral.</p>
+
+      <h2 style={{ margin: '12px 0 0', fontSize: 17, color: '#111' }}>IDENTIFICACIÓN OFICIAL (ACTUALIZACIÓN)</h2>
+      <YnRow label="¿Ha existido algún cambio en su identificación oficial desde su último estudio o ingreso?" value={getField(sec, 'dg_id_cambio')} onChange={(v) => updateField(sec, 'dg_id_cambio', v)} />
+      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <p style={{ margin: '0 0 10px', fontWeight: 600 }}>Identificación oficial vigente (marque una o más) *</p>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}><input type="checkbox" checked={getField(sec, 'dg_id_ine') === '1'} onChange={(e) => updateField(sec, 'dg_id_ine', e.target.checked ? '1' : '')} /> INE</label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}><input type="checkbox" checked={getField(sec, 'dg_id_pasaporte') === '1'} onChange={(e) => updateField(sec, 'dg_id_pasaporte', e.target.checked ? '1' : '')} /> Pasaporte</label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}><input type="checkbox" checked={getField(sec, 'dg_id_otra') === '1'} onChange={(e) => updateField(sec, 'dg_id_otra', e.target.checked ? '1' : '')} /> Otra</label>
+        {getField(sec, 'dg_id_otra') === '1' && <input type="text" placeholder="Especifique" value={getField(sec, 'dg_id_otra_texto')} onChange={(e) => updateField(sec, 'dg_id_otra_texto', e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box', marginBottom: 12 }} />}
+        <label style={{ fontWeight: 600, fontSize: 13 }}>Número de identificación *</label>
+        <input type="text" value={getField(sec, 'dg_id_numero')} onChange={(e) => updateField(sec, 'dg_id_numero', e.target.value)} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
+      </div>
+
+      <div style={{ padding: 16, background: '#eff6ff', borderRadius: 10, border: '1px solid #93c5fd' }}>
+        <p style={{ margin: '0 0 10px', fontWeight: 700, color: '#1e3a5f' }}>Identificación oficial en PDF (obligatorio)</p>
+        <p style={{ margin: '0 0 12px', fontSize: 14, color: '#334155', lineHeight: 1.5 }}>
+          Adjunte en <strong>formato PDF</strong> su identificación oficial vigente, con o sin cambio respecto al último estudio, para la actualización de su expediente laboral. La documentación se utilizará únicamente para esa finalidad.
+        </p>
+        <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>Formato permitido: PDF únicamente. Peso máximo: 5 MB.</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <label style={{ cursor: uploading ? 'wait' : 'pointer' }}>
+            <input type="file" accept=".pdf,application/pdf" style={{ display: 'none' }} disabled={uploading} onChange={handlePdf} />
+            <span style={{ display: 'inline-block', padding: '10px 18px', background: uploading ? '#64748b' : '#1e40af', color: '#fff', borderRadius: 8, fontWeight: 700 }}>{uploading ? 'Subiendo…' : 'Subir PDF'}</span>
+          </label>
+          {getField(sec, 'identificacion_oficial_pdf') ? (
+            <span style={{ padding: '6px 12px', background: '#d1fae5', borderRadius: 8, fontSize: 14, fontWeight: 600 }}>Archivo recibido ✓</span>
+          ) : (
+            <span style={{ color: '#b45309', fontSize: 14, fontWeight: 600 }}>Archivo requerido</span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

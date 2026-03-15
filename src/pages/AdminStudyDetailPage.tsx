@@ -18,7 +18,25 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   cancelado: { bg: '#fee2e2', text: '#991b1b' },
 };
 
-const PREFERRED_SECTIONS = ['Datos Personales', 'Datos de Contacto', 'Domicilio Actual', 'Historial Académico', 'Historial Laboral', 'Situación Económica', 'Referencias Familiares', 'Documentos'];
+const PREFERRED_SECTIONS = [
+  'Formato Actualización',
+  'Autorización Actualización',
+  'Datos Generales e Identificación',
+  'Domicilio Actual Actualización',
+  'Situación Laboral Actual',
+  'Ingresos y Situación Económica',
+  'Escolaridad y Capacitación',
+  'Bienestar y Antecedentes Legales',
+  'Carta Penal Observaciones y Declaración',
+  'Datos Personales',
+  'Datos de Contacto',
+  'Domicilio Actual',
+  'Historial Académico',
+  'Historial Laboral',
+  'Situación Económica',
+  'Referencias Familiares',
+  'Documentos',
+];
 
 /** Document type keys that store file paths; show download button in admin. */
 const DOCUMENT_FIELD_KEYS = ['ine_identificacion', 'curp_documento', 'comprobante_domicilio', 'ultimo_recibo_nomina', 'otros_documentos'];
@@ -174,8 +192,13 @@ export default function AdminStudyDetailPage() {
   const [domNotes, setDomNotes] = useState('');
   const [concNotes, setConcNotes] = useState('');
   const [concVerdict, setConcVerdict] = useState<string | null>(null);
+  const [concResultado, setConcResultado] = useState<string | null>(null);
+  const [concObsRel, setConcObsRel] = useState('');
+  const [concFechaCierre, setConcFechaCierre] = useState('');
+  const [concAnalista, setConcAnalista] = useState('');
   const [savingDom, setSavingDom] = useState(false);
   const [savingConc, setSavingConc] = useState(false);
+  const [serverPdfLoading, setServerPdfLoading] = useState(false);
 
   // Study actions
   const [statusChanging, setStatusChanging] = useState(false);
@@ -218,6 +241,26 @@ export default function AdminStudyDetailPage() {
       .finally(() => setLoading(false));
   }, [isAdmin, studyId, navigate]);
 
+  const reloadInvitations = () => {
+    if (!studyId) return;
+    fetch(`/api/studies.php?action=list_invitations&study_id=${studyId}`, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.invitations) setInvitations(d.invitations);
+      });
+  };
+
+  useEffect(() => {
+    if (!isAdmin || !studyId) return;
+    const onFocus = () => reloadInvitations();
+    const t = setInterval(reloadInvitations, 45000);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [isAdmin, studyId]);
+
   useEffect(() => {
     setDetailTab(0);
   }, [selectedInvId]);
@@ -230,6 +273,10 @@ export default function AdminStudyDetailPage() {
       setDomiciliary(null);
       setConcNotes('');
       setConcVerdict(null);
+      setConcResultado(null);
+      setConcObsRel('');
+      setConcFechaCierre('');
+      setConcAnalista('');
       setDomPhotoUrl('');
       setDomVisitDate('');
       setDomVisitType('presencial');
@@ -241,6 +288,10 @@ export default function AdminStudyDetailPage() {
     setDomiciliary(null);
     setConcNotes('');
     setConcVerdict(null);
+    setConcResultado(null);
+    setConcObsRel('');
+    setConcFechaCierre('');
+    setConcAnalista('');
     setDomPhotoUrl('');
     setDomVisitDate('');
     setDomVisitType('presencial');
@@ -260,6 +311,10 @@ export default function AdminStudyDetailPage() {
       // Always set form fields from response so candidate with no data shows empty (not previous candidate's data)
       setConcNotes(concRes?.analyst_notes ?? '');
       setConcVerdict(concRes?.verdict ?? null);
+      setConcResultado(concRes?.resultado_actualizacion ?? null);
+      setConcObsRel(concRes?.observaciones_relevantes ?? '');
+      setConcFechaCierre(concRes?.fecha_cierre_estudio ? String(concRes.fecha_cierre_estudio).slice(0, 10) : '');
+      setConcAnalista(concRes?.analista_responsable ?? '');
       setDomPhotoUrl(domRes?.photo_url ?? '');
       setDomVisitDate(domRes?.visit_date ? String(domRes.visit_date).slice(0, 10) : '');
       setDomVisitType(domRes?.visit_type === 'referenciada' ? 'referenciada' : 'presencial');
@@ -382,6 +437,10 @@ export default function AdminStudyDetailPage() {
         study_invitation_id: selectedInvId,
         analyst_notes: concNotes,
         verdict: concVerdict,
+        resultado_actualizacion: concResultado,
+        observaciones_relevantes: concObsRel,
+        fecha_cierre_estudio: concFechaCierre || null,
+        analista_responsable: concAnalista,
       }),
     })
       .then((r) => r.json())
@@ -483,6 +542,16 @@ export default function AdminStudyDetailPage() {
       .finally(() => setResendingCompanyInvite(false));
   };
 
+  const handleDownloadServerPdf = () => {
+    if (!selectedInvId) return;
+    setServerPdfLoading(true);
+    window.open(`/api/studies.php?action=download_pdf&invitation_id=${selectedInvId}`, '_blank');
+    setTimeout(() => setServerPdfLoading(false), 1500);
+  };
+
+  const domPhotoDownloadUrl =
+    domPhotoUrl && !/^https?:\/\//i.test(domPhotoUrl) ? documentDownloadApiUrl(domPhotoUrl) : '';
+
   const handleSendCompanyReset = () => {
     const email = String(study?.invited_company_email || '').trim();
     if (!email) {
@@ -578,11 +647,28 @@ export default function AdminStudyDetailPage() {
                     <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <button
                         type="button"
+                        onClick={handleDownloadServerPdf}
+                        disabled={selectedInv.status !== 'completed'}
+                        style={{
+                          padding: '8px 14px',
+                          background: selectedInv.status === 'completed' ? '#0f766e' : '#9ca3af',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 8,
+                          cursor: selectedInv.status === 'completed' ? 'pointer' : 'not-allowed',
+                          fontSize: 13,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {serverPdfLoading ? 'Abriendo…' : 'PDF candidato (servidor)'}
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => downloadCandidatePdf(selectedInv, formData, study?.company_name)}
                         disabled={formDataLoading || Object.keys(formData).length === 0}
-                        style={{ padding: '8px 14px', background: '#059669', color: '#fff', border: 'none', borderRadius: 8, cursor: formDataLoading ? 'not-allowed' : 'pointer', fontSize: 13 }}
+                        style={{ padding: '8px 14px', background: '#059669', color: '#fff', border: 'none', borderRadius: 8, cursor: formDataLoading ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600 }}
                       >
-                        Descargar PDF
+                        PDF rápido (navegador)
                       </button>
                       <button
                         type="button"
@@ -631,7 +717,14 @@ export default function AdminStudyDetailPage() {
                           {entries.map(([k, v]) => {
                             const valueStr = v != null && String(v).trim() !== '' ? String(v) : '';
                             const isDocField = isDocumentosSection && DOCUMENT_FIELD_KEYS.includes(k);
-                            const downloadUrl = isDocField && valueStr ? documentDownloadApiUrl(valueStr) : '';
+                            const isStoredPdf =
+                              valueStr &&
+                              (k.endsWith('_pdf') ||
+                                k === 'identificacion_oficial_pdf' ||
+                                /^cap_doc_/.test(k)) &&
+                              !/^https?:\/\//i.test(valueStr);
+                            const downloadUrl =
+                              (isDocField && valueStr) || isStoredPdf ? documentDownloadApiUrl(valueStr) : '';
                             return (
                               <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                                 <span style={{ fontWeight: 500, minWidth: 180 }}>{formatFieldLabel(k)}:</span>
@@ -659,51 +752,120 @@ export default function AdminStudyDetailPage() {
                     })()}
                   </div>
 
-                  {/* Admin-only: Verificación Domiciliaria + Conclusiones */}
+                  {/* Admin-only: 11. Uso interno + verificación + semáforo */}
                   {isAdmin && (
-                    <>
-                      <div style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 20, marginBottom: 20 }}>
-                        <h4 style={{ margin: '0 0 12px' }}>Verificación Domiciliaria (uso interno)</h4>
-                        <div style={{ marginBottom: 12 }}>
-                          <label style={{ display: 'block', marginBottom: 4 }}>Foto</label>
-                          <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ marginBottom: 4 }} />
-                          {domPhotoUrl && <p style={{ margin: 0, fontSize: 12 }}>URL: {domPhotoUrl}</p>}
-                        </div>
-                        <div style={{ marginBottom: 12 }}>
-                          <label style={{ display: 'block', marginBottom: 4 }}>Fecha de visita</label>
-                          <input type="date" value={domVisitDate} onChange={(e) => setDomVisitDate(e.target.value)} style={{ padding: 8, width: '100%', boxSizing: 'border-box' }} />
-                        </div>
-                        <div style={{ marginBottom: 12 }}>
-                          <label style={{ display: 'block', marginBottom: 4 }}>Tipo de visita</label>
-                          <label><input type="radio" name="visitType" checked={domVisitType === 'presencial'} onChange={() => setDomVisitType('presencial')} /> Presencial</label>
-                          <label style={{ marginLeft: 16 }}><input type="radio" name="visitType" checked={domVisitType === 'referenciada'} onChange={() => setDomVisitType('referenciada')} /> Referenciada</label>
-                        </div>
-                        <div style={{ marginBottom: 12 }}>
-                          <label style={{ display: 'block', marginBottom: 4 }}>Observaciones del analista</label>
-                          <textarea value={domNotes} onChange={(e) => setDomNotes(e.target.value)} rows={3} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} />
-                        </div>
-                        <button onClick={handleSaveDomiciliary} disabled={savingDom} style={{ padding: '8px 16px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Guardar verificación</button>
+                    <div style={{ border: '2px solid #1e3a5f', borderRadius: 12, padding: 20, marginTop: 24, background: '#f8fafc' }}>
+                      <h3 style={{ margin: '0 0 4px', color: '#1e3a5f', fontSize: 16 }}>11. USO INTERNO – AGENCIA / EMPRESA</h3>
+                      <p style={{ margin: '0 0 16px', fontSize: 12, color: '#64748b', fontWeight: 600 }}>No visible para el colaborador</p>
+
+                      <h4 style={{ margin: '0 0 10px', fontSize: 14 }}>CONCLUSIONES Y RESULTADO DE LA ACTUALIZACIÓN</h4>
+                      <div style={{ marginBottom: 12 }}>
+                        <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Conclusiones del analista</label>
+                        <textarea value={concNotes} onChange={(e) => setConcNotes(e.target.value)} rows={4} placeholder="Conclusiones…" style={{ width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #cbd5e1' }} />
                       </div>
-                      <div style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
-                        <h4 style={{ margin: '0 0 12px' }}>Conclusiones del Analista</h4>
-                        <div style={{ marginBottom: 12 }}>
-                          <label style={{ display: 'block', marginBottom: 4 }}>Notas internas del analista</label>
-                          <textarea value={concNotes} onChange={(e) => setConcNotes(e.target.value)} rows={3} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }} />
+                      <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 13 }}>Resultado de la actualización</p>
+                      {[
+                        { value: 'sin_observaciones', label: 'Información actualizada sin observaciones' },
+                        { value: 'con_observaciones', label: 'Información actualizada con observaciones' },
+                        { value: 'pendiente_complementar', label: 'Información pendiente de complementar' },
+                      ].map(({ value, label }) => (
+                        <label key={value} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 8, cursor: 'pointer', fontSize: 14 }}>
+                          <input type="radio" name="concResultado" checked={concResultado === value} onChange={() => setConcResultado(value)} style={{ marginTop: 3 }} />
+                          <span>{label}</span>
+                        </label>
+                      ))}
+                      <p style={{ margin: '8px 0 12px', fontSize: 12, color: '#475569', fontStyle: 'italic', padding: 10, background: '#e0f2fe', borderRadius: 8 }}>
+                        El estatus «Información pendiente de complementar» se refiere exclusivamente a documentación o información administrativa en proceso y no constituye observación negativa sobre el colaborador.
+                      </p>
+                      <div style={{ marginBottom: 12 }}>
+                        <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Observaciones relevantes (si aplica)</label>
+                        <textarea value={concObsRel} onChange={(e) => setConcObsRel(e.target.value)} rows={3} style={{ width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #cbd5e1' }} />
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                        <div>
+                          <label style={{ fontWeight: 600, fontSize: 13 }}>Fecha de cierre del estudio</label>
+                          <input type="date" value={concFechaCierre} onChange={(e) => setConcFechaCierre(e.target.value)} style={{ width: '100%', marginTop: 6, padding: 8, borderRadius: 8, border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
                         </div>
-                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
-                          {[
-                            { value: 'recomendable', label: '✅ Recomendable', border: '#16a34a' },
-                            { value: 'recomendable_con_observaciones', label: '⚠️ Recomendable con observaciones', border: '#eab308' },
-                            { value: 'no_recomendable', label: '❌ No recomendable', border: '#dc2626' },
-                          ].map(({ value, label, border }) => (
-                            <button key={value} type="button" onClick={() => setConcVerdict(value)} style={{ padding: 12, border: `2px solid ${concVerdict === value ? border : '#e5e7eb'}`, borderRadius: 8, background: concVerdict === value ? `${border}20` : '#fff', cursor: 'pointer', flex: 1, minWidth: 140 }}>
+                        <div>
+                          <label style={{ fontWeight: 600, fontSize: 13 }}>Analista responsable</label>
+                          <input type="text" value={concAnalista} onChange={(e) => setConcAnalista(e.target.value)} placeholder="Nombre del analista" style={{ width: '100%', marginTop: 6, padding: 8, borderRadius: 8, border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
+                        </div>
+                      </div>
+
+                      <hr style={{ border: 'none', borderTop: '1px solid #cbd5e1', margin: '16px 0' }} />
+                      <h4 style={{ margin: '0 0 10px', fontSize: 14 }}>VERIFICACIÓN DOMICILIARIA – USO INTERNO</h4>
+                      <div style={{ marginBottom: 12 }}>
+                        <label style={{ display: 'block', marginBottom: 6, fontWeight: 600 }}>Fotografía exterior del domicilio</label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+                          <input type="file" accept="image/*" onChange={handlePhotoUpload} />
+                          {domPhotoDownloadUrl ? (
+                            <a
+                              href={domPhotoDownloadUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download
+                              style={{ padding: '10px 16px', background: '#166534', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 700, fontSize: 14 }}
+                            >
+                              Descargar foto guardada
+                            </a>
+                          ) : (
+                            <span style={{ fontSize: 13, color: '#64748b' }}>Suba y guarde para poder descargar después</span>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ marginBottom: 12 }}>
+                        <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Fecha de visita</label>
+                        <input type="date" value={domVisitDate} onChange={(e) => setDomVisitDate(e.target.value)} style={{ padding: 8, width: '100%', maxWidth: 280, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #cbd5e1' }} />
+                      </div>
+                      <div style={{ marginBottom: 12 }}>
+                        <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Tipo de visita</label>
+                        <label style={{ marginRight: 16 }}><input type="radio" name="visitType" checked={domVisitType === 'presencial'} onChange={() => setDomVisitType('presencial')} /> Presencial</label>
+                        <label><input type="radio" name="visitType" checked={domVisitType === 'referenciada'} onChange={() => setDomVisitType('referenciada')} /> Referenciada</label>
+                      </div>
+                      <div style={{ marginBottom: 12 }}>
+                        <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Observaciones del analista (visita)</label>
+                        <textarea value={domNotes} onChange={(e) => setDomNotes(e.target.value)} rows={3} style={{ width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #cbd5e1' }} />
+                      </div>
+                      <button onClick={handleSaveDomiciliary} disabled={savingDom} style={{ padding: '10px 18px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>
+                        Guardar verificación domiciliaria
+                      </button>
+
+                      <hr style={{ border: 'none', borderTop: '1px solid #cbd5e1', margin: '20px 0' }} />
+                      <p style={{ margin: '0 0 10px', fontWeight: 700, fontSize: 13 }}>Semáforo (opcional – visibilidad empresa según configuración)</p>
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+                        {[
+                          { value: 'recomendable', label: 'Recomendable', bg: '#15803d', activeBg: '#166534' },
+                          { value: 'recomendable_con_observaciones', label: 'Recomendable c/ obs.', bg: '#ca8a04', activeBg: '#a16207' },
+                          { value: 'no_recomendable', label: 'No recomendable', bg: '#b91c1c', activeBg: '#991b1b' },
+                        ].map(({ value, label, bg, activeBg }) => {
+                          const on = concVerdict === value;
+                          return (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => setConcVerdict(value)}
+                              style={{
+                                padding: '12px 16px',
+                                border: on ? `3px solid ${activeBg}` : '2px solid #334155',
+                                borderRadius: 8,
+                                background: on ? activeBg : bg,
+                                color: '#ffffff',
+                                cursor: 'pointer',
+                                fontWeight: 800,
+                                fontSize: 13,
+                                textShadow: '0 1px 2px rgba(0,0,0,0.35)',
+                                boxShadow: on ? '0 2px 8px rgba(0,0,0,0.25)' : 'none',
+                              }}
+                            >
                               {label}
                             </button>
-                          ))}
-                        </div>
-                        <button onClick={handleSaveConclusion} disabled={savingConc} style={{ padding: '8px 16px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Guardar conclusión</button>
+                          );
+                        })}
                       </div>
-                    </>
+                      <button onClick={handleSaveConclusion} disabled={savingConc} style={{ padding: '10px 18px', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>
+                        Guardar conclusiones y cierre
+                      </button>
+                    </div>
                   )}
                 </>
               )}

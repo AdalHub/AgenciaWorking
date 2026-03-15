@@ -69,6 +69,18 @@ export default function AdminStudiesPage() {
   }, []);
 
   useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'visible') loadStudies();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', loadStudies);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', loadStudies);
+    };
+  }, []);
+
+  useEffect(() => {
     if (drawerStudyId) {
       setDrawerLoading(true);
       fetch(`/api/studies.php?action=list_invitations&study_id=${drawerStudyId}`, { credentials: 'include' })
