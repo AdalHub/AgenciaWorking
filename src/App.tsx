@@ -28,6 +28,7 @@ import EstudioPublicoPage from './pages/EstudioPublicoPage';
 import EstudiosViewPage from './pages/EstudiosViewPage';
 import AdminStudiesPage from './pages/AdminStudiesPage';
 import AdminStudyDetailPage from './pages/AdminStudyDetailPage';
+import AdminCandidateStudyViewPage from './pages/AdminCandidateStudyViewPage';
 import AdminEmailQueuePage from './pages/AdminEmailQueuePage';
 
 export default function App() {
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="blogs" element={<AdminTabContent tab="blogs" />} />
           <Route path="studies" element={<AdminStudiesPage />} />
           <Route path="studies/:id" element={<AdminStudyDetailPage />} />
+          <Route path="studies/:id/candidates/:invitationId/view" element={<AdminCandidateStudyViewPage />} />
           <Route path="email-queue" element={<AdminEmailQueuePage />} />
         </Route>
         <Route path="/schedule" element={<ScheduleList />} />

@@ -19,15 +19,18 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 };
 
 const PREFERRED_SECTIONS = [
-  'Formato Actualización',
+  'Datos Personales y de Contacto',
   'Autorización Actualización',
-  'Datos Generales e Identificación',
-  'Domicilio Actual Actualización',
-  'Situación Laboral Actual',
-  'Ingresos y Situación Económica',
+  'Domicilio',
+  'Información del Cónyuge, Familiares y Contacto',
+  'Referencias Personales',
   'Escolaridad y Capacitación',
+  'Historia Laboral',
+  'Datos Generales e Identificación',
+  'Ingresos y Situación Económica',
+  'Información Legal y Trámite de Carta de No Antecedentes Penales',
   'Bienestar y Antecedentes Legales',
-  'Carta Penal Observaciones y Declaración',
+  'Entorno Social y Condiciones de Vivienda',
   'Datos Personales',
   'Datos de Contacto',
   'Domicilio Actual',
@@ -124,6 +127,74 @@ function escapeHtml(s: string): string {
 }
 
 function formatFieldLabel(key: string): string {
+  const refMatch = key.match(/^(\d+)_ref_(.+)$/);
+  if (refMatch) {
+    const num = parseInt(refMatch[1], 10) + 1;
+    const sub = refMatch[2].replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    return `Referencia ${num} – ${sub}`;
+  }
+  const famMatch = key.match(/^(\d+)_fam_(.+)$/);
+  if (famMatch) {
+    const num = parseInt(famMatch[1], 10) + 1;
+    const sub = famMatch[2].replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    return `Familiar ${num} – ${sub}`;
+  }
+  if (key.startsWith('conyuge_')) {
+    const sub = key.slice(7).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    return `Cónyuge/Pareja – ${sub}`;
+  }
+  const ieDepMatch = key.match(/^ie_dep_(\d+)_(.+)$/);
+  if (ieDepMatch) {
+    const num = parseInt(ieDepMatch[1], 10) + 1;
+    const sub = ieDepMatch[2].replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    return `Dependiente ${num} – ${sub}`;
+  }
+  if (key.startsWith('gasto_')) {
+    const sub = key.slice(6).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    return `Gasto – ${sub}`;
+  }
+  if (key.startsWith('contacto_emergencia_')) {
+    const sub = key.slice(19).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    return `Contacto emergencia – ${sub}`;
+  }
+  if (key.startsWith('contacto_')) {
+    const sub = key.slice(9).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    return `Contacto – ${sub}`;
+  }
+  const hlAntMatch = key.match(/^hl_ant_(\d+)_(.+)$/);
+  if (hlAntMatch) {
+    const num = parseInt(hlAntMatch[1], 10) + 1;
+    const sub = hlAntMatch[2].replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    return `Empleo anterior ${num} – ${sub}`;
+  }
+  const hlAdicMatch = key.match(/^hl_adic_(\d+)_(.+)$/);
+  if (hlAdicMatch) {
+    const num = parseInt(hlAdicMatch[1], 10) + 1;
+    const sub = hlAdicMatch[2].replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    return `Empleo adicional ${num} – ${sub}`;
+  }
+  const hlNomMatch = key.match(/^hl_nom_(\d+)_(.+)$/);
+  if (hlNomMatch) {
+    const num = parseInt(hlNomMatch[1], 10) + 1;
+    const sub = hlNomMatch[2].replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    return `Empleo no mencionado ${num} – ${sub}`;
+  }
+  if (key.startsWith('hl_actual_')) {
+    const sub = key.slice(10).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    return `Empleo actual – ${sub}`;
+  }
+  if (key.startsWith('hl_periodo_sin_')) {
+    const m = key.match(/^hl_periodo_sin_(\d+)_(.+)$/);
+    if (m) {
+      const num = parseInt(m[1], 10) + 1;
+      const sub = m[2].replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      return `Periodo sin empleo ${num} – ${sub}`;
+    }
+  }
+  if (key.startsWith('hl_periodos_sin_empleo')) {
+    const sub = key.slice(21).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).trim();
+    return sub ? `Periodos sin empleo – ${sub}` : 'Periodos sin empleo';
+  }
   return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
@@ -199,6 +270,10 @@ export default function AdminStudyDetailPage() {
   const [savingDom, setSavingDom] = useState(false);
   const [savingConc, setSavingConc] = useState(false);
   const [serverPdfLoading, setServerPdfLoading] = useState(false);
+  const [hlAdminOpen, setHlAdminOpen] = useState(false);
+  const [hlAdminFields, setHlAdminFields] = useState<Record<string, string>>({});
+  const [hlAdminSaving, setHlAdminSaving] = useState(false);
+  const [hlAdminUploadingKey, setHlAdminUploadingKey] = useState<string | null>(null);
 
   // Study actions
   const [statusChanging, setStatusChanging] = useState(false);
@@ -306,6 +381,20 @@ export default function AdminStudyDetailPage() {
       isAdmin ? fetch(domUrl, { credentials: 'include' }).then(async (r) => (r.ok ? r.json().catch(() => null) : null)) : Promise.resolve(null),
     ]).then(([formRes, concRes, domRes]) => {
       setFormData(typeof formRes === 'object' && formRes !== null && !formRes.error ? formRes : {});
+      // Prefill admin-only Historia Laboral fields (notes + attachments)
+      try {
+        const hl = (formRes && typeof formRes === 'object' && formRes['Historia Laboral']) ? formRes['Historia Laboral'] : {};
+        const out: Record<string, string> = {};
+        if (hl && typeof hl === 'object') {
+          Object.entries(hl).forEach(([k, v]) => {
+            if (!/^hl_(actual|ant_\d+|adic_\d+)_admin_/.test(k)) return;
+            out[k] = v != null ? String(v) : '';
+          });
+        }
+        setHlAdminFields(out);
+      } catch {
+        setHlAdminFields({});
+      }
       setConclusion(concRes && !concRes?.error ? concRes : null);
       setDomiciliary(domRes && !domRes?.error ? domRes : null);
       // Always set form fields from response so candidate with no data shows empty (not previous candidate's data)
@@ -321,6 +410,79 @@ export default function AdminStudyDetailPage() {
       setDomNotes(domRes?.analyst_notes ?? '');
     }).finally(() => setFormDataLoading(false));
   }, [selectedInvId, isAdmin]);
+
+  const reloadFormData = () => {
+    if (!selectedInvId) return Promise.resolve();
+    setFormDataLoading(true);
+    const formUrl = `/api/studies.php?action=get_form_data&invitation_id=${selectedInvId}`;
+    return fetch(formUrl, { credentials: 'include' })
+      .then(async (r) => (r.ok ? r.json().catch(() => ({})) : {}))
+      .then((formRes) => {
+        setFormData(typeof formRes === 'object' && formRes !== null && !formRes.error ? formRes : {});
+        const hl = (formRes && typeof formRes === 'object' && formRes['Historia Laboral']) ? formRes['Historia Laboral'] : {};
+        const out: Record<string, string> = {};
+        if (hl && typeof hl === 'object') {
+          Object.entries(hl).forEach(([k, v]) => {
+            if (!/^hl_(actual|ant_\d+|adic_\d+)_admin_/.test(k)) return;
+            out[k] = v != null ? String(v) : '';
+          });
+        }
+        setHlAdminFields(out);
+      })
+      .finally(() => setFormDataLoading(false));
+  };
+
+  const saveHistoriaLaboralAdmin = () => {
+    if (!selectedInvId) return;
+    setHlAdminSaving(true);
+    const fields = Object.entries(hlAdminFields).map(([field_key, field_value]) => ({
+      section: 'Historia Laboral',
+      field_key,
+      field_value: field_value ?? '',
+    }));
+    fetch('/api/studies.php?action=save_admin_form_data_batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ study_invitation_id: selectedInvId, fields }),
+    })
+      .then((r) => r.json().catch(() => ({})))
+      .then((d) => {
+        if (d?.error) setToast(d.error);
+        else setToast('Notas de historia laboral guardadas');
+      })
+      .then(() => reloadFormData())
+      .finally(() => setHlAdminSaving(false));
+  };
+
+  const uploadHistoriaLaboralAttachment = (file: File, key: string) => {
+    if (!file) return;
+    const max = 5 * 1024 * 1024;
+    if (file.size > max) {
+      setToast('El archivo no debe superar 5 MB');
+      return;
+    }
+    const okPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const okImg = /^image\/(jpeg|jpg|png|webp)$/i.test(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name);
+    if (!okPdf && !okImg) {
+      setToast('Sube un PDF o una imagen (JPG/PNG/WebP)');
+      return;
+    }
+    setHlAdminUploadingKey(key);
+    const fd = new FormData();
+    fd.append('file', file);
+    fetch('/api/upload.php', { method: 'POST', credentials: 'include', body: fd })
+      .then((r) => r.json().catch(() => ({})))
+      .then((d) => {
+        if (d?.url) {
+          setHlAdminFields((prev) => ({ ...prev, [key]: String(d.url) }));
+          setToast('Archivo cargado. Recuerda guardar.');
+        } else {
+          setToast('No se pudo subir el archivo');
+        }
+      })
+      .finally(() => setHlAdminUploadingKey(null));
+  };
 
   const selectedInv = invitations.find((i) => i.id === selectedInvId);
   const completedCount = invitations.filter((i) => i.status === 'completed').length;
@@ -647,6 +809,13 @@ export default function AdminStudyDetailPage() {
                     <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <button
                         type="button"
+                        onClick={() => navigate(`/admin/studies/${studyId}/candidates/${selectedInv.id}/view?back=study`)}
+                        style={{ padding: '8px 14px', background: '#111827', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 800 }}
+                      >
+                        Ver estudio
+                      </button>
+                      <button
+                        type="button"
                         onClick={handleDownloadServerPdf}
                         disabled={selectedInv.status !== 'completed'}
                         style={{
@@ -723,8 +892,10 @@ export default function AdminStudyDetailPage() {
                                 k === 'identificacion_oficial_pdf' ||
                                 /^cap_doc_/.test(k)) &&
                               !/^https?:\/\//i.test(valueStr);
+                            const isStoredImage = valueStr && k === 'foto_participante' && !/^https?:\/\//i.test(valueStr);
+                            const isStoredAttachment = valueStr && /_admin_respaldo$/.test(k) && !/^https?:\/\//i.test(valueStr);
                             const downloadUrl =
-                              (isDocField && valueStr) || isStoredPdf ? documentDownloadApiUrl(valueStr) : '';
+                              (isDocField && valueStr) || isStoredPdf || isStoredImage || isStoredAttachment ? documentDownloadApiUrl(valueStr) : '';
                             return (
                               <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                                 <span style={{ fontWeight: 500, minWidth: 180 }}>{formatFieldLabel(k)}:</span>
@@ -747,6 +918,106 @@ export default function AdminStudyDetailPage() {
                               </div>
                             );
                           })}
+
+                          {sectionKey === 'Historia Laboral' && (
+                            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e5e7eb' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                                <h4 style={{ margin: 0, fontSize: 14 }}>Notas del analista (solo admin)</h4>
+                                <button type="button" onClick={() => setHlAdminOpen((s) => !s)} style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontSize: 13 }}>
+                                  {hlAdminOpen ? 'Ocultar' : 'Mostrar'}
+                                </button>
+                              </div>
+                              {hlAdminOpen && (
+                                <div style={{ marginTop: 12, display: 'grid', gap: 14 }}>
+                                  {[
+                                    { label: 'Empleo actual', prefix: 'hl_actual' },
+                                    { label: 'Empleo anterior 1', prefix: 'hl_ant_0' },
+                                    { label: 'Empleo anterior 2', prefix: 'hl_ant_1' },
+                                    { label: 'Empleo anterior 3', prefix: 'hl_ant_2' },
+                                    { label: 'Empleo adicional 1', prefix: 'hl_adic_0' },
+                                    { label: 'Empleo adicional 2', prefix: 'hl_adic_1' },
+                                    { label: 'Empleo adicional 3', prefix: 'hl_adic_2' },
+                                  ].map(({ label, prefix }) => {
+                                    const k1 = `${prefix}_admin_comentarios_entrevistado`;
+                                    const k2 = `${prefix}_admin_observaciones_internas`;
+                                    const k3 = `${prefix}_admin_respaldo`;
+                                    return (
+                                      <div key={prefix} style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                                        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>{label}</div>
+                                        <div style={{ display: 'grid', gap: 10 }}>
+                                          <div>
+                                            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 12 }}>ESPACIO 1: Comentarios del entrevistado</label>
+                                            <textarea
+                                              value={hlAdminFields[k1] ?? ''}
+                                              onChange={(e) => setHlAdminFields((p) => ({ ...p, [k1]: e.target.value }))}
+                                              rows={3}
+                                              style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                                              placeholder="Notas de la referencia…"
+                                            />
+                                          </div>
+                                          <div>
+                                            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 12 }}>ESPACIO 2: Observaciones internas Working</label>
+                                            <textarea
+                                              value={hlAdminFields[k2] ?? ''}
+                                              onChange={(e) => setHlAdminFields((p) => ({ ...p, [k2]: e.target.value }))}
+                                              rows={3}
+                                              style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                                              placeholder="Observaciones internas…"
+                                            />
+                                          </div>
+                                          <div>
+                                            <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 12 }}>SUBIR IMAGEN O PDF</label>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                                              <label style={{ cursor: hlAdminUploadingKey === k3 ? 'wait' : 'pointer' }}>
+                                                <input
+                                                  type="file"
+                                                  accept=".pdf,application/pdf,image/*"
+                                                  style={{ display: 'none' }}
+                                                  disabled={hlAdminUploadingKey !== null}
+                                                  onChange={(e) => {
+                                                    const f = e.target.files?.[0];
+                                                    if (!f) return;
+                                                    uploadHistoriaLaboralAttachment(f, k3);
+                                                    e.target.value = '';
+                                                  }}
+                                                />
+                                                <span style={{ display: 'inline-block', padding: '8px 12px', background: hlAdminUploadingKey === k3 ? '#64748b' : '#1e40af', color: '#fff', borderRadius: 8, fontSize: 12, fontWeight: 700 }}>
+                                                  {hlAdminUploadingKey === k3 ? 'Subiendo…' : 'Adjuntar'}
+                                                </span>
+                                              </label>
+                                              {hlAdminFields[k3] ? (
+                                                <a
+                                                  href={documentDownloadApiUrl(hlAdminFields[k3])}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  style={{ fontSize: 12, color: '#059669', fontWeight: 700, textDecoration: 'none' }}
+                                                >
+                                                  Ver archivo
+                                                </a>
+                                              ) : (
+                                                <span style={{ fontSize: 12, color: '#6b7280' }}>Sin archivo</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+
+                                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
+                                    <button
+                                      type="button"
+                                      onClick={saveHistoriaLaboralAdmin}
+                                      disabled={hlAdminSaving}
+                                      style={{ padding: '10px 14px', background: hlAdminSaving ? '#9ca3af' : '#059669', color: '#fff', border: 'none', borderRadius: 10, cursor: hlAdminSaving ? 'not-allowed' : 'pointer', fontWeight: 800, fontSize: 13 }}
+                                    >
+                                      {hlAdminSaving ? 'Guardando…' : 'Guardar notas de historia laboral'}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })()}
