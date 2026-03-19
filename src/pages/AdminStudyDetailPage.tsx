@@ -711,6 +711,20 @@ export default function AdminStudyDetailPage() {
     setTimeout(() => setServerPdfLoading(false), 1500);
   };
 
+  const handleDownloadPrettyCandidatePdfForInvitation = async (inv: Invitation) => {
+    setServerPdfLoading(true);
+    try {
+      const res = await fetch(`/api/studies.php?action=get_form_data&invitation_id=${inv.id}`, { credentials: 'include' });
+      const data = await res.json().catch(() => ({}));
+      const formDataForInv = data && typeof data === 'object' && !data.error ? (data as FormDataBySection) : {};
+      downloadCandidatePdf(inv, formDataForInv, study?.company_name);
+    } catch {
+      setToast('No se pudo generar el PDF imprimible del candidato.');
+    } finally {
+      setTimeout(() => setServerPdfLoading(false), 500);
+    }
+  };
+
   const domPhotoDownloadUrl =
     domPhotoUrl && !/^https?:\/\//i.test(domPhotoUrl) ? documentDownloadApiUrl(domPhotoUrl) : '';
 
@@ -752,10 +766,15 @@ export default function AdminStudyDetailPage() {
   return (
     <>
         <div style={{ maxWidth: 1400, width: '100%', boxSizing: 'border-box', display: 'flex', gap: 24, alignItems: 'flex-start' }}>
-          {/* Two columns: list (30%) + detail (70%) */}
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', gap: 24 }}>
-            {/* Left: candidate list */}
-            <div style={{ width: '30%', flexShrink: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+          {/* Main: candidate list */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', gap: 24, flexDirection: 'column' }}>
+            <div>
+              <button onClick={() => navigate('/admin/studies')} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline', fontSize: 14 }}>
+                ← Volver a estudios
+              </button>
+            </div>
+
+            <div style={{ width: '100%', flexShrink: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
               <div style={{ marginBottom: 8 }}>
                 <h3 style={{ margin: '0 0 4px' }}>{study.company_name}</h3>
                 <span style={{ padding: '4px 8px', borderRadius: 6, background: statusStyle.bg, color: statusStyle.text, fontSize: 12 }}>{STATUS_LABELS[study.status]}</span>
@@ -764,23 +783,143 @@ export default function AdminStudyDetailPage() {
               {study.study_type === 'public' && (
                 <div style={{ padding: 10, background: '#fef3c7', borderRadius: 8, marginBottom: 12, fontSize: 13 }}>Estudio público — los candidatos acceden con el enlace compartido, no con códigos individuales.</div>
               )}
+
+              {/* Acciones del estudio (arriba, en vez de panel lateral) */}
+              <div style={{ marginBottom: 16, padding: 14, background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 12 }}>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <span style={{ padding: '4px 8px', borderRadius: 6, background: statusStyle.bg, color: statusStyle.text, fontSize: 12, fontWeight: 800 }}>
+                    {STATUS_LABELS[study.status] || study.status}
+                  </span>
+
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 900, color: '#111827' }}>Cambiar estado</label>
+                    <select
+                      value={study.status}
+                      onChange={(e) => handleStatusChange(e.target.value)}
+                      disabled={statusChanging}
+                      style={{ padding: 8, borderRadius: 10, border: '1px solid #e5e7eb', minWidth: 210, background: '#fff' }}
+                    >
+                      {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                        <option key={k} value={k}>{v}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+                  <button
+                    onClick={handleSeedDemo}
+                    disabled={seedingDemo}
+                    style={{ padding: '10px 14px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: 10, cursor: seedingDemo ? 'not-allowed' : 'pointer', fontWeight: 900, fontSize: 13 }}
+                  >
+                    {seedingDemo ? 'Rellenando…' : 'Rellenar estudio de prueba (demo)'}
+                  </button>
+
+                  {study.invited_company_email && (
+                    <button
+                      onClick={handleResendCompanyInvite}
+                      disabled={resendingCompanyInvite}
+                      style={{ padding: '10px 14px', background: '#0ea5e9', color: '#fff', border: 'none', borderRadius: 10, cursor: resendingCompanyInvite ? 'not-allowed' : 'pointer', fontWeight: 900, fontSize: 13 }}
+                    >
+                      {resendingCompanyInvite ? 'Reenviando invitación…' : 'Reenviar invitación empresa'}
+                    </button>
+                  )}
+
+                  {study.invited_company_email && (
+                    <button
+                      onClick={handleSendCompanyReset}
+                      disabled={sendingCompanyReset}
+                      style={{ padding: '10px 14px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 10, cursor: sendingCompanyReset ? 'not-allowed' : 'pointer', fontWeight: 900, fontSize: 13 }}
+                    >
+                      {sendingCompanyReset ? 'Enviando reset…' : 'Enviar reset contraseña empresa'}
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setShowExtendModal(true)}
+                    style={{ padding: '10px 14px', background: '#f3f4f6', color: '#0f172a', border: '1px solid #e5e7eb', borderRadius: 10, cursor: 'pointer', fontWeight: 900, fontSize: 13 }}
+                  >
+                    Extender retención
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ minWidth: 260 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 900, color: '#111827' }}>
+                      <input type="checkbox" checked={!!study.show_verdict_to_company} onChange={handleVerdictToggle} />
+                      Compartir dictamen con empresa
+                    </label>
+                    <p style={{ margin: '4px 0 0', fontSize: 11, color: '#6b7280' }}>Activo: el PDF de la empresa incluirá el resultado de la evaluación</p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => setShowCloseConfirm(true)}
+                      disabled={study.status === 'concluido' || !canCloseStudy}
+                      style={{
+                        padding: '10px 14px',
+                        background: study.status === 'concluido' || !canCloseStudy ? '#f3f4f6' : '#1d4ed8',
+                        color: study.status === 'concluido' || !canCloseStudy ? '#6b7280' : '#fff',
+                        border: 'none',
+                        borderRadius: 10,
+                        cursor: study.status === 'concluido' || !canCloseStudy ? 'not-allowed' : 'pointer',
+                        fontWeight: 900,
+                        fontSize: 13,
+                      }}
+                    >
+                      Cerrar estudio / Generar PDF
+                    </button>
+
+                    {study.status === 'concluido' && (
+                      <button
+                        type="button"
+                        onClick={handleDownloadStudyFinalPdf}
+                        disabled={downloadFinalPdfLoading}
+                        style={{ padding: '10px 14px', background: '#059669', color: '#fff', border: 'none', borderRadius: 10, cursor: downloadFinalPdfLoading ? 'not-allowed' : 'pointer', fontWeight: 900, fontSize: 13 }}
+                      >
+                        {downloadFinalPdfLoading ? 'Descargando…' : 'Descargar PDF final del estudio'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div style={{ maxHeight: 400, overflowY: 'auto' }}>
                 {invitations.map((inv) => (
                   <div
                     key={inv.id}
-                    onClick={() => setSelectedInvId(inv.id)}
                     style={{
                       padding: 12,
                       borderBottom: '1px solid #e5e7eb',
-                      cursor: 'pointer',
-                      background: selectedInvId === inv.id ? '#eff6ff' : undefined,
+                      display: 'flex',
+                      gap: 12,
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
                     }}
                   >
-                    <div style={{ fontWeight: 500 }}>{inv.candidate_name?.trim() || inv.candidate_email || 'Anónimo'}</div>
-                    <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-                      <span style={{ padding: '2px 6px', borderRadius: 4, background: inv.status === 'completed' ? '#d1fae5' : inv.status === 'in_progress' ? '#dbeafe' : '#f3f4f6' }}>{inv.status}</span>
-                      {selectedInvId === inv.id && Object.keys(formData).length > 0 && (
-                        <span style={{ marginLeft: 8 }}>{completionPct(formData)}%</span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, color: '#0f172a' }}>{inv.candidate_name?.trim() || inv.candidate_email || 'Anónimo'}</div>
+                      <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+                        <span style={{ padding: '2px 6px', borderRadius: 4, background: inv.status === 'completed' ? '#d1fae5' : inv.status === 'in_progress' ? '#dbeafe' : '#f3f4f6' }}>{inv.status}</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/admin/studies/${studyId}/candidates/${inv.id}/view?back=study`)}
+                        style={{ padding: '8px 12px', background: '#111827', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 800 }}
+                      >
+                        Ver
+                      </button>
+                      {inv.status === 'completed' && (
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadPrettyCandidatePdfForInvitation(inv)}
+                          disabled={serverPdfLoading}
+                          style={{ padding: '8px 12px', background: '#059669', color: '#fff', border: 'none', borderRadius: 8, cursor: serverPdfLoading ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 800 }}
+                        >
+                          {serverPdfLoading ? 'Descargando…' : 'Descargar'}
+                        </button>
                       )}
                     </div>
                   </div>
@@ -788,8 +927,9 @@ export default function AdminStudyDetailPage() {
               </div>
             </div>
 
-            {/* Right: candidate detail */}
-            <div style={{ flex: 1, minWidth: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+            {/* Candidate detail intentionally hidden in this redesigned flow.
+                Click "Ver" to open the full multi-page candidate view. */}
+            <div style={{ flex: 1, minWidth: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20, display: 'none' }}>
               {!selectedInv ? (
                 <p style={{ color: '#6b7280', textAlign: 'center', padding: 40 }}>Selecciona un candidato de la lista para ver su información</p>
               ) : (
@@ -1143,78 +1283,10 @@ export default function AdminStudyDetailPage() {
             </div>
           </div>
 
-          {/* Study actions panel - sticky right */}
-          <div style={{ position: 'sticky', top: 96, width: 280, flexShrink: 0 }}>
-            <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
-              <h4 style={{ margin: '0 0 12px' }}>Acciones del estudio</h4>
-              <p style={{ margin: '0 0 8px', fontSize: 14 }}>
-                <span style={{ padding: '4px 8px', borderRadius: 6, background: statusStyle.bg, color: statusStyle.text }}>{STATUS_LABELS[study.status] || study.status}</span>
-              </p>
-              <label style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>Cambiar estado</label>
-              <select value={study.status} onChange={(e) => handleStatusChange(e.target.value)} disabled={statusChanging} style={{ width: '100%', padding: 8, marginBottom: 12 }}>
-                {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
-                ))}
-              </select>
-              <button
-                onClick={handleSeedDemo}
-                disabled={seedingDemo}
-                style={{ width: '100%', padding: 10, background: '#f59e0b', color: '#fff', border: 'none', borderRadius: 8, cursor: seedingDemo ? 'not-allowed' : 'pointer', marginBottom: 10, fontSize: 13 }}
-              >
-                {seedingDemo ? 'Rellenando…' : 'Rellenar estudio de prueba (demo)'}
-              </button>
-              {study.invited_company_email && (
-                <button
-                  onClick={handleResendCompanyInvite}
-                  disabled={resendingCompanyInvite}
-                  style={{ width: '100%', padding: 10, background: '#0ea5e9', color: '#fff', border: 'none', borderRadius: 8, cursor: resendingCompanyInvite ? 'not-allowed' : 'pointer', marginBottom: 10, fontSize: 13 }}
-                >
-                  {resendingCompanyInvite ? 'Reenviando invitación…' : 'Reenviar invitación empresa'}
-                </button>
-              )}
-              {study.invited_company_email && (
-                <button
-                  onClick={handleSendCompanyReset}
-                  disabled={sendingCompanyReset}
-                  style={{ width: '100%', padding: 10, background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, cursor: sendingCompanyReset ? 'not-allowed' : 'pointer', marginBottom: 10, fontSize: 13 }}
-                >
-                  {sendingCompanyReset ? 'Enviando reset…' : 'Enviar reset contraseña empresa'}
-                </button>
-              )}
-              <button
-                onClick={() => setShowCloseConfirm(true)}
-                disabled={study.status === 'concluido' || !canCloseStudy}
-                style={{ width: '100%', padding: 12, background: study.status === 'concluido' ? '#e5e7eb' : '#1d4ed8', color: '#fff', border: 'none', borderRadius: 8, cursor: study.status === 'concluido' ? 'not-allowed' : 'pointer', marginBottom: 12 }}
-              >
-                Cerrar estudio / Generar PDF
-              </button>
-              {study.status === 'concluido' && (
-                <button
-                  type="button"
-                  onClick={handleDownloadStudyFinalPdf}
-                  disabled={downloadFinalPdfLoading}
-                  style={{ width: '100%', padding: 10, background: '#059669', color: '#fff', border: 'none', borderRadius: 8, cursor: downloadFinalPdfLoading ? 'not-allowed' : 'pointer', marginBottom: 10, fontSize: 13 }}
-                >
-                  {downloadFinalPdfLoading ? 'Descargando…' : 'Descargar PDF final del estudio'}
-                </button>
-              )}
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                  <input type="checkbox" checked={!!study.show_verdict_to_company} onChange={handleVerdictToggle} />
-                  Compartir dictamen con empresa
-                </label>
-                <p style={{ margin: '4px 0 0', fontSize: 11, color: '#6b7280' }}>Activo: el PDF de la empresa incluirá el resultado de la evaluación</p>
-              </div>
-              <button onClick={() => setShowExtendModal(true)} style={{ width: '100%', padding: 8, background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer' }}>Extender retención</button>
-            </div>
-          </div>
+          {/* Acciones del estudio se renderizan arriba (moved from right panel). */}
         </div>
 
         {toast && <div style={{ position: 'fixed', bottom: 24, right: 24, padding: 12, background: '#111', color: '#fff', borderRadius: 8 }}>{toast}</div>}
-
-        <div style={{ marginBottom: 24 }}>
-          <button onClick={() => navigate('/admin/studies')} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline' }}>← Volver a estudios</button>
-        </div>
 
       {/* Close study confirmation */}
       {showCloseConfirm && (

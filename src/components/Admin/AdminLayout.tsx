@@ -1,6 +1,6 @@
 // Shared admin layout: auth check, side menu (desktop) / hamburger (mobile), Outlet for child routes.
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import Header from '../header/header';
 import Footer from '../Footer/Footer';
 import ForgotPassword from './ForgotPassword';
@@ -45,6 +45,7 @@ export default function AdminLayout() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const isMobile = useIsMobile();
+  const location = useLocation();
 
   const checkAdmin = async () => {
     try {
@@ -63,6 +64,10 @@ export default function AdminLayout() {
   }, []);
 
   const closeMenu = () => setMenuOpen(false);
+
+  // UX: when navigating into the study detail / candidate view,
+  // we hide the global admin navigation and rely on in-page "Volver" buttons.
+  const hideGlobalAdminNav = /^\/admin\/studies\/\d+(?:\/candidates\/\d+\/view)?$/.test(location.pathname);
 
   if (checking) {
     return (
@@ -220,8 +225,8 @@ export default function AdminLayout() {
             boxSizing: 'border-box',
           }}
         >
-          {/* Desktop sidebar */}
-          {!isMobile && (
+          {/* Desktop sidebar (hidden for study detail / candidate view) */}
+          {!isMobile && !hideGlobalAdminNav && (
             <aside
               style={{
                 width: SIDEBAR_WIDTH,
@@ -237,7 +242,7 @@ export default function AdminLayout() {
           )}
 
           {/* Mobile: hamburger + overlay */}
-          {isMobile && (
+          {isMobile && !hideGlobalAdminNav && (
             <>
               <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
                 <button

@@ -168,6 +168,8 @@ export default function AdminCandidateStudyViewPage() {
   const [hlAdminSaving, setHlAdminSaving] = useState(false);
   const [hlAdminUploadingKey, setHlAdminUploadingKey] = useState<string | null>(null);
 
+  const [showVerdictToCompany, setShowVerdictToCompany] = useState(false);
+
   useEffect(() => {
     setChecking(true);
     // Match existing admin pages: session is validated via /api/auth.php
@@ -220,12 +222,14 @@ export default function AdminCandidateStudyViewPage() {
     const formUrl = `/api/studies.php?action=get_form_data&invitation_id=${invitationId}`;
     const concUrl = `/api/studies.php?action=get_conclusion&invitation_id=${invitationId}`;
     const domUrl = `/api/studies.php?action=get_domiciliary&invitation_id=${invitationId}`;
+    const studyUrl = `/api/studies.php?action=get_study&id=${studyId}`;
     Promise.all([
       fetch(formUrl, { credentials: 'include' }).then(async (r) => (r.ok ? r.json().catch(() => ({})) : {})),
       fetch(concUrl, { credentials: 'include' }).then(async (r) => (r.ok ? r.json().catch(() => null) : null)),
       fetch(domUrl, { credentials: 'include' }).then(async (r) => (r.ok ? r.json().catch(() => null) : null)),
+      fetch(studyUrl, { credentials: 'include' }).then(async (r) => (r.ok ? r.json().catch(() => ({})) : {})),
     ])
-      .then(([formRes, concRes, domRes]) => {
+      .then(([formRes, concRes, domRes, studyRes]) => {
         setFormData(typeof formRes === 'object' && formRes !== null && !formRes.error ? formRes : {});
 
         setConcNotes(concRes?.analyst_notes ?? '');
@@ -239,6 +243,8 @@ export default function AdminCandidateStudyViewPage() {
         setDomVisitDate(domRes?.visit_date ? String(domRes.visit_date).slice(0, 10) : '');
         setDomVisitType(domRes?.visit_type === 'referenciada' ? 'referenciada' : 'presencial');
         setDomNotes(domRes?.analyst_notes ?? '');
+
+        setShowVerdictToCompany(!!studyRes?.show_verdict_to_company);
 
         // Prefill admin-only Historia Laboral fields
         const hl = (formRes && typeof formRes === 'object' && formRes['Historia Laboral']) ? formRes['Historia Laboral'] : {};
@@ -399,12 +405,40 @@ export default function AdminCandidateStudyViewPage() {
   };
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '18px 18px 80px' }}>
-      <button onClick={backTo} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline', marginBottom: 10 }}>
-        ← Volver
-      </button>
+    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '18px 18px 80px' }}>
+      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+        <aside style={{ width: 260, flexShrink: 0, position: 'sticky', top: 96 }}>
+          <button onClick={backTo} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline', marginBottom: 12, fontSize: 14 }}>
+            ← Volver
+          </button>
 
-      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 18 }}>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {tabs.map((t, idx) => (
+              <button
+                key={t}
+                onClick={() => setTabIdx(idx)}
+                style={{
+                  padding: '10px 12px',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 10,
+                  background: tabIdx === idx ? '#111' : '#fff',
+                  color: tabIdx === idx ? '#fff' : '#111',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  textAlign: 'left',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 18 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'grid', gap: 4 }}>
             <div style={{ fontWeight: 800, fontSize: 16 }}>{inv?.candidate_name?.trim() || inv?.candidate_email || `Invitación #${invitationId}`}</div>
@@ -415,26 +449,6 @@ export default function AdminCandidateStudyViewPage() {
           <button type="button" onClick={loadAll} disabled={formLoading} style={{ padding: '8px 12px', borderRadius: 10, border: '1px solid #cbd5e1', background: '#fff', cursor: formLoading ? 'not-allowed' : 'pointer' }}>
             {formLoading ? 'Actualizando…' : 'Actualizar'}
           </button>
-        </div>
-
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 14 }}>
-          {tabs.map((t, idx) => (
-            <button
-              key={t}
-              onClick={() => setTabIdx(idx)}
-              style={{
-                padding: '8px 10px',
-                border: '1px solid #e5e7eb',
-                borderRadius: 999,
-                background: tabIdx === idx ? '#111' : '#fff',
-                color: tabIdx === idx ? '#fff' : '#111',
-                cursor: 'pointer',
-                fontSize: 13,
-              }}
-            >
-              {t}
-            </button>
-          ))}
         </div>
 
         <div style={{ marginTop: 16 }}>
@@ -477,11 +491,7 @@ export default function AdminCandidateStudyViewPage() {
                     <input type="text" value={concAnalista} onChange={(e) => setConcAnalista(e.target.value)} placeholder="Nombre del analista" style={{ width: '100%', marginTop: 6, padding: 8, borderRadius: 10, border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
                   </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button type="button" onClick={handleSaveConclusion} disabled={savingConc} style={{ padding: '10px 14px', background: savingConc ? '#9ca3af' : '#059669', color: '#fff', border: 'none', borderRadius: 10, cursor: savingConc ? 'not-allowed' : 'pointer', fontWeight: 800 }}>
-                    {savingConc ? 'Guardando…' : 'Guardar conclusiones'}
-                  </button>
-                </div>
+                {/* Guardado de conclusiones al final (incluye semáforo) */}
 
                 <hr style={{ border: 'none', borderTop: '1px solid #cbd5e1', margin: '16px 0' }} />
 
@@ -496,7 +506,11 @@ export default function AdminCandidateStudyViewPage() {
                         Descargar / Ver
                       </a>
                     </div>
-                  ) : null}
+                  ) : (
+                    <p style={{ margin: '8px 0 0', fontSize: 12, color: '#475569', fontWeight: 700 }}>
+                      Suba y guarde para poder descargar después
+                    </p>
+                  )}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                   <div>
@@ -517,7 +531,68 @@ export default function AdminCandidateStudyViewPage() {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <button type="button" onClick={handleSaveDomiciliary} disabled={savingDom} style={{ padding: '10px 14px', background: savingDom ? '#9ca3af' : '#1d4ed8', color: '#fff', border: 'none', borderRadius: 10, cursor: savingDom ? 'not-allowed' : 'pointer', fontWeight: 800 }}>
-                    {savingDom ? 'Guardando…' : 'Guardar verificación'}
+                    {savingDom ? 'Guardando…' : 'Guardar verificación domiciliaria'}
+                  </button>
+                </div>
+
+                <hr style={{ border: 'none', borderTop: '1px solid #cbd5e1', margin: '16px 0' }} />
+
+                <p style={{ margin: '0 0 10px', fontWeight: 700, fontSize: 13 }}>
+                  Semáforo (opcional – visibilidad empresa según configuración)
+                </p>
+                {showVerdictToCompany ? (
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+                    {[
+                      { value: 'recomendable', label: 'Recomendable', bg: '#15803d', activeBg: '#166534' },
+                      { value: 'recomendable_con_observaciones', label: 'Recomendable c/ obs.', bg: '#ca8a04', activeBg: '#a16207' },
+                      { value: 'no_recomendable', label: 'No recomendable', bg: '#b91c1c', activeBg: '#991b1b' },
+                    ].map(({ value, label, bg, activeBg }) => {
+                      const on = concVerdict === value;
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setConcVerdict(value)}
+                          style={{
+                            padding: '12px 16px',
+                            border: on ? `3px solid ${activeBg}` : '2px solid #334155',
+                            borderRadius: 8,
+                            background: on ? activeBg : bg,
+                            color: '#ffffff',
+                            cursor: 'pointer',
+                            fontWeight: 900,
+                            fontSize: 13,
+                            textShadow: '0 1px 2px rgba(0,0,0,0.35)',
+                            boxShadow: on ? '0 2px 8px rgba(0,0,0,0.25)' : 'none',
+                          }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p style={{ margin: '0 0 16px', fontSize: 12, color: '#64748b', fontWeight: 700 }}>
+                    El semáforo no está visible para la empresa (configuración del estudio).
+                  </p>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={handleSaveConclusion}
+                    disabled={savingConc}
+                    style={{
+                      padding: '10px 14px',
+                      background: savingConc ? '#9ca3af' : '#059669',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 10,
+                      cursor: savingConc ? 'not-allowed' : 'pointer',
+                      fontWeight: 900,
+                    }}
+                  >
+                    {savingConc ? 'Guardando…' : 'Guardar conclusiones y cierre'}
                   </button>
                 </div>
               </div>
@@ -662,6 +737,8 @@ export default function AdminCandidateStudyViewPage() {
           )}
         </div>
       </div>
+    </div>
+    </div>
 
       {toast ? (
         <div style={{ position: 'fixed', bottom: 18, left: '50%', transform: 'translateX(-50%)', background: '#111827', color: '#fff', padding: '10px 14px', borderRadius: 12, fontSize: 13 }}>
