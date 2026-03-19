@@ -334,40 +334,30 @@ export default function EstudioPage() {
       req('contacto_emergencia_parentesco');
       req('contacto_emergencia_telefono');
     } else if (sec === 'Historia Laboral') {
-      // 3.1 Empleo actual: optional, but if any field filled, all required must be filled
-      const hasActual = (getField(sec, 'hl_actual_empresa') ?? '').trim() || (getField(sec, 'hl_actual_puesto') ?? '').trim();
-      if (hasActual) {
-        req('hl_actual_empresa');
-        req('hl_actual_puesto');
-        req('hl_actual_area');
-        req('hl_actual_periodo_de');
-        req('hl_actual_motivo_cambio');
-      }
-      // 3.2 Empleos anteriores: dynamic (1..3). At least 1 required.
+      // Single job section (3.1) uses hl_ant_* slots with an "Actual" toggle:
+      // - When Actual is selected, end date (periodo_a) and motivo_termino are not required.
       const antCount = Math.max(1, Math.min(3, parseInt(getField(sec, 'hl_ant_count') || '1', 10) || 1));
-      for (let i = 0; i < antCount; i++) {
-        req(`hl_ant_${i}_empresa`);
-        req(`hl_ant_${i}_puesto`);
-        req(`hl_ant_${i}_area`);
-        req(`hl_ant_${i}_periodo_de`);
-        req(`hl_ant_${i}_periodo_a`);
-        req(`hl_ant_${i}_motivo_termino`);
-        req(`hl_ant_${i}_ref_nombre`);
-        req(`hl_ant_${i}_ref_puesto`);
-        req(`hl_ant_${i}_ref_telefono`);
-      }
-      // 3.3 Periodos sin empleo: if Sí, require motivo
       if (getField(sec, 'hl_periodos_sin_empleo') === 'si') {
         total++;
         if (['busqueda', 'estudios', 'familiar', 'salud', 'otro'].includes(getField(sec, 'hl_periodos_sin_empleo_motivo'))) filled++;
         if (getField(sec, 'hl_periodos_sin_empleo_motivo') === 'otro') req('hl_periodos_sin_empleo_otro');
       }
-      // Empleos adicionales: if Sí, require at least empleo adicional 1
-      if (getField(sec, 'hl_empleos_adicionales') === 'si') {
-        req('hl_adic_0_empresa');
-        req('hl_adic_0_puesto');
-        req('hl_adic_0_de');
-        req('hl_adic_0_a');
+      for (let i = 0; i < antCount; i++) {
+        req(`hl_ant_${i}_empresa`);
+        req(`hl_ant_${i}_puesto`);
+        req(`hl_ant_${i}_area`);
+        req(`hl_ant_${i}_periodo_de`);
+
+        const isActual = getField(sec, `hl_ant_${i}_a_actual`) === '1';
+        if (!isActual) {
+          req(`hl_ant_${i}_periodo_a`);
+          req(`hl_ant_${i}_motivo_termino`);
+        }
+
+        // Reference fields are required for each employment.
+        req(`hl_ant_${i}_ref_nombre`);
+        req(`hl_ant_${i}_ref_puesto`);
+        req(`hl_ant_${i}_ref_telefono`);
       }
     } else if (sec === 'Ingresos y Situación Económica') {
       total++;
@@ -1293,9 +1283,50 @@ function SectionHistoriaLaboral({
   const inputStyle: React.CSSProperties = { width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' };
   const labelReq = { display: 'block' as const, marginBottom: 4, fontWeight: 600, fontSize: 14 };
   const labelOpt = { display: 'block' as const, marginBottom: 4, fontWeight: 600, fontSize: 14, color: '#64748b' };
-  const empleosAdicionalesSi = getField(sec, 'hl_empleos_adicionales') === 'si';
+  const antCount = Math.max(1, Math.min(3, parseInt(getField(sec, 'hl_ant_count') || '1', 10) || 1));
   const periodosSinSi = getField(sec, 'hl_periodos_sin_empleo') === 'si';
   const motivoOtro = getField(sec, 'hl_periodos_sin_empleo_motivo') === 'otro';
+
+  const isJobActual = (i: number) => getField(sec, `hl_ant_${i}_a_actual`) === '1';
+  const maybeClearIfHasValue = (k: string) => {
+    if ((getField(sec, k) ?? '').trim()) updateField(sec, k, '');
+  };
+
+  const onToggleJobActual = (i: number, checked: boolean) => {
+    updateField(sec, `hl_ant_${i}_a_actual`, checked ? '1' : '');
+    // Keep DB/stored data consistent with the UI:
+    // when Actual is selected, end date + motivo_termino are not needed.
+    if (checked) {
+      maybeClearIfHasValue(`hl_ant_${i}_periodo_a`);
+      maybeClearIfHasValue(`hl_ant_${i}_motivo_termino`);
+    }
+  };
+
+  const clearJobFields = (jobIndex: number) => {
+    // Clear all stored fields for a given employment slot.
+    const fields = [
+      'empresa',
+      'puesto',
+      'area',
+      'periodo_de',
+      'a_actual',
+      'periodo_a',
+      'motivo_termino',
+      'jefe',
+      'ref_nombre',
+      'ref_puesto',
+      'ref_telefono',
+      'observaciones',
+    ];
+    fields.forEach((f) => updateField(sec, `hl_ant_${jobIndex}_${f}`, ''));
+  };
+
+  const removeEmployment = (i: number) => {
+    // Remove employment slots starting at index i (i>0 only).
+    if (i <= 0) return;
+    for (let j = i; j < 3; j++) clearJobFields(j);
+    updateField(sec, 'hl_ant_count', String(i)); // keep slots [0..i-1]
+  };
 
   return (
     <div style={{ display: 'grid', gap: 24 }}>
@@ -1305,106 +1336,116 @@ function SectionHistoriaLaboral({
       </p>
       <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>Los campos marcados con (*) son obligatorios.</p>
 
-      {/* 3.1 EMPLEO ACTUAL O MÁS RECIENTE */}
+      {/* 3.1 ÚNICO SECCIÓN DE EMPLEOS (incluye empleo actual vía toggle "Actual") */}
       <div style={{ padding: 20, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-        <h3 style={{ margin: '0 0 16px', fontSize: 16, color: '#0f172a' }}>3.1 EMPLEO ACTUAL O MÁS RECIENTE</h3>
-        <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>(Solo si el evaluado sigue laborando ahí)</p>
-        <div style={{ display: 'grid', gap: 14 }}>
-          <div><label style={labelReq}>Empresa *</label><input type="text" value={getField(sec, 'hl_actual_empresa')} onChange={(e) => updateField(sec, 'hl_actual_empresa', e.target.value)} placeholder="Nombre de la empresa" style={inputStyle} /></div>
-          <div><label style={labelReq}>Puesto *</label><input type="text" value={getField(sec, 'hl_actual_puesto')} onChange={(e) => updateField(sec, 'hl_actual_puesto', e.target.value)} placeholder="Puesto" style={inputStyle} /></div>
-          <div><label style={labelReq}>Área / Departamento *</label><input type="text" value={getField(sec, 'hl_actual_area')} onChange={(e) => updateField(sec, 'hl_actual_area', e.target.value)} placeholder="Área o departamento" style={inputStyle} /></div>
-          <div>
-            <label style={labelReq}>Periodo laborado *</label>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span>De:</span>
-              <input type="text" value={getField(sec, 'hl_actual_periodo_de')} onChange={(e) => updateField(sec, 'hl_actual_periodo_de', e.target.value)} placeholder="Ej. 01/2020" style={{ ...inputStyle, maxWidth: 140 }} />
-              <span>A:</span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                <input type="checkbox" checked={getField(sec, 'hl_actual_a_actual') === '1'} onChange={(e) => updateField(sec, 'hl_actual_a_actual', e.target.checked ? '1' : '')} />
-                <span>Actual</span>
-              </label>
-              {getField(sec, 'hl_actual_a_actual') !== '1' && (
-                <input type="text" value={getField(sec, 'hl_actual_periodo_a')} onChange={(e) => updateField(sec, 'hl_actual_periodo_a', e.target.value)} placeholder="Ej. 12/2024" style={{ ...inputStyle, maxWidth: 140 }} />
-              )}
-            </div>
-          </div>
-          <div><label style={labelOpt}>Nombre del jefe inmediato</label><input type="text" value={getField(sec, 'hl_actual_jefe')} onChange={(e) => updateField(sec, 'hl_actual_jefe', e.target.value)} placeholder="Nombre del jefe" style={inputStyle} /></div>
-          <div><label style={labelReq}>Motivo de cambio laboral *</label><input type="text" value={getField(sec, 'hl_actual_motivo_cambio')} onChange={(e) => updateField(sec, 'hl_actual_motivo_cambio', e.target.value)} placeholder="Ej. Mejor oportunidad, cambio de residencia" style={inputStyle} /></div>
-          <div><label style={labelOpt}>Observaciones</label><textarea value={getField(sec, 'hl_actual_observaciones')} onChange={(e) => updateField(sec, 'hl_actual_observaciones', e.target.value)} rows={2} style={inputStyle} placeholder="Opcional" /></div>
-        </div>
-        <p style={{ margin: '16px 0 0', padding: 12, background: '#eff6ff', borderRadius: 8, border: '1px solid #93c5fd', fontSize: 13, color: '#1e3a8a', lineHeight: 1.5 }}>
-          <strong>Nota importante:</strong> El empleo actual se registra únicamente con fines informativos y no será contactado como referencia laboral. La omisión de referencia laboral del empleo actual es una práctica estándar para evitar afectaciones al evaluado.
-        </p>
-      </div>
-
-      {/* 3.2 EMPLEOS ANTERIORES */}
-      <div style={{ padding: 20, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-        <h3 style={{ margin: '0 0 16px', fontSize: 16, color: '#0f172a' }}>3.2 EMPLEOS ANTERIORES CON ANTIGÜEDAD HASTA 10 AÑOS</h3>
+        <h3 style={{ margin: '0 0 16px', fontSize: 16, color: '#0f172a' }}>3.1 EMPLEOS ACTUAL O ANTERIORES CON ANTIGÜEDAD HASTA 10 AÑOS</h3>
         <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>Registrar al menos los últimos 3 empleos o 10 años, lo que ocurra primero.</p>
-        {(() => {
-          const antCount = Math.max(1, Math.min(3, parseInt(getField(sec, 'hl_ant_count') || '1', 10) || 1));
-          return (
-            <>
-              {Array.from({ length: antCount }, (_, i) => (
-                <div key={i} style={{ marginBottom: 20, padding: 16, background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-                  <h4 style={{ margin: '0 0 12px', fontSize: 14, color: '#475569' }}>Empleo anterior {i + 1}</h4>
-                  <div style={{ display: 'grid', gap: 12 }}>
-                    <div><label style={labelReq}>Empresa *</label><input type="text" value={getField(sec, `hl_ant_${i}_empresa`)} onChange={(e) => updateField(sec, `hl_ant_${i}_empresa`, e.target.value)} placeholder="Empresa" style={inputStyle} /></div>
-                    <div><label style={labelReq}>Puesto *</label><input type="text" value={getField(sec, `hl_ant_${i}_puesto`)} onChange={(e) => updateField(sec, `hl_ant_${i}_puesto`, e.target.value)} placeholder="Puesto" style={inputStyle} /></div>
-                    <div><label style={labelReq}>Área / Departamento *</label><input type="text" value={getField(sec, `hl_ant_${i}_area`)} onChange={(e) => updateField(sec, `hl_ant_${i}_area`, e.target.value)} placeholder="Área" style={inputStyle} /></div>
-                    <div>
-                      <label style={labelReq}>Periodo laborado *</label>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <input type="text" value={getField(sec, `hl_ant_${i}_periodo_de`)} onChange={(e) => updateField(sec, `hl_ant_${i}_periodo_de`, e.target.value)} placeholder="De (ej. 01/2018)" style={{ ...inputStyle, maxWidth: 140 }} />
-                        <span>a</span>
-                        <input type="text" value={getField(sec, `hl_ant_${i}_periodo_a`)} onChange={(e) => updateField(sec, `hl_ant_${i}_periodo_a`, e.target.value)} placeholder="A (ej. 12/2020)" style={{ ...inputStyle, maxWidth: 140 }} />
-                      </div>
-                    </div>
-                    <div><label style={labelOpt}>Nombre del jefe inmediato</label><input type="text" value={getField(sec, `hl_ant_${i}_jefe`)} onChange={(e) => updateField(sec, `hl_ant_${i}_jefe`, e.target.value)} placeholder="Jefe inmediato" style={inputStyle} /></div>
-                    <div><label style={labelReq}>Motivo de término de la relación laboral *</label><input type="text" value={getField(sec, `hl_ant_${i}_motivo_termino`)} onChange={(e) => updateField(sec, `hl_ant_${i}_motivo_termino`, e.target.value)} placeholder="Motivo" style={inputStyle} /></div>
-                    <div style={{ padding: 12, background: '#f1f5f9', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                      <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 13 }}>Referencia laboral *</p>
-                      <div style={{ display: 'grid', gap: 10 }}>
-                        <div><label style={labelReq}>Nombre</label><input type="text" value={getField(sec, `hl_ant_${i}_ref_nombre`)} onChange={(e) => updateField(sec, `hl_ant_${i}_ref_nombre`, e.target.value)} placeholder="Nombre del referente" style={inputStyle} /></div>
-                        <div><label style={labelReq}>Puesto</label><input type="text" value={getField(sec, `hl_ant_${i}_ref_puesto`)} onChange={(e) => updateField(sec, `hl_ant_${i}_ref_puesto`, e.target.value)} placeholder="Puesto del referente" style={inputStyle} /></div>
-                        <div><label style={labelReq}>Teléfono</label><input type="tel" value={getField(sec, `hl_ant_${i}_ref_telefono`)} onChange={(e) => updateField(sec, `hl_ant_${i}_ref_telefono`, e.target.value)} placeholder="Teléfono" style={inputStyle} /></div>
-                      </div>
-                    </div>
-                    <div><label style={labelOpt}>Observaciones</label><textarea value={getField(sec, `hl_ant_${i}_observaciones`)} onChange={(e) => updateField(sec, `hl_ant_${i}_observaciones`, e.target.value)} rows={2} style={inputStyle} placeholder="Opcional" /></div>
-                  </div>
-                </div>
-              ))}
 
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        {Array.from({ length: antCount }, (_, i) => (
+          <div key={i} style={{ marginBottom: 20, padding: 16, background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+              <h4 style={{ margin: 0, fontSize: 14, color: '#475569' }}>{`Empleo ${i + 1}`}</h4>
+              {i > 0 ? (
                 <button
                   type="button"
-                  onClick={() => updateField(sec, 'hl_ant_count', String(Math.min(3, antCount + 1)))}
-                  disabled={antCount >= 3}
-                  style={{ padding: '10px 16px', background: antCount >= 3 ? '#9ca3af' : '#e2e8f0', border: '2px solid #475569', borderRadius: 8, cursor: antCount >= 3 ? 'not-allowed' : 'pointer', fontWeight: 800, color: '#0f172a', fontSize: 14 }}
+                  onClick={() => removeEmployment(i)}
+                  style={{
+                    padding: '8px 12px',
+                    background: '#fee2e2',
+                    border: '2px solid #fecaca',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    fontWeight: 900,
+                    color: '#991b1b',
+                    fontSize: 13,
+                  }}
                 >
-                  + Agregar empleo anterior
+                  Quitar empleo
                 </button>
-                {antCount > 1 ? (
-                  <button
-                    type="button"
-                    onClick={() => updateField(sec, 'hl_ant_count', String(Math.max(1, antCount - 1)))}
-                    style={{ padding: '10px 16px', background: '#fee2e2', border: '2px solid #fecaca', borderRadius: 8, cursor: 'pointer', fontWeight: 800, color: '#991b1b', fontSize: 14 }}
-                  >
-                    Quitar último
-                  </button>
-                ) : null}
+              ) : null}
+            </div>
+
+            <div style={{ display: 'grid', gap: 12 }}>
+              <div><label style={labelReq}>Empresa *</label><input type="text" value={getField(sec, `hl_ant_${i}_empresa`)} onChange={(e) => updateField(sec, `hl_ant_${i}_empresa`, e.target.value)} placeholder="Nombre de la empresa" style={inputStyle} /></div>
+              <div><label style={labelReq}>Puesto *</label><input type="text" value={getField(sec, `hl_ant_${i}_puesto`)} onChange={(e) => updateField(sec, `hl_ant_${i}_puesto`, e.target.value)} placeholder="Puesto" style={inputStyle} /></div>
+              <div><label style={labelReq}>Área / Departamento *</label><input type="text" value={getField(sec, `hl_ant_${i}_area`)} onChange={(e) => updateField(sec, `hl_ant_${i}_area`, e.target.value)} placeholder="Área" style={inputStyle} /></div>
+
+              <div>
+                <label style={labelReq}>Periodo laborado *</label>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span>De</span>
+                  <input
+                    type="text"
+                    value={getField(sec, `hl_ant_${i}_periodo_de`)}
+                    onChange={(e) => updateField(sec, `hl_ant_${i}_periodo_de`, e.target.value)}
+                    placeholder="Ej. 01/2018"
+                    style={{ ...inputStyle, maxWidth: 160 }}
+                  />
+
+                  <span>a</span>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={isJobActual(i)}
+                      onChange={(e) => onToggleJobActual(i, e.target.checked)}
+                    />
+                    <span>Actual</span>
+                  </label>
+
+                  {!isJobActual(i) && (
+                    <input
+                      type="text"
+                      value={getField(sec, `hl_ant_${i}_periodo_a`)}
+                      onChange={(e) => updateField(sec, `hl_ant_${i}_periodo_a`, e.target.value)}
+                      placeholder="Ej. 12/2020"
+                      style={{ ...inputStyle, maxWidth: 160 }}
+                    />
+                  )}
+                </div>
               </div>
-            </>
-          );
-        })()}
-        <p style={{ margin: '12px 0 0', padding: 12, background: '#fef3c7', borderRadius: 8, border: '1px solid #fcd34d', fontSize: 13, color: '#92400e', lineHeight: 1.5 }}>
-          📌 Las referencias laborales de empleos anteriores podrán ser contactadas como parte del proceso de validación del estudio socioeconómico.
-        </p>
+
+              {!isJobActual(i) && (
+                <div>
+                  <label style={labelReq}>Motivo de término de la relación laboral *</label>
+                  <input type="text" value={getField(sec, `hl_ant_${i}_motivo_termino`)} onChange={(e) => updateField(sec, `hl_ant_${i}_motivo_termino`, e.target.value)} placeholder="Motivo" style={inputStyle} />
+                </div>
+              )}
+
+              <div>
+                <label style={labelOpt}>Nombre del jefe inmediato</label>
+                <input type="text" value={getField(sec, `hl_ant_${i}_jefe`)} onChange={(e) => updateField(sec, `hl_ant_${i}_jefe`, e.target.value)} placeholder="Jefe inmediato" style={inputStyle} />
+              </div>
+
+              <div style={{ padding: 12, background: '#f1f5f9', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 13 }}>Referencia laboral *</p>
+                <div style={{ display: 'grid', gap: 10 }}>
+                  <div><label style={labelReq}>Nombre</label><input type="text" value={getField(sec, `hl_ant_${i}_ref_nombre`)} onChange={(e) => updateField(sec, `hl_ant_${i}_ref_nombre`, e.target.value)} placeholder="Nombre del referente" style={inputStyle} /></div>
+                  <div><label style={labelReq}>Puesto</label><input type="text" value={getField(sec, `hl_ant_${i}_ref_puesto`)} onChange={(e) => updateField(sec, `hl_ant_${i}_ref_puesto`, e.target.value)} placeholder="Puesto del referente" style={inputStyle} /></div>
+                  <div><label style={labelReq}>Teléfono</label><input type="tel" value={getField(sec, `hl_ant_${i}_ref_telefono`)} onChange={(e) => updateField(sec, `hl_ant_${i}_ref_telefono`, e.target.value)} placeholder="Teléfono" style={inputStyle} /></div>
+                </div>
+              </div>
+
+              <div><label style={labelOpt}>Observaciones</label><textarea value={getField(sec, `hl_ant_${i}_observaciones`)} onChange={(e) => updateField(sec, `hl_ant_${i}_observaciones`, e.target.value)} rows={2} style={inputStyle} placeholder="Opcional" /></div>
+            </div>
+          </div>
+        ))}
+
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => updateField(sec, 'hl_ant_count', String(Math.min(3, antCount + 1)))}
+            disabled={antCount >= 3}
+            style={{ padding: '10px 16px', background: antCount >= 3 ? '#9ca3af' : '#e2e8f0', border: '2px solid #475569', borderRadius: 8, cursor: antCount >= 3 ? 'not-allowed' : 'pointer', fontWeight: 800, color: '#0f172a', fontSize: 14 }}
+          >
+            + Agregar otro empleo
+          </button>
+        </div>
       </div>
 
-      {/* 3.3 PERIODOS SIN EMPLEO */}
+      {/* 3.2 PERIODOS SIN EMPLEO */}
       <div style={{ padding: 20, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-        <h3 style={{ margin: '0 0 16px', fontSize: 16, color: '#0f172a' }}>3.3 PERIODOS SIN EMPLEO</h3>
+        <h3 style={{ margin: '0 0 16px', fontSize: 16, color: '#0f172a' }}>3.2 PERIODOS SIN EMPLEO</h3>
         <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>(Aplica únicamente si existieron periodos entre empleos)</p>
         <YnRow label="¿Hubo periodos sin empleo entre uno y otro trabajo?" value={getField(sec, 'hl_periodos_sin_empleo')} onChange={(v) => updateField(sec, 'hl_periodos_sin_empleo', v)} />
         {periodosSinSi && (
@@ -1426,7 +1467,13 @@ function SectionHistoriaLaboral({
                 ))}
               </div>
               {motivoOtro && (
-                <input type="text" value={getField(sec, 'hl_periodos_sin_empleo_otro')} onChange={(e) => updateField(sec, 'hl_periodos_sin_empleo_otro', e.target.value)} placeholder="Especifique" style={{ ...inputStyle, marginTop: 10 }} />
+                <input
+                  type="text"
+                  value={getField(sec, 'hl_periodos_sin_empleo_otro')}
+                  onChange={(e) => updateField(sec, 'hl_periodos_sin_empleo_otro', e.target.value)}
+                  placeholder="Especifique"
+                  style={{ ...inputStyle, marginTop: 10 }}
+                />
               )}
             </div>
             <div style={{ marginTop: 16 }}>
@@ -1445,80 +1492,6 @@ function SectionHistoriaLaboral({
             </div>
           </>
         )}
-      </div>
-
-      {/* EMPLEOS ADICIONALES */}
-      <div style={{ padding: 20, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-        <h3 style={{ margin: '0 0 16px', fontSize: 16, color: '#0f172a' }}>EMPLEOS ADICIONALES</h3>
-        <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>(En caso de contar con más empleos a los registrados anteriormente y solo si no se registraron en las secciones anteriores)</p>
-        <YnRow label="¿Cuenta con más empleos a los registrados?" value={getField(sec, 'hl_empleos_adicionales')} onChange={(v) => updateField(sec, 'hl_empleos_adicionales', v)} />
-        {empleosAdicionalesSi && (
-          <div style={{ marginTop: 16, display: 'grid', gap: 16 }}>
-            {[0, 1, 2].map((k) => (
-              <div key={k} style={{ padding: 14, background: '#fff', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <p style={{ margin: '0 0 10px', fontWeight: 600, fontSize: 14 }}>Empleo adicional {k + 1}</p>
-                <div style={{ display: 'grid', gap: 10 }}>
-                  <div><label style={labelReq}>Empresa:</label><input type="text" value={getField(sec, `hl_adic_${k}_empresa`)} onChange={(e) => updateField(sec, `hl_adic_${k}_empresa`, e.target.value)} placeholder="Empresa" style={inputStyle} /></div>
-                  <div><label style={labelReq}>Puesto:</label><input type="text" value={getField(sec, `hl_adic_${k}_puesto`)} onChange={(e) => updateField(sec, `hl_adic_${k}_puesto`, e.target.value)} placeholder="Puesto" style={inputStyle} /></div>
-                  <div>
-                    <label style={labelReq}>Periodo laborado:</label>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <span>De</span>
-                      <input type="text" value={getField(sec, `hl_adic_${k}_de`)} onChange={(e) => updateField(sec, `hl_adic_${k}_de`, e.target.value)} placeholder="Ej. 01/2015" style={{ ...inputStyle, maxWidth: 120 }} />
-                      <span>a</span>
-                      <input type="text" value={getField(sec, `hl_adic_${k}_a`)} onChange={(e) => updateField(sec, `hl_adic_${k}_a`, e.target.value)} placeholder="Ej. 12/2017" style={{ ...inputStyle, maxWidth: 120 }} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 3.4 EMPLEOS NO MENCIONADOS INICIALMENTE */}
-      <div style={{ padding: 20, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-        <h3 style={{ margin: '0 0 16px', fontSize: 16, color: '#0f172a' }}>3.4 EMPLEOS NO MENCIONADOS INICIALMENTE (SI APLICA)</h3>
-        <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>Empleos identificados durante el proceso de verificación que no fueron registrados inicialmente.</p>
-        <YnRow label="¿Aplica empleos no mencionados inicialmente?" value={getField(sec, 'hl_nom_aplica')} onChange={(v) => updateField(sec, 'hl_nom_aplica', v)} />
-        {getField(sec, 'hl_nom_aplica') === 'si' && (() => {
-          const n = Math.max(1, Math.min(5, parseInt(getField(sec, 'hl_nom_count') || '1', 10) || 1));
-          return (
-            <>
-              {Array.from({ length: n }, (_, i) => (
-                <div key={i} style={{ marginBottom: 16, padding: 14, background: '#fff', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                  <p style={{ margin: '0 0 10px', fontWeight: 600, fontSize: 13 }}>Empleo {i + 1}</p>
-                  <div style={{ display: 'grid', gap: 10 }}>
-                    <div><label style={labelOpt}>Empresa</label><input type="text" value={getField(sec, `hl_nom_${i}_empresa`)} onChange={(e) => updateField(sec, `hl_nom_${i}_empresa`, e.target.value)} placeholder="Empresa" style={inputStyle} /></div>
-                    <div><label style={labelOpt}>Puesto o actividad</label><input type="text" value={getField(sec, `hl_nom_${i}_puesto`)} onChange={(e) => updateField(sec, `hl_nom_${i}_puesto`, e.target.value)} placeholder="Puesto" style={inputStyle} /></div>
-                    <div><label style={labelOpt}>Periodo aproximado</label><input type="text" value={getField(sec, `hl_nom_${i}_periodo`)} onChange={(e) => updateField(sec, `hl_nom_${i}_periodo`, e.target.value)} placeholder="Ej. 2015-2017" style={inputStyle} /></div>
-                    <div><label style={labelOpt}>Medio por el cual se identificó</label><input type="text" value={getField(sec, `hl_nom_${i}_medio`)} onChange={(e) => updateField(sec, `hl_nom_${i}_medio`, e.target.value)} placeholder="Ej. Verificación de antecedentes" style={inputStyle} /></div>
-                    <div><label style={labelOpt}>Observaciones</label><input type="text" value={getField(sec, `hl_nom_${i}_observaciones`)} onChange={(e) => updateField(sec, `hl_nom_${i}_observaciones`, e.target.value)} placeholder="Opcional" style={inputStyle} /></div>
-                  </div>
-                </div>
-              ))}
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={() => updateField(sec, 'hl_nom_count', String(Math.min(5, n + 1)))}
-                  disabled={n >= 5}
-                  style={{ padding: '10px 16px', background: n >= 5 ? '#9ca3af' : '#e2e8f0', border: '2px solid #475569', borderRadius: 8, cursor: n >= 5 ? 'not-allowed' : 'pointer', fontWeight: 800, color: '#0f172a', fontSize: 14 }}
-                >
-                  + Agregar empleo
-                </button>
-                {n > 1 ? (
-                  <button
-                    type="button"
-                    onClick={() => updateField(sec, 'hl_nom_count', String(Math.max(1, n - 1)))}
-                    style={{ padding: '10px 16px', background: '#fee2e2', border: '2px solid #fecaca', borderRadius: 8, cursor: 'pointer', fontWeight: 800, color: '#991b1b', fontSize: 14 }}
-                  >
-                    Quitar último
-                  </button>
-                ) : null}
-              </div>
-            </>
-          );
-        })()}
       </div>
     </div>
   );
@@ -2038,10 +2011,14 @@ function SectionBienestarAntecedentes({
           { key: 'si', label: 'Sí' },
         ]}
       />
-      <YnRow
+      <ChoiceRow
         label="¿Consume alguna sustancia prohibida? *"
         value={getField(sec, 'bw_sustancia_prohibida')}
         onChange={(v) => updateField(sec, 'bw_sustancia_prohibida', v)}
+        options={[
+          { key: 'si', label: 'Sí' },
+          { key: 'no', label: 'No' },
+        ]}
       />
       <p style={{ margin: 0, padding: 14, background: '#eff6ff', borderRadius: 10, border: '1px solid #93c5fd', fontSize: 14, color: '#1e3a8a', lineHeight: 1.5 }}>
         <strong>Nota importante:</strong> Información de carácter declarativo.
@@ -2355,52 +2332,49 @@ function SectionReferenciasPersonales({
   const labelReq = { display: 'block' as const, marginBottom: 4, fontWeight: 600 };
   const labelOpt = { display: 'block' as const, marginBottom: 4, fontWeight: 600, color: '#64748b' };
 
-  const RefBlock = ({ idx, title }: { idx: number; title: string }) => (
-    <div style={{ padding: 20, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', marginBottom: 24 }}>
-      <h3 style={{ margin: '0 0 16px', fontSize: 16, color: '#0f172a' }}>{title}</h3>
-      <div style={{ display: 'grid', gap: 14 }}>
-        <div>
-          <label style={labelReq}>Nombre completo *</label>
-          <input type="text" value={getField(sec, `${idx}_ref_nombre_completo`)} onChange={(e) => updateField(sec, `${idx}_ref_nombre_completo`, e.target.value)} placeholder="Nombre completo del referente" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelReq}>Parentesco *</label>
-          <input type="text" value={getField(sec, `${idx}_ref_parentesco`)} onChange={(e) => updateField(sec, `${idx}_ref_parentesco`, e.target.value)} placeholder="Ej. Amigo, Vecino, Familiar" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelOpt}>Ocupación</label>
-          <input type="text" value={getField(sec, `${idx}_ref_ocupacion`)} onChange={(e) => updateField(sec, `${idx}_ref_ocupacion`, e.target.value)} placeholder="Ocupación o actividad" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelReq}>Teléfono *</label>
-          <input type="tel" value={getField(sec, `${idx}_ref_telefono`)} onChange={(e) => updateField(sec, `${idx}_ref_telefono`, e.target.value)} placeholder="Teléfono de contacto" style={inputStyle} />
-        </div>
-        <div>
-          <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 14 }}>¿Vive con el evaluado? *</p>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-              <input type="radio" name={`vive_${idx}`} checked={getField(sec, `${idx}_ref_vive_con_evaluado`) === 'si'} onChange={() => updateField(sec, `${idx}_ref_vive_con_evaluado`, 'si')} />
-              <span>Sí</span>
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-              <input type="radio" name={`vive_${idx}`} checked={getField(sec, `${idx}_ref_vive_con_evaluado`) === 'no'} onChange={() => updateField(sec, `${idx}_ref_vive_con_evaluado`, 'no')} />
-              <span>No</span>
-            </label>
-          </div>
-        </div>
-        <div>
-          <label style={labelOpt}>Tiempo de conocer al evaluado (años)</label>
-          <input type="text" inputMode="numeric" value={getField(sec, `${idx}_ref_tiempo_conocer_anios`)} onChange={(e) => updateField(sec, `${idx}_ref_tiempo_conocer_anios`, e.target.value)} placeholder="Ej. 5" style={{ ...inputStyle, maxWidth: 120 }} />
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div style={{ display: 'grid', gap: 8 }}>
       <h2 style={{ margin: 0, fontSize: 18, color: '#111' }}>1.6 REFERENCIAS PERSONALES</h2>
-      <RefBlock idx={0} title="Referencia 1" />
-      <RefBlock idx={1} title="Referencia 2" />
+      {[0, 1].map((idx) => (
+        <div key={idx} style={{ padding: 20, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', marginBottom: 24 }}>
+          <h3 style={{ margin: '0 0 16px', fontSize: 16, color: '#0f172a' }}>{`Referencia ${idx + 1}`}</h3>
+          <div style={{ display: 'grid', gap: 14 }}>
+            <div>
+              <label style={labelReq}>Nombre completo *</label>
+              <input type="text" value={getField(sec, `${idx}_ref_nombre_completo`)} onChange={(e) => updateField(sec, `${idx}_ref_nombre_completo`, e.target.value)} placeholder="Nombre completo del referente" style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelReq}>Parentesco *</label>
+              <input type="text" value={getField(sec, `${idx}_ref_parentesco`)} onChange={(e) => updateField(sec, `${idx}_ref_parentesco`, e.target.value)} placeholder="Ej. Amigo, Vecino, Familiar" style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelOpt}>Ocupación</label>
+              <input type="text" value={getField(sec, `${idx}_ref_ocupacion`)} onChange={(e) => updateField(sec, `${idx}_ref_ocupacion`, e.target.value)} placeholder="Ocupación o actividad" style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelReq}>Teléfono *</label>
+              <input type="tel" value={getField(sec, `${idx}_ref_telefono`)} onChange={(e) => updateField(sec, `${idx}_ref_telefono`, e.target.value)} placeholder="Teléfono de contacto" style={inputStyle} />
+            </div>
+            <div>
+              <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 14 }}>¿Vive con el evaluado? *</p>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="radio" name={`vive_${idx}`} checked={getField(sec, `${idx}_ref_vive_con_evaluado`) === 'si'} onChange={() => updateField(sec, `${idx}_ref_vive_con_evaluado`, 'si')} />
+                  <span>Sí</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="radio" name={`vive_${idx}`} checked={getField(sec, `${idx}_ref_vive_con_evaluado`) === 'no'} onChange={() => updateField(sec, `${idx}_ref_vive_con_evaluado`, 'no')} />
+                  <span>No</span>
+                </label>
+              </div>
+            </div>
+            <div>
+              <label style={labelOpt}>Tiempo de conocer al evaluado (años)</label>
+              <input type="text" inputMode="numeric" value={getField(sec, `${idx}_ref_tiempo_conocer_anios`)} onChange={(e) => updateField(sec, `${idx}_ref_tiempo_conocer_anios`, e.target.value)} placeholder="Ej. 5" style={{ ...inputStyle, maxWidth: 120 }} />
+            </div>
+          </div>
+        </div>
+      ))}
       <p style={{ margin: 0, padding: 14, background: '#eff6ff', borderRadius: 10, border: '1px solid #93c5fd', fontSize: 14, color: '#1e3a8a', lineHeight: 1.5 }}>
         <strong>Nota importante:</strong> La referencia se solicita únicamente como contacto de carácter personal para fines administrativos y de integración del expediente laboral.
       </p>
