@@ -128,6 +128,369 @@ function buildTabs(formData: FormDataBySection, includeInternal: boolean): strin
   return out.length ? out : includeInternal ? ['Uso interno (analista)'] : ['Datos'];
 }
 
+function normalizeText(v: unknown): string {
+  return v != null ? String(v).trim() : '';
+}
+
+function renderConyugeFamiliaContactoTable(sectionData: Record<string, string>) {
+  const spouseRows: Array<{ label: string; key: string }> = [
+    { label: 'Nombre completo', key: 'conyuge_nombre_completo' },
+    { label: 'Edad', key: 'conyuge_edad' },
+    { label: 'Fecha de nacimiento', key: 'conyuge_fecha_nacimiento' },
+    { label: 'Lugar de nacimiento', key: 'conyuge_lugar_nacimiento' },
+    { label: 'Actividad actual', key: 'conyuge_actividad_actual' },
+    { label: 'Empresa donde labora', key: 'conyuge_empresa' },
+    { label: 'Puesto o actividad', key: 'conyuge_puesto_actividad' },
+    { label: 'Negocio propio - actividad', key: 'conyuge_negocio_propio_actividad' },
+    { label: 'Ingreso mensual que aporta', key: 'conyuge_ingreso_mensual_aporta' },
+  ];
+
+  const familyColumns: Array<{ key: string; label: string }> = [
+    { key: 'nombre_completo', label: 'Nombre completo' },
+    { key: 'parentesco', label: 'Parentesco' },
+    { key: 'edad', label: 'Edad' },
+    { key: 'estado_civil', label: 'Estado civil' },
+    { key: 'ocupacion_profesion', label: 'Ocupacion / profesion' },
+    { key: 'domicilio_ciudad_estado', label: 'Domicilio (ciudad y estado)' },
+    { key: 'telefono', label: 'Telefono' },
+    { key: 'observaciones', label: 'Observaciones' },
+  ];
+
+  const familyRows = Array.from({ length: 6 }, (_, idx) => {
+    const row: Record<string, string> = {};
+    familyColumns.forEach((c) => {
+      row[c.key] = normalizeText(sectionData[`${idx}_fam_${c.key}`]);
+    });
+    const hasData = familyColumns.some((c) => row[c.key] !== '');
+    return { idx, row, hasData };
+  }).filter((r) => r.hasData);
+
+  const contactRows: Array<{ label: string; key: string }> = [
+    { label: 'Telefono celular personal', key: 'contacto_telefono_celular' },
+    { label: 'Telefono alterno', key: 'contacto_telefono_alterno' },
+    { label: 'Correo personal', key: 'contacto_correo_personal' },
+    { label: 'Contacto emergencia - Nombre', key: 'contacto_emergencia_nombre' },
+    { label: 'Contacto emergencia - Parentesco', key: 'contacto_emergencia_parentesco' },
+    { label: 'Contacto emergencia - Telefono', key: 'contacto_emergencia_telefono' },
+  ];
+
+  const renderedKeys = new Set<string>();
+  spouseRows.forEach((r) => renderedKeys.add(r.key));
+  contactRows.forEach((r) => renderedKeys.add(r.key));
+  for (let i = 0; i < 6; i++) {
+    familyColumns.forEach((c) => renderedKeys.add(`${i}_fam_${c.key}`));
+  }
+  const extraEntries = Object.entries(sectionData).filter(([k, v]) => !renderedKeys.has(k) && normalizeText(v) !== '');
+
+  const thStyle = {
+    textAlign: 'left' as const,
+    padding: '8px 10px',
+    background: '#f8fafc',
+    borderBottom: '1px solid #e5e7eb',
+    borderRight: '1px solid #e5e7eb',
+    fontSize: 12,
+    fontWeight: 800,
+    color: '#0f172a',
+  };
+  const tdStyle = {
+    padding: '8px 10px',
+    borderBottom: '1px solid #e5e7eb',
+    borderRight: '1px solid #e5e7eb',
+    fontSize: 13,
+    color: '#111827',
+    verticalAlign: 'top' as const,
+  };
+
+  return (
+    <div style={{ display: 'grid', gap: 16 }}>
+      <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ padding: '10px 12px', background: '#f1f5f9', fontWeight: 800, fontSize: 13 }}>1.4.3 Informacion del conyuge o pareja</div>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <tbody>
+            {spouseRows
+              .map(({ label, key }) => ({ label, value: normalizeText(sectionData[key]) }))
+              .filter((r) => r.value !== '')
+              .map((row) => (
+                <tr key={row.label}>
+                  <th style={{ ...thStyle, width: '36%' }}>{row.label}</th>
+                  <td style={{ ...tdStyle, borderRight: 'none' }}>{row.value}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, overflowX: 'auto' }}>
+        <div style={{ padding: '10px 12px', background: '#f1f5f9', fontWeight: 800, fontSize: 13 }}>1.4.4 Familiares del participante</div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 980 }}>
+          <thead>
+            <tr>
+              <th style={thStyle}>#</th>
+              {familyColumns.map((c) => (
+                <th key={c.key} style={thStyle}>{c.label}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {familyRows.length ? (
+              familyRows.map(({ idx, row }) => (
+                <tr key={idx}>
+                  <td style={tdStyle}>{idx + 1}</td>
+                  {familyColumns.map((c, ci) => (
+                    <td key={c.key} style={{ ...tdStyle, borderRight: ci === familyColumns.length - 1 ? 'none' : tdStyle.borderRight }}>{row[c.key] || '—'}</td>
+                  ))}
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={familyColumns.length + 1} style={{ ...tdStyle, borderRight: 'none', color: '#6b7280' }}>Sin familiares capturados.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ padding: '10px 12px', background: '#f1f5f9', fontWeight: 800, fontSize: 13 }}>1.5 Datos de contacto y emergencia</div>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <tbody>
+            {contactRows
+              .map(({ label, key }) => ({ label, value: normalizeText(sectionData[key]) }))
+              .filter((r) => r.value !== '')
+              .map((row) => (
+                <tr key={row.label}>
+                  <th style={{ ...thStyle, width: '36%' }}>{row.label}</th>
+                  <td style={{ ...tdStyle, borderRight: 'none' }}>{row.value}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+
+      {extraEntries.length > 0 && (
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 12 }}>
+          <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 8 }}>Otros campos capturados</div>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {extraEntries.map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 700 }}>{formatFieldLabel(k)}:</span>
+                <span>{normalizeText(v)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function renderEconomicSituationSection(sectionData: Record<string, string>) {
+  const normalize = (v: unknown) => (v != null ? String(v).trim() : '');
+  const yn = (v: string) => (v === 'si' ? 'Sí' : v === 'no' ? 'No' : '—');
+  const rangoMap: Record<string, string> = {
+    menos10k: 'Menos de $10,000',
+    '10_15': '$10,001 – $15,000',
+    '15_20': '$15,001 – $20,000',
+    '20_30': '$20,001 – $30,000',
+    '30_40': '$30,001 – $40,000',
+    '40_50': '$40,001 – $50,000',
+    mas50: 'Más de $50,000',
+  };
+  const parseMonto = (s: string): number => {
+    const cleaned = String(s || '')
+      .replace(/,/g, '')
+      .replace(/\s/g, '')
+      .replace(/[^\d.-]/g, '');
+    const n = parseFloat(cleaned);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const gastos: Array<{ key: string; label: string }> = [
+    { key: 'gasto_renta', label: 'Renta' },
+    { key: 'gasto_hipoteca', label: 'Hipoteca' },
+    { key: 'gasto_alimentos', label: 'Alimentos / despensa' },
+    { key: 'gasto_agua', label: 'Agua' },
+    { key: 'gasto_luz', label: 'Luz' },
+    { key: 'gasto_gas', label: 'Gas' },
+    { key: 'gasto_tel_casa', label: 'Teléfono de casa' },
+    { key: 'gasto_tel_celular', label: 'Teléfono celular' },
+    { key: 'gasto_internet_tv', label: 'Internet / televisión' },
+    { key: 'gasto_mantenimiento', label: 'Mantenimiento del hogar' },
+    { key: 'gasto_cuotas_condominio', label: 'Cuotas / condominio' },
+    { key: 'gasto_limpieza', label: 'Limpieza / artículos del hogar' },
+    { key: 'gasto_gasolina', label: 'Gasolina' },
+    { key: 'gasto_transporte', label: 'Transporte público' },
+    { key: 'gasto_esparcimiento', label: 'Esparcimiento / entretenimiento' },
+    { key: 'gasto_ropa', label: 'Ropa y calzado' },
+    { key: 'gasto_escolares', label: 'Gastos escolares' },
+    { key: 'gasto_medicos', label: 'Gastos médicos' },
+    { key: 'gasto_seguro_vida', label: 'Seguro de vida' },
+    { key: 'gasto_seguro_medico', label: 'Seguro médico' },
+    { key: 'gasto_aplicaciones', label: 'Apps / plataformas digitales' },
+    { key: 'gasto_apoyo_pension', label: 'Apoyo o pensión familiar' },
+    { key: 'gasto_guarderia', label: 'Guardería / cuidado infantil' },
+    { key: 'gasto_otros', label: 'Otros gastos' },
+  ];
+  const prestamos: Array<{ base: string; label: string }> = [
+    { base: 'credito_nomina', label: 'Crédito de nómina' },
+    { base: 'prestamo_personal', label: 'Préstamo personal' },
+    { base: 'credito_automotriz', label: 'Crédito automotriz' },
+    { base: 'tarjetas_credito', label: 'Tarjetas de crédito' },
+    { base: 'credito_tiendas', label: 'Crédito en tiendas / mueblerías' },
+    { base: 'otros_creditos', label: 'Otros créditos' },
+  ];
+
+  const totalGastos = gastos.reduce((sum, g) => sum + parseMonto(normalize(sectionData[g.key])), 0);
+  const tipoDependientes = [
+    sectionData.ie_dep_hijos === '1' ? 'Hijos' : '',
+    sectionData.ie_dep_conyuge === '1' ? 'Cónyuge' : '',
+    sectionData.ie_dep_padres === '1' ? 'Padres' : '',
+    sectionData.ie_dep_otros === '1' ? 'Otros' : '',
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const buroChecks = [
+    sectionData.ie_buro_atrasos === '1' ? 'Atrasos de pago' : '',
+    sectionData.ie_buro_reestructura === '1' ? 'Reestructura / convenio' : '',
+    sectionData.ie_buro_liquidado === '1' ? 'Adeudo liquidado' : '',
+    sectionData.ie_buro_otro === '1' ? 'Otro' : '',
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  const thStyle = {
+    textAlign: 'left' as const,
+    padding: '8px 10px',
+    background: '#f1f5f9',
+    borderBottom: '1px solid #cbd5e1',
+    fontSize: 12,
+    fontWeight: 800,
+    color: '#0f172a',
+  };
+  const tdStyle = {
+    padding: '8px 10px',
+    borderBottom: '1px solid #e2e8f0',
+    fontSize: 13,
+    color: '#111827',
+    verticalAlign: 'top' as const,
+  };
+
+  return (
+    <div style={{ display: 'grid', gap: 16 }}>
+      <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
+        <h4 style={{ margin: '0 0 10px', fontSize: 16, color: '#334155' }}>4.1 Ingresos mensuales aproximados</h4>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div><strong>Ingreso mensual aproximado:</strong> {rangoMap[normalize(sectionData.ie_rango)] || '—'}</div>
+          <div><strong>Cuenta con ingresos adicionales:</strong> {yn(normalize(sectionData.ie_ingresos_adicionales))}</div>
+          {normalize(sectionData.ie_ingresos_adicionales_tipo) !== '' && (
+            <div><strong>Tipo de ingreso adicional:</strong> {normalize(sectionData.ie_ingresos_adicionales_tipo)}</div>
+          )}
+        </div>
+      </div>
+
+      <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
+        <h4 style={{ margin: '0 0 10px', fontSize: 16, color: '#334155' }}>4.2 Gastos mensuales generales</h4>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <tbody>
+            {gastos.map((g) => (
+              <tr key={g.key}>
+                <th style={{ ...thStyle, width: '55%' }}>{g.label}</th>
+                <td style={tdStyle}>{normalize(sectionData[g.key]) || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc', overflowX: 'auto' }}>
+        <h4 style={{ margin: '0 0 10px', fontSize: 16, color: '#334155' }}>4.3 Préstamos o compromisos financieros</h4>
+        <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Tipo de compromiso</th>
+              <th style={thStyle}>Pago mensual</th>
+              <th style={thStyle}>Saldo pendiente</th>
+            </tr>
+          </thead>
+          <tbody>
+            {prestamos.map((p) => (
+              <tr key={p.base}>
+                <td style={tdStyle}>{p.label}</td>
+                <td style={tdStyle}>{normalize(sectionData[`${p.base}_pago`]) || '—'}</td>
+                <td style={tdStyle}>{normalize(sectionData[`${p.base}_saldo`]) || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ padding: 14, background: '#ecfdf5', borderRadius: 12, border: '2px solid #10b981' }}>
+        <div style={{ fontWeight: 800, color: '#065f46', fontSize: 15 }}>TOTAL DE GASTOS MENSUALES APROXIMADOS</div>
+        <div style={{ marginTop: 6, fontWeight: 900, color: '#047857', fontSize: 20 }}>
+          Total estimado: ${totalGastos.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+        </div>
+      </div>
+
+      <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc', overflowX: 'auto' }}>
+        <h4 style={{ margin: '0 0 10px', fontSize: 16, color: '#334155' }}>4.4 Personas que dependen económicamente</h4>
+        <div style={{ display: 'grid', gap: 8, marginBottom: 10 }}>
+          <div><strong>Número de dependientes:</strong> {normalize(sectionData.ie_num_dependientes) || '—'}</div>
+          <div><strong>Tipo de dependientes:</strong> {tipoDependientes || '—'}</div>
+        </div>
+        <table style={{ width: '100%', minWidth: 900, borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={thStyle}>#</th>
+              <th style={thStyle}>Nombre completo</th>
+              <th style={thStyle}>Parentesco</th>
+              <th style={thStyle}>Edad</th>
+              <th style={thStyle}>Estado civil</th>
+              <th style={thStyle}>Ocupación o grado escolar</th>
+              <th style={thStyle}>Institución pública / privada</th>
+              <th style={thStyle}>Empresa o actividad laboral</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[0, 1, 2, 3].map((idx) => (
+              <tr key={idx}>
+                <td style={tdStyle}>{idx + 1}</td>
+                <td style={tdStyle}>{normalize(sectionData[`ie_dep_${idx}_nombre_completo`]) || '—'}</td>
+                <td style={tdStyle}>{normalize(sectionData[`ie_dep_${idx}_parentesco`]) || '—'}</td>
+                <td style={tdStyle}>{normalize(sectionData[`ie_dep_${idx}_edad`]) || '—'}</td>
+                <td style={tdStyle}>{normalize(sectionData[`ie_dep_${idx}_estado_civil`]) || '—'}</td>
+                <td style={tdStyle}>{normalize(sectionData[`ie_dep_${idx}_ocupacion_grado`]) || '—'}</td>
+                <td style={tdStyle}>{normalize(sectionData[`ie_dep_${idx}_institucion`]) || '—'}</td>
+                <td style={tdStyle}>{normalize(sectionData[`ie_dep_${idx}_empresa_actividad`]) || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {normalize(sectionData.ie_dep_mas_texto) !== '' && (
+          <div style={{ marginTop: 10 }}><strong>Información adicional de dependientes:</strong> {normalize(sectionData.ie_dep_mas_texto)}</div>
+        )}
+      </div>
+
+      <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
+        <h4 style={{ margin: '0 0 8px', fontSize: 16, color: '#334155' }}>4.5 Observaciones del evaluado</h4>
+        <div>{normalize(sectionData.ie_obs_evaluado) || '—'}</div>
+      </div>
+
+      <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
+        <h4 style={{ margin: '0 0 8px', fontSize: 16, color: '#334155' }}>4.6 Situación crediticia</h4>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div><strong>Buró de crédito (problema relevante):</strong> {yn(normalize(sectionData.ie_buro_problema))}</div>
+          {normalize(sectionData.ie_buro_problema) === 'si' && (
+            <>
+              <div><strong>Detalle declarativo:</strong> {buroChecks || '—'}</div>
+              {normalize(sectionData.ie_buro_otro_texto) !== '' && <div><strong>Otro (especifique):</strong> {normalize(sectionData.ie_buro_otro_texto)}</div>}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminCandidateStudyViewPage() {
   const navigate = useNavigate();
   const { id: studyIdParam, invitationId: invitationIdParam } = useParams<{ id: string; invitationId: string }>();
@@ -605,6 +968,12 @@ export default function AdminCandidateStudyViewPage() {
                 const sectionData = formData[currentTab] || {};
                 const entries = Object.entries(sectionData);
                 if (entries.length === 0) return <p style={{ color: '#9ca3af' }}>—</p>;
+                if (currentTab === 'Información del Cónyuge, Familiares y Contacto') {
+                  return renderConyugeFamiliaContactoTable(sectionData as Record<string, string>);
+                }
+                if (currentTab === 'Ingresos y Situación Económica') {
+                  return renderEconomicSituationSection(sectionData as Record<string, string>);
+                }
                 const isDocumentosSection = currentTab.toLowerCase() === 'documentos';
                 return (
                   <div style={{ display: 'grid', gap: 12 }}>

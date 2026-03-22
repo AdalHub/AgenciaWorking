@@ -711,15 +711,23 @@ export default function AdminStudyDetailPage() {
     setTimeout(() => setServerPdfLoading(false), 1500);
   };
 
-  const handleDownloadPrettyCandidatePdfForInvitation = async (inv: Invitation) => {
+  const handleDownloadAdminPdfForInvitation = async (inv: Invitation) => {
     setServerPdfLoading(true);
     try {
-      const res = await fetch(`/api/studies.php?action=get_form_data&invitation_id=${inv.id}`, { credentials: 'include' });
-      const data = await res.json().catch(() => ({}));
-      const formDataForInv = data && typeof data === 'object' && !data.error ? (data as FormDataBySection) : {};
-      downloadCandidatePdf(inv, formDataForInv, study?.company_name);
+      const res = await fetch(`/api/studies.php?action=download_pdf&invitation_id=${inv.id}`, { credentials: 'include' });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setToast(d?.error || 'No se pudo descargar el PDF del candidato.');
+        return;
+      }
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `estudio-${inv.id}-formato-completo.pdf`;
+      a.click();
+      URL.revokeObjectURL(a.href);
     } catch {
-      setToast('No se pudo generar el PDF imprimible del candidato.');
+      setToast('No se pudo descargar el PDF del candidato.');
     } finally {
       setTimeout(() => setServerPdfLoading(false), 500);
     }
@@ -914,7 +922,7 @@ export default function AdminStudyDetailPage() {
                       {inv.status === 'completed' && (
                         <button
                           type="button"
-                          onClick={() => handleDownloadPrettyCandidatePdfForInvitation(inv)}
+                          onClick={() => handleDownloadAdminPdfForInvitation(inv)}
                           disabled={serverPdfLoading}
                           style={{ padding: '8px 12px', background: '#059669', color: '#fff', border: 'none', borderRadius: 8, cursor: serverPdfLoading ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 800 }}
                         >
