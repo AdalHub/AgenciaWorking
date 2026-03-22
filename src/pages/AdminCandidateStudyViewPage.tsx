@@ -150,16 +150,19 @@ function renderConyugeFamiliaContactoTable(sectionData: Record<string, string>) 
     { key: 'parentesco', label: 'Parentesco' },
     { key: 'edad', label: 'Edad' },
     { key: 'estado_civil', label: 'Estado civil' },
-    { key: 'ocupacion_profesion', label: 'Ocupacion / profesion' },
+    { key: 'ocupacion', label: 'Ocupación / profesión' },
     { key: 'domicilio_ciudad_estado', label: 'Domicilio (ciudad y estado)' },
-    { key: 'telefono', label: 'Telefono' },
+    { key: 'telefono', label: 'Teléfono' },
     { key: 'observaciones', label: 'Observaciones' },
   ];
 
   const familyRows = Array.from({ length: 6 }, (_, idx) => {
     const row: Record<string, string> = {};
     familyColumns.forEach((c) => {
-      row[c.key] = normalizeText(sectionData[`${idx}_fam_${c.key}`]);
+      const primary = normalizeText(sectionData[`${idx}_fam_${c.key}`]);
+      const legacyOcup =
+        c.key === 'ocupacion' ? normalizeText(sectionData[`${idx}_fam_ocupacion_profesion`]) : '';
+      row[c.key] = primary || legacyOcup;
     });
     const hasData = familyColumns.some((c) => row[c.key] !== '');
     return { idx, row, hasData };
@@ -341,6 +344,8 @@ function renderEconomicSituationSection(sectionData: Record<string, string>) {
   ];
 
   const totalGastos = gastos.reduce((sum, g) => sum + parseMonto(normalize(sectionData[g.key])), 0);
+  const totalPrestamoPago = prestamos.reduce((sum, p) => sum + parseMonto(normalize(sectionData[`${p.base}_pago`])), 0);
+  const totalPrestamoSaldo = prestamos.reduce((sum, p) => sum + parseMonto(normalize(sectionData[`${p.base}_saldo`])), 0);
   const tipoDependientes = [
     sectionData.ie_dep_hijos === '1' ? 'Hijos' : '',
     sectionData.ie_dep_conyuge === '1' ? 'Cónyuge' : '',
@@ -389,17 +394,18 @@ function renderEconomicSituationSection(sectionData: Record<string, string>) {
       </div>
 
       <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
-        <h4 style={{ margin: '0 0 10px', fontSize: 16, color: '#334155' }}>4.2 Gastos mensuales generales</h4>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <tbody>
-            {gastos.map((g) => (
-              <tr key={g.key}>
-                <th style={{ ...thStyle, width: '55%' }}>{g.label}</th>
-                <td style={tdStyle}>{normalize(sectionData[g.key]) || '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <h4 style={{ margin: '0 0 6px', fontSize: 16, color: '#334155' }}>4.2 Gastos mensuales generales</h4>
+        <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>
+          (Realizados por el participante y las personas que dependen económicamente de él)
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '10px 14px' }}>
+          {gastos.map((g) => (
+            <div key={g.key} style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 4, color: '#334155' }}>{g.label}</div>
+              <div style={{ fontSize: 13, color: '#111827', wordBreak: 'break-word' }}>{normalize(sectionData[g.key]) || '—'}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc', overflowX: 'auto' }}>
@@ -420,6 +426,15 @@ function renderEconomicSituationSection(sectionData: Record<string, string>) {
                 <td style={tdStyle}>{normalize(sectionData[`${p.base}_saldo`]) || '—'}</td>
               </tr>
             ))}
+            <tr>
+              <td style={{ ...tdStyle, fontWeight: 800 }}>TOTALES (suma)</td>
+              <td style={{ ...tdStyle, fontWeight: 800 }}>
+                ${totalPrestamoPago.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </td>
+              <td style={{ ...tdStyle, fontWeight: 800 }}>
+                ${totalPrestamoSaldo.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -428,6 +443,9 @@ function renderEconomicSituationSection(sectionData: Record<string, string>) {
         <div style={{ fontWeight: 800, color: '#065f46', fontSize: 15 }}>TOTAL DE GASTOS MENSUALES APROXIMADOS</div>
         <div style={{ marginTop: 6, fontWeight: 900, color: '#047857', fontSize: 20 }}>
           Total estimado: ${totalGastos.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+        </div>
+        <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>
+          Los montos indicados son aproximados y se registran con fines de análisis socioeconómico del hogar.
         </div>
       </div>
 
