@@ -112,8 +112,8 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
 
   const handleDownloadInformeCandidato = () => {
     if (!selectedInvId || selectedInv?.status !== 'completed') return;
-    const url = `${API}/studies.php?action=download_pdf&invitation_id=${selectedInvId}${token ? '&token=' + encodeURIComponent(token) : ''}`;
-    fetch(url, creds).then((r) => {
+    const url = `${API}/studies.php?action=download_pdf&invitation_id=${selectedInvId}&_ts=${Date.now()}${token ? '&token=' + encodeURIComponent(token) : ''}`;
+    fetch(url, { ...creds, cache: 'no-store' }).then((r) => {
       if (!r.ok) {
         r.json().then((d: { error?: string }) => setToast(d.error || 'No disponible')).catch(() => setToast('No disponible'));
         return;
@@ -121,7 +121,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
       r.blob().then((blob) => {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `informe-cliente-${selectedInvId}.pdf`;
+        a.download = `informe-cliente-${selectedInvId}-${Date.now()}.pdf`;
         a.click();
         URL.revokeObjectURL(a.href);
       });
@@ -130,8 +130,8 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
 
   const handleDownloadInformeEstudio = () => {
     if (!studyId) return;
-    const url = `${API}/studies.php?action=download_study_final_pdf&study_id=${studyId}${token ? '&token=' + encodeURIComponent(token) : ''}`;
-    fetch(url, creds).then((r) => {
+    const url = `${API}/studies.php?action=download_study_final_pdf&study_id=${studyId}&_ts=${Date.now()}${token ? '&token=' + encodeURIComponent(token) : ''}`;
+    fetch(url, { ...creds, cache: 'no-store' }).then((r) => {
       if (!r.ok) {
         r.json().then((d: { error?: string }) => setToast(d.error || 'No disponible')).catch(() => setToast('No disponible'));
         return;
@@ -139,7 +139,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
       r.blob().then((blob) => {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `informe-cliente-estudio-${studyId}.pdf`;
+        a.download = `informe-cliente-estudio-${studyId}-${Date.now()}.pdf`;
         a.click();
         URL.revokeObjectURL(a.href);
       });

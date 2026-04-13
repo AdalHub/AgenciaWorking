@@ -530,19 +530,23 @@ export default function AdminStudyDetailPage() {
   const handleDownloadStudyFinalPdf = () => {
     if (!studyId) return;
     setDownloadFinalPdfLoading(true);
-    fetch(`/api/studies.php?action=download_study_final_pdf&study_id=${studyId}`, { credentials: 'include' })
+    fetch(`/api/studies.php?action=download_study_final_pdf&study_id=${studyId}&_ts=${Date.now()}`, { credentials: 'include', cache: 'no-store' })
       .then((r) => {
         if (!r.ok) {
           if (r.headers.get('content-type')?.includes('application/json')) return r.json().then((d: { error?: string }) => setToast(d.error || 'PDF no disponible'));
           setToast('PDF final no disponible');
           return;
         }
+        const rendererVersion = r.headers.get('X-AW-PDF-Renderer');
         return r.blob().then((blob) => {
           const a = document.createElement('a');
           a.href = URL.createObjectURL(blob);
-          a.download = `estudio-${studyId}-final.pdf`;
+          a.download = `estudio-${studyId}-final-${Date.now()}.pdf`;
           a.click();
           URL.revokeObjectURL(a.href);
+          if (rendererVersion) {
+            setToast(`PDF regenerado con versión ${rendererVersion}`);
+          }
         });
       })
       .finally(() => setDownloadFinalPdfLoading(false));
@@ -707,14 +711,14 @@ export default function AdminStudyDetailPage() {
   const handleDownloadServerPdf = () => {
     if (!selectedInvId) return;
     setServerPdfLoading(true);
-    window.open(`/api/studies.php?action=download_pdf&invitation_id=${selectedInvId}`, '_blank');
+    window.open(`/api/studies.php?action=download_pdf&invitation_id=${selectedInvId}&_ts=${Date.now()}`, '_blank');
     setTimeout(() => setServerPdfLoading(false), 1500);
   };
 
   const handleDownloadAdminPdfForInvitation = async (inv: Invitation) => {
     setServerPdfLoading(true);
     try {
-      const res = await fetch(`/api/studies.php?action=download_pdf&invitation_id=${inv.id}`, { credentials: 'include' });
+      const res = await fetch(`/api/studies.php?action=download_pdf&invitation_id=${inv.id}&_ts=${Date.now()}`, { credentials: 'include', cache: 'no-store' });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
         setToast(d?.error || 'No se pudo descargar el PDF del candidato.');
@@ -723,7 +727,7 @@ export default function AdminStudyDetailPage() {
       const blob = await res.blob();
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `estudio-${inv.id}-formato-completo.pdf`;
+      a.download = `estudio-${inv.id}-formato-completo-${Date.now()}.pdf`;
       a.click();
       URL.revokeObjectURL(a.href);
     } catch {

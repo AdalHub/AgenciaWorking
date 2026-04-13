@@ -90,7 +90,7 @@ export default function EmpresaDashboard() {
         return;
       }
 
-      const pdfRes = await fetch(`/api/studies.php?action=download_study_final_pdf&study_id=${studyId}`, { credentials: 'include' });
+      const pdfRes = await fetch(`/api/studies.php?action=download_study_final_pdf&study_id=${studyId}&_ts=${Date.now()}`, { credentials: 'include', cache: 'no-store' });
       if (!pdfRes.ok) {
         const ct = pdfRes.headers.get('content-type');
         if (ct && ct.includes('application/json')) {
@@ -105,7 +105,7 @@ export default function EmpresaDashboard() {
       const blob = await pdfRes.blob();
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `estudio-${studyId}-final.pdf`;
+      a.download = `estudio-${studyId}-final-${Date.now()}.pdf`;
       a.click();
       URL.revokeObjectURL(a.href);
     } catch {

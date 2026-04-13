@@ -313,7 +313,7 @@ export default function AdminStudiesPage() {
                       <td style={{ padding: 8 }}>{inv.completed_at ? formatDate(inv.completed_at) : '—'}</td>
                       <td style={{ padding: 8 }}>
                         {inv.status === 'completed' ? (
-                          <a href={`/api/studies.php?action=download_pdf&invitation_id=${inv.id}`} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', fontWeight: 700 }}>Descargar PDF</a>
+                          <a href={`/api/studies.php?action=download_pdf&invitation_id=${inv.id}&_ts=${Date.now()}`} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', fontWeight: 700 }}>Descargar PDF</a>
                         ) : (
                           <span style={{ color: '#9ca3af' }}>PDF no generado aún</span>
                         )}
