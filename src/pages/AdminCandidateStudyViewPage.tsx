@@ -15,6 +15,159 @@ type Invitation = {
 type FormDataBySection = Record<string, Record<string, string>>;
 
 const DOCUMENT_FIELD_KEYS = ['ine_identificacion', 'curp_documento', 'comprobante_domicilio', 'ultimo_recibo_nomina', 'otros_documentos'];
+const BOOLEAN_FIELD_PREFIXES = ['vivi_serv_', 'ie_buro_', 'ie_dep_'];
+const BOOLEAN_FIELD_KEYS = new Set([
+  'al_legal',
+  'bw_tabaco',
+  'bw_sustancia_prohibida',
+  'dom_autorizacion_verificacion',
+  'esc_documentacion',
+  'hl_actual_imss_registro',
+]);
+
+type FieldOption = { value: string; label: string };
+
+const FIELD_OPTIONS: Record<string, FieldOption[]> = {
+  dp_estado_civil: [
+    { value: 'soltero', label: 'Soltero(a)' },
+    { value: 'casado', label: 'Casado(a)' },
+    { value: 'union_libre', label: 'Unión libre' },
+    { value: 'divorciado', label: 'Divorciado(a)' },
+    { value: 'viudo', label: 'Viudo(a)' },
+  ],
+  dp_genero: [
+    { value: 'masculino', label: 'Masculino' },
+    { value: 'femenino', label: 'Femenino' },
+    { value: 'otro', label: 'Otro' },
+  ],
+  dp_id_presentada: [
+    { value: 'ine', label: 'INE' },
+    { value: 'pasaporte', label: 'Pasaporte' },
+    { value: 'cedula_profesional', label: 'Cédula profesional' },
+  ],
+  dom_tipo_vivienda: [
+    { value: 'propia', label: 'Propia' },
+    { value: 'rentada', label: 'Rentada' },
+    { value: 'familiar', label: 'Familiar' },
+    { value: 'prestada', label: 'Prestada' },
+    { value: 'otro', label: 'Otro' },
+  ],
+  dom_tiempo_residencia: [
+    { value: 'menos6', label: 'Menos de 1 año' },
+    { value: '6m_1a', label: 'De 1 año a 2 años' },
+    { value: '1a_2a', label: 'De 2 años a 5 años' },
+    { value: 'mas1a', label: 'Más de 5 años' },
+  ],
+  dom_autorizacion_verificacion: [
+    { value: 'si', label: 'Sí' },
+    { value: 'no', label: 'No' },
+  ],
+  esc_documentacion: [
+    { value: 'si', label: 'Sí' },
+    { value: 'no', label: 'No' },
+  ],
+  esc_estatus: [
+    { value: 'trunca', label: 'Trunca' },
+    { value: 'concluido', label: 'Concluido' },
+    { value: 'en_proceso', label: 'En proceso' },
+  ],
+  esc_estudiando_actual: [
+    { value: 'si', label: 'Sí' },
+    { value: 'no', label: 'No' },
+  ],
+  esc_nivel: [
+    { value: 'primaria', label: 'Primaria' },
+    { value: 'secundaria', label: 'Secundaria' },
+    { value: 'bachillerato', label: 'Bachillerato' },
+    { value: 'tecnico', label: 'Técnico' },
+    { value: 'licenciatura', label: 'Licenciatura' },
+    { value: 'ingenieria', label: 'Ingeniería' },
+    { value: 'maestria', label: 'Maestría' },
+    { value: 'doctorado', label: 'Doctorado' },
+  ],
+  esc_posgrado_estatus: [
+    { value: 'trunca', label: 'Trunca' },
+    { value: 'concluido', label: 'Concluido' },
+    { value: 'en_proceso', label: 'En proceso' },
+  ],
+  esc_posgrado_tipo: [
+    { value: 'especialidad', label: 'Especialidad' },
+    { value: 'maestria', label: 'Maestría' },
+    { value: 'doctorado', label: 'Doctorado' },
+  ],
+  ie_rango: [
+    { value: 'menos10k', label: 'Menos de $10,000' },
+    { value: '10_15', label: '$10,001 a $15,000' },
+    { value: '15_20', label: '$15,001 a $20,000' },
+    { value: '20_30', label: '$20,001 a $30,000' },
+    { value: '30_40', label: '$30,001 a $40,000' },
+    { value: '40_50', label: '$40,001 a $50,000' },
+    { value: 'mas50', label: 'Más de $50,000' },
+  ],
+  ie_ingresos_adicionales: [
+    { value: 'si', label: 'Sí' },
+    { value: 'no', label: 'No' },
+  ],
+  al_legal: [
+    { value: 'si', label: 'Sí' },
+    { value: 'no', label: 'No' },
+  ],
+  cap_tramite: [
+    { value: 'autorizo', label: 'Autorizo el trámite' },
+    { value: 'no_autorizo', label: 'No autorizo el trámite' },
+  ],
+  bw_alcohol: [
+    { value: 'no', label: 'No' },
+    { value: 'ocasional', label: 'Ocasional' },
+    { value: 'frecuente', label: 'Frecuente' },
+  ],
+  bw_tabaco: [
+    { value: 'si', label: 'Sí' },
+    { value: 'no', label: 'No' },
+  ],
+  bw_sustancia_prohibida: [
+    { value: 'si', label: 'Sí' },
+    { value: 'no', label: 'No' },
+  ],
+  vivi_zona: [
+    { value: 'residencial', label: 'Residencial' },
+    { value: 'popular', label: 'Popular' },
+    { value: 'campestre', label: 'Campestre' },
+    { value: 'industrial', label: 'Industrial' },
+    { value: 'turistica', label: 'Turística' },
+    { value: 'otro', label: 'Otro' },
+  ],
+  vivi_tipo: [
+    { value: 'casa', label: 'Casa' },
+    { value: 'departamento', label: 'Departamento' },
+    { value: 'condominio', label: 'Condominio' },
+    { value: 'unidad', label: 'Unidad habitacional (Infonavit / Fovissste)' },
+  ],
+  vivi_colonia_tipo: [
+    { value: 'privado', label: 'Privado' },
+    { value: 'abierto', label: 'Abierto' },
+    { value: 'seguridad', label: 'Con sistema de seguridad' },
+    { value: 'otro', label: 'Otro' },
+  ],
+  vivi_actividad_vecinal: [
+    { value: 'industrial', label: 'Industrial' },
+    { value: 'comercial', label: 'Comercial' },
+    { value: 'ejidal', label: 'Ejidal / Rural' },
+    { value: 'otro', label: 'Otro' },
+  ],
+  transporte_medio: [
+    { value: 'publico', label: 'Transporte público' },
+    { value: 'propio', label: 'Vehículo propio' },
+    { value: 'empresa', label: 'Transporte de la empresa' },
+    { value: 'pie', label: 'A pie' },
+    { value: 'otro', label: 'Otro' },
+  ],
+  transporte_tiempo: [
+    { value: 'menos30', label: 'Menos de 30 min' },
+    { value: '30_60', label: '30–60 min' },
+    { value: 'mas60', label: 'Más de 60 min' },
+  ],
+};
 
 function documentDownloadApiUrl(filePath: string): string {
   const v = (filePath || '').trim();
@@ -32,7 +185,74 @@ function formatDate(d: string | null | undefined): string {
   }
 }
 
+function buildHistoriaLaboralAdminBlocks(sectionData: Record<string, string>): Array<{ label: string; prefix: string }> {
+  const filled = (prefix: string): boolean =>
+    Object.entries(sectionData).some(
+      ([key, value]) => key.startsWith(`${prefix}_`) && String(value ?? '').trim() !== '' && !/_admin_/.test(key)
+    );
+
+  const blocks: Array<{ label: string; prefix: string }> = [];
+  const antCountRaw = parseInt(String(sectionData.hl_ant_count || ''), 10);
+  const configuredCount = Number.isFinite(antCountRaw) ? Math.max(0, Math.min(10, antCountRaw)) : 0;
+  const detectedIndexes = Array.from({ length: 10 }, (_, i) => i).filter((i) => filled(`hl_ant_${i}`));
+  const lastDetectedIndex = detectedIndexes.length > 0 ? Math.max(...detectedIndexes) : -1;
+  const totalAntBlocks = Math.max(configuredCount, lastDetectedIndex + 1, 1);
+
+  if (filled('hl_actual')) {
+    blocks.push({ label: 'Empleo actual', prefix: 'hl_actual' });
+  }
+
+  for (let i = 0; i < totalAntBlocks; i += 1) {
+    const prefix = `hl_ant_${i}`;
+    const isActual = ['1', 'si', 'true'].includes(String(sectionData[`${prefix}_a_actual`] || sectionData[`${prefix}_actual`] || '').trim().toLowerCase());
+    blocks.push({ label: isActual ? `Empleo ${i + 1} (actual)` : `Empleo ${i + 1}`, prefix });
+  }
+
+  for (let i = 0; i < 10; i += 1) {
+    const prefix = `hl_adic_${i}`;
+    if (filled(prefix)) {
+      blocks.push({ label: `Empleo adicional ${i + 1}`, prefix });
+    }
+  }
+
+  return blocks;
+}
+
 function formatFieldLabel(key: string): string {
+  const explicitLabels: Record<string, string> = {
+    dp_id_cedula_profesional: 'Identificacion oficial - Cedula Profesional',
+    dom_comprobante_domicilio_pdf: 'Comprobante de domicilio (no mayor a 3 meses)',
+    hl_constancia_imss_pdf: 'Constancia de semanas cotizadas (IMSS)',
+    hl_documentacion_adicional_pdf: 'Documentacion adicional',
+    al_legal: 'Antecedente legal declarado',
+    al_legal_texto: 'Detalle declarado',
+    cap_tramite: 'Autorizacion para tramite',
+    cap_doc_acta: 'Acta de nacimiento',
+    cap_doc_ine: 'Credencial para votar (INE)',
+    cap_doc_foto: 'Fotografia reciente con fondo blanco',
+    cap_doc_domicilio: 'Comprobante de domicilio',
+    bw_alcohol: '¿Consume alcohol?',
+    bw_tabaco: '¿Fuma?',
+    bw_sustancia_prohibida: '¿Consume alguna sustancia prohibida?',
+    vivi_zona: 'Zona de la vivienda',
+    vivi_zona_otro: 'Zona de la vivienda (otro)',
+    vivi_tipo: 'Tipo de vivienda',
+    vivi_colonia_tipo: 'Colonia / tipo de fraccionamiento',
+    vivi_colonia_otro: 'Colonia / tipo de fraccionamiento (otro)',
+    vivi_actividad_vecinal: 'Actividad vecinal predominante',
+    vivi_actividad_vecinal_otro: 'Actividad vecinal (otro)',
+    vivi_serv_agua: 'Servicio de agua',
+    vivi_serv_luz: 'Servicio de luz',
+    vivi_serv_alumbrado: 'Alumbrado publico',
+    vivi_serv_drenaje: 'Drenaje',
+    vivi_serv_pavimentacion: 'Pavimentacion',
+    vivi_serv_transporte: 'Transporte publico',
+    vivi_serv_areas_verdes_cuidadas: 'Areas verdes cuidadas',
+    vivi_serv_areas_verdes_descuidadas: 'Areas verdes descuidadas',
+    transporte_medio: 'Medio principal de transporte',
+    transporte_tiempo: 'Tiempo aproximado de traslado',
+  };
+  if (explicitLabels[key]) return explicitLabels[key];
   const refMatch = key.match(/^(\d+)_ref_(.+)$/);
   if (refMatch) {
     const num = parseInt(refMatch[1], 10) + 1;
@@ -105,7 +325,8 @@ function formatFieldLabel(key: string): string {
 }
 
 function buildTabs(formData: FormDataBySection, includeInternal: boolean): string[] {
-  const keys = Object.keys(formData || {});
+  const removedSection = 'datos generales e identificación';
+  const keys = Object.keys(formData || {}).filter((k) => k.toLowerCase() !== removedSection);
   const preferred = [
     'Datos Personales y de Contacto',
     'Autorización Actualización',
@@ -113,7 +334,6 @@ function buildTabs(formData: FormDataBySection, includeInternal: boolean): strin
     'Información del Cónyuge, Familiares y Contacto',
     'Referencias Personales',
     'Escolaridad y Capacitación',
-    'Datos Generales e Identificación',
     'Historia Laboral',
     'Ingresos y Situación Económica',
     'Información Legal y Trámite de Carta de No Antecedentes Penales',
@@ -130,6 +350,80 @@ function buildTabs(formData: FormDataBySection, includeInternal: boolean): strin
 
 function normalizeText(v: unknown): string {
   return v != null ? String(v).trim() : '';
+}
+
+function isAdminOnlyHistoriaLaboralKey(key: string): boolean {
+  return /^hl_(actual|ant_\d+|adic_\d+)_admin_/.test(key);
+}
+
+function getCandidateSectionEntries(sectionName: string, sectionData: Record<string, string>): Array<[string, string]> {
+  return Object.entries(sectionData).filter(([key]) => !(sectionName === 'Historia Laboral' && isAdminOnlyHistoriaLaboralKey(key)));
+}
+
+function getFieldOptions(key: string): FieldOption[] | null {
+  if (FIELD_OPTIONS[key]) return FIELD_OPTIONS[key];
+  if (/^hl_(actual|ant_\d+|adic_\d+)_a_actual$/.test(key)) {
+    return [
+      { value: 'si', label: 'Sí' },
+      { value: 'no', label: 'No' },
+    ];
+  }
+  if (/^hl_(actual|ant_\d+|adic_\d+)_imss_registro$/.test(key)) {
+    return [
+      { value: 'si', label: 'Sí' },
+      { value: 'no', label: 'No' },
+    ];
+  }
+  return null;
+}
+
+function isBooleanCheckboxField(key: string, value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  if (BOOLEAN_FIELD_KEYS.has(key)) return false;
+  if (BOOLEAN_FIELD_PREFIXES.some((prefix) => key.startsWith(prefix))) return true;
+  return normalized === '1' || normalized === '0';
+}
+
+function isYesNoField(key: string, value: string): boolean {
+  if (BOOLEAN_FIELD_KEYS.has(key)) return true;
+  if (/^hl_(actual|ant_\d+|adic_\d+)_a_actual$/.test(key)) return true;
+  if (/^hl_(actual|ant_\d+|adic_\d+)_imss_registro$/.test(key)) return true;
+  const normalized = value.trim().toLowerCase();
+  return normalized === 'si' || normalized === 'no';
+}
+
+function isFileField(key: string, value: string): boolean {
+  if (key === 'foto_participante') return true;
+  if (/_pdf$/i.test(key) || /^cap_doc_/i.test(key)) return true;
+  if (value.trim() && /^uploads\//i.test(value.trim())) return true;
+  return false;
+}
+
+function getFileFieldConfig(key: string): { accept: string; help: string } {
+  if (key === 'foto_participante') {
+    return { accept: '.png,.jpg,.jpeg,image/png,image/jpeg', help: 'Imagen JPG o PNG. Máximo 5 MB.' };
+  }
+  if (key === 'dom_comprobante_domicilio_pdf' || key === 'cap_doc_foto') {
+    return { accept: '.pdf,application/pdf,.png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp', help: 'PDF o imagen JPG/PNG/WEBP. Máximo 5 MB.' };
+  }
+  if (/_admin_respaldo$/i.test(key)) {
+    return { accept: '.pdf,application/pdf,.png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp', help: 'PDF o imagen JPG/PNG/WEBP. Máximo 5 MB.' };
+  }
+  return { accept: '.pdf,application/pdf', help: 'PDF. Máximo 5 MB.' };
+}
+
+function isMultilineField(key: string, value: string): boolean {
+  if (value.includes('\n') || value.length > 90) return true;
+  return /(observ|nota|coment|descripcion|detalle|declaracion|resumen|texto|domicilio|actividad|empresa|institucion|otro)/i.test(key);
+}
+
+function isDateField(key: string, value: string): boolean {
+  return /fecha|periodo_(de|a)$/i.test(key) && /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
+}
+
+function sectionsEqual(a: Record<string, string>, b: Record<string, string>): boolean {
+  const keys = Array.from(new Set([...Object.keys(a), ...Object.keys(b)])).sort();
+  return keys.every((key) => String(a[key] ?? '') === String(b[key] ?? ''));
 }
 
 function renderConyugeFamiliaContactoTable(sectionData: Record<string, string>) {
@@ -315,9 +609,9 @@ function renderEconomicSituationSection(sectionData: Record<string, string>) {
     { key: 'gasto_agua', label: 'Agua' },
     { key: 'gasto_luz', label: 'Luz' },
     { key: 'gasto_gas', label: 'Gas' },
-    { key: 'gasto_tel_casa', label: 'Teléfono de casa' },
+    { key: 'gasto_tel_casa', label: 'Teléfono de casa / Internet' },
     { key: 'gasto_tel_celular', label: 'Teléfono celular' },
-    { key: 'gasto_internet_tv', label: 'Internet / televisión' },
+    { key: 'gasto_internet_tv', label: 'Suscripciones de streaming' },
     { key: 'gasto_mantenimiento', label: 'Mantenimiento del hogar' },
     { key: 'gasto_cuotas_condominio', label: 'Cuotas / condominio' },
     { key: 'gasto_limpieza', label: 'Limpieza / artículos del hogar' },
@@ -497,12 +791,191 @@ function renderEconomicSituationSection(sectionData: Record<string, string>) {
         <h4 style={{ margin: '0 0 8px', fontSize: 16, color: '#334155' }}>4.6 Situación crediticia</h4>
         <div style={{ display: 'grid', gap: 8 }}>
           <div><strong>Buró de crédito (problema relevante):</strong> {yn(normalize(sectionData.ie_buro_problema))}</div>
-          {normalize(sectionData.ie_buro_problema) === 'si' && (
-            <>
-              <div><strong>Detalle declarativo:</strong> {buroChecks || '—'}</div>
-              {normalize(sectionData.ie_buro_otro_texto) !== '' && <div><strong>Otro (especifique):</strong> {normalize(sectionData.ie_buro_otro_texto)}</div>}
-            </>
+        </div>
+      </div>
+
+      <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
+        <h4 style={{ margin: '0 0 8px', fontSize: 16, color: '#334155' }}>4.7 Detalle general del historial crediticio (opcional)</h4>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div><strong>Detalle declarativo:</strong> {normalize(sectionData.ie_buro_problema) === 'si' ? buroChecks || '—' : '—'}</div>
+          {normalize(sectionData.ie_buro_problema) === 'si' && normalize(sectionData.ie_buro_otro_texto) !== '' && <div><strong>Otro:</strong> {normalize(sectionData.ie_buro_otro_texto)}</div>}
+          <div style={{ fontSize: 12, color: '#64748b', fontStyle: 'italic' }}>
+            Esta información es de carácter declarativo y no implica consulta a sociedades de información crediticia.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function renderLegalSection(sectionData: Record<string, string>) {
+  const normalize = (v: unknown) => (v != null ? String(v).trim() : '');
+  const yn = (v: string) => (v === 'si' ? 'Sí' : v === 'no' ? 'No' : '—');
+  const tramite = normalize(sectionData.cap_tramite) === 'autorizo'
+    ? 'Autorizo el trámite'
+    : normalize(sectionData.cap_tramite) === 'no_autorizo'
+      ? 'No autorizo el trámite'
+      : '—';
+  const docs = [
+    { key: 'cap_doc_acta', label: 'Acta de nacimiento' },
+    { key: 'cap_doc_ine', label: 'Credencial para votar (INE)' },
+    { key: 'cap_doc_foto', label: 'Fotografía reciente con fondo blanco' },
+    { key: 'cap_doc_domicilio', label: 'Comprobante de domicilio (no mayor a 3 meses)' },
+  ].filter((doc) => normalize(sectionData[doc.key]) !== '');
+
+  return (
+    <div style={{ display: 'grid', gap: 16 }}>
+      <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
+        <h4 style={{ margin: '0 0 8px', fontSize: 16, color: '#334155' }}>5.1 Antecedentes legales (declarativo)</h4>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div><strong>Antecedente legal declarado:</strong> {yn(normalize(sectionData.al_legal))}</div>
+          {normalize(sectionData.al_legal_texto) !== '' && (
+            <div><strong>Detalle declarado:</strong> {normalize(sectionData.al_legal_texto)}</div>
           )}
+          <div style={{ fontSize: 12, color: '#64748b', fontStyle: 'italic' }}>
+            La presente información es de carácter declarativo, no constituye dictamen legal y no sustituye documentos oficiales emitidos por autoridad competente.
+          </div>
+        </div>
+      </div>
+
+      <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
+        <h4 style={{ margin: '0 0 8px', fontSize: 16, color: '#334155' }}>5.2 Trámite de carta de no antecedentes penales</h4>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div><strong>Autorización para trámite:</strong> {tramite}</div>
+        </div>
+      </div>
+
+      {docs.length > 0 && (
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
+          <h4 style={{ margin: '0 0 8px', fontSize: 16, color: '#334155' }}>Documentación adjunta</h4>
+          <div style={{ display: 'grid', gap: 10 }}>
+            {docs.map((doc) => {
+              const filePath = normalize(sectionData[doc.key]);
+              const url = documentDownloadApiUrl(filePath);
+              return (
+                <div key={doc.key} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <strong style={{ minWidth: 260 }}>{doc.label}:</strong>
+                  <span style={{ color: '#6b7280', fontSize: 13 }}>{filePath.replace(/^.*[/\\]/, '')}</span>
+                  {url ? (
+                    <a href={url} target="_blank" rel="noopener noreferrer" download style={{ padding: '6px 12px', background: '#059669', color: '#fff', borderRadius: 6, textDecoration: 'none', fontSize: 13 }}>
+                      Descargar
+                    </a>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function renderHabitosSection(sectionData: Record<string, string>) {
+  const normalize = (v: unknown) => (v != null ? String(v).trim() : '');
+  const yn = (v: string) => (v === 'si' ? 'Sí' : v === 'no' ? 'No' : '—');
+  const alcoholMap: Record<string, string> = {
+    no: 'No',
+    ocasional: 'Ocasional',
+    frecuente: 'Frecuente',
+  };
+
+  return (
+    <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
+      <h4 style={{ margin: '0 0 8px', fontSize: 16, color: '#334155' }}>Hábitos generales</h4>
+      <div style={{ display: 'grid', gap: 8 }}>
+        <div><strong>¿Consume alcohol?:</strong> {alcoholMap[normalize(sectionData.bw_alcohol)] || '—'}</div>
+        <div><strong>¿Fuma?:</strong> {yn(normalize(sectionData.bw_tabaco))}</div>
+        <div><strong>¿Consume alguna sustancia prohibida?:</strong> {yn(normalize(sectionData.bw_sustancia_prohibida))}</div>
+      </div>
+    </div>
+  );
+}
+
+function renderEntornoViviendaSection(sectionData: Record<string, string>) {
+  const normalize = (v: unknown) => (v != null ? String(v).trim() : '');
+  const ynBool = (v: string) => (['1', 'si', 'true'].includes(v.toLowerCase()) ? 'Sí' : ['0', 'no', 'false'].includes(v.toLowerCase()) ? 'No' : '—');
+  const zonaMap: Record<string, string> = {
+    residencial: 'Residencial',
+    popular: 'Popular',
+    campestre: 'Campestre',
+    industrial: 'Industrial',
+    turistica: 'Turística',
+    otro: 'Otro',
+  };
+  const tipoMap: Record<string, string> = {
+    casa: 'Casa',
+    departamento: 'Departamento',
+    condominio: 'Condominio',
+    unidad: 'Unidad habitacional (Infonavit / Fovissste)',
+  };
+  const coloniaMap: Record<string, string> = {
+    privado: 'Privado',
+    abierto: 'Abierto',
+    seguridad: 'Con sistema de seguridad',
+    otro: 'Otro',
+  };
+  const actividadMap: Record<string, string> = {
+    industrial: 'Industrial',
+    comercial: 'Comercial',
+    ejidal: 'Ejidal / Rural',
+    otro: 'Otro',
+  };
+  const transporteMap: Record<string, string> = {
+    publico: 'Transporte público',
+    propio: 'Vehículo propio',
+    empresa: 'Transporte de la empresa',
+    pie: 'A pie',
+    otro: 'Otro',
+  };
+  const tiempoMap: Record<string, string> = {
+    menos30: 'Menos de 30 min',
+    '30_60': '30–60 min',
+    mas60: 'Más de 60 min',
+  };
+  const servicios = [
+    ['vivi_serv_agua', 'Agua'],
+    ['vivi_serv_luz', 'Luz'],
+    ['vivi_serv_alumbrado', 'Alumbrado público'],
+    ['vivi_serv_drenaje', 'Drenaje'],
+    ['vivi_serv_pavimentacion', 'Pavimentación'],
+    ['vivi_serv_transporte', 'Transporte público'],
+    ['vivi_serv_areas_verdes_cuidadas', 'Áreas verdes cuidadas'],
+    ['vivi_serv_areas_verdes_descuidadas', 'Áreas verdes descuidadas'],
+  ] as const;
+
+  return (
+    <div style={{ display: 'grid', gap: 16 }}>
+      <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
+        <h4 style={{ margin: '0 0 8px', fontSize: 16, color: '#334155' }}>7.1 Entorno de la vivienda</h4>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div><strong>Zona de la vivienda:</strong> {zonaMap[normalize(sectionData.vivi_zona)] || '—'}</div>
+          {normalize(sectionData.vivi_zona) === 'otro' && normalize(sectionData.vivi_zona_otro) !== '' && <div><strong>Zona de la vivienda (otro):</strong> {normalize(sectionData.vivi_zona_otro)}</div>}
+          <div><strong>Tipo de vivienda:</strong> {tipoMap[normalize(sectionData.vivi_tipo)] || '—'}</div>
+          <div><strong>Colonia / tipo de fraccionamiento:</strong> {coloniaMap[normalize(sectionData.vivi_colonia_tipo)] || '—'}</div>
+          {normalize(sectionData.vivi_colonia_tipo) === 'otro' && normalize(sectionData.vivi_colonia_otro) !== '' && <div><strong>Colonia / tipo de fraccionamiento (otro):</strong> {normalize(sectionData.vivi_colonia_otro)}</div>}
+          <div><strong>Actividad vecinal predominante:</strong> {actividadMap[normalize(sectionData.vivi_actividad_vecinal)] || '—'}</div>
+          {normalize(sectionData.vivi_actividad_vecinal) === 'otro' && normalize(sectionData.vivi_actividad_vecinal_otro) !== '' && <div><strong>Actividad vecinal (otro):</strong> {normalize(sectionData.vivi_actividad_vecinal_otro)}</div>}
+        </div>
+      </div>
+
+      <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
+        <h4 style={{ margin: '0 0 8px', fontSize: 16, color: '#334155' }}>7.1 Servicios públicos de la zona</h4>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+          {servicios.map(([key, label]) => (
+            <div key={key}><strong>{label}:</strong> {ynBool(normalize(sectionData[key]))}</div>
+          ))}
+        </div>
+        <div style={{ marginTop: 10, fontSize: 12, color: '#64748b', fontStyle: 'italic' }}>
+          Esta información es de carácter declarativo y podrá ser complementada con la verificación domiciliaria, en caso de que haya sido autorizada por el evaluado.
+        </div>
+      </div>
+
+      <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
+        <h4 style={{ margin: '0 0 8px', fontSize: 16, color: '#334155' }}>7.2 Medios de transporte y traslado al trabajo</h4>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div><strong>Medio principal de transporte:</strong> {transporteMap[normalize(sectionData.transporte_medio)] || '—'}</div>
+          <div><strong>Tiempo aproximado de traslado:</strong> {tiempoMap[normalize(sectionData.transporte_tiempo)] || '—'}</div>
         </div>
       </div>
     </div>
@@ -527,6 +1000,10 @@ export default function AdminCandidateStudyViewPage() {
   const [formData, setFormData] = useState<FormDataBySection>({});
   const [formLoading, setFormLoading] = useState(false);
   const [tabIdx, setTabIdx] = useState(0);
+  const [editingTab, setEditingTab] = useState<string | null>(null);
+  const [pageDrafts, setPageDrafts] = useState<FormDataBySection>({});
+  const [pageSaving, setPageSaving] = useState(false);
+  const [pageUploadingKey, setPageUploadingKey] = useState<string | null>(null);
 
   // Internal admin state (existing functionality moved here)
   const [domPhotoUrl, setDomPhotoUrl] = useState('');
@@ -597,6 +1074,18 @@ export default function AdminCandidateStudyViewPage() {
     document.body.scrollTop = 0;
   }, [tabIdx]);
 
+  useEffect(() => {
+    if (!currentTab || currentTab === 'Uso interno (analista)' || formLoading) return;
+    setEditingTab(currentTab);
+    setPageDrafts((prev) => {
+      if (prev[currentTab]) return prev;
+      return {
+        ...prev,
+        [currentTab]: { ...originalSectionData },
+      };
+    });
+  }, [currentTab, formLoading]);
+
   const loadAll = () => {
     if (!invitationId) return;
     setFormLoading(true);
@@ -612,6 +1101,8 @@ export default function AdminCandidateStudyViewPage() {
     ])
       .then(([formRes, concRes, domRes, studyRes]) => {
         setFormData(typeof formRes === 'object' && formRes !== null && !formRes.error ? formRes : {});
+        setEditingTab(null);
+        setPageDrafts({});
 
         setConcNotes(concRes?.analyst_notes ?? '');
         setConcVerdict(concRes?.verdict ?? null);
@@ -646,6 +1137,14 @@ export default function AdminCandidateStudyViewPage() {
     loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invitationId, isAdmin, checking]);
+
+  const originalSectionData = useMemo<Record<string, string>>(
+    () => (currentTab && formData[currentTab] ? Object.fromEntries(getCandidateSectionEntries(currentTab, formData[currentTab] || {})) : {}),
+    [currentTab, formData]
+  );
+  const draftSectionData = pageDrafts[currentTab] || originalSectionData;
+  const sectionDirty = !sectionsEqual(originalSectionData, draftSectionData);
+  const isEditingCurrentTab = editingTab === currentTab;
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -750,6 +1249,439 @@ export default function AdminCandidateStudyViewPage() {
       .finally(() => setHlAdminUploadingKey(null));
   };
 
+  const cancelEditingCurrentTab = () => {
+    if (!currentTab) return;
+    setPageDrafts((prev) => {
+      const next = { ...prev };
+      delete next[currentTab];
+      return next;
+    });
+    setEditingTab((prev) => (prev === currentTab ? null : prev));
+    setPageUploadingKey(null);
+  };
+
+  const updateDraftField = (fieldKey: string, fieldValue: string) => {
+    if (!currentTab) return;
+    if (editingTab !== currentTab) {
+      setEditingTab(currentTab);
+    }
+    setPageDrafts((prev) => ({
+      ...prev,
+      [currentTab]: {
+        ...(prev[currentTab] || originalSectionData),
+        [fieldKey]: fieldValue,
+      },
+    }));
+  };
+
+  const uploadEditableFieldFile = (file: File, fieldKey: string) => {
+    const max = 5 * 1024 * 1024;
+    if (file.size > max) {
+      setToast('El archivo no debe superar 5 MB');
+      return;
+    }
+    const config = getFileFieldConfig(fieldKey);
+    const lower = file.name.toLowerCase();
+    const isPdf = file.type === 'application/pdf' || lower.endsWith('.pdf');
+    const isImage = /^image\/(jpeg|jpg|png|webp)$/i.test(file.type) || /\.(jpe?g|png|webp)$/i.test(lower);
+    if (fieldKey === 'foto_participante' && !isImage) {
+      setToast('Solo se permiten imágenes JPG o PNG para la fotografía');
+      return;
+    }
+    if (fieldKey !== 'foto_participante' && config.accept.includes('application/pdf') && !config.accept.includes('image/') && !isPdf) {
+      setToast('Solo se permiten archivos PDF para este campo');
+      return;
+    }
+    if (config.accept.includes('image/') && !isPdf && !isImage) {
+      setToast('Solo se permiten PDF o imágenes compatibles para este campo');
+      return;
+    }
+    setPageUploadingKey(fieldKey);
+    const fd = new FormData();
+    fd.append('file', file);
+    fetch('/api/upload.php', { method: 'POST', credentials: 'include', body: fd })
+      .then((r) => r.json().catch(() => ({})))
+      .then((d) => {
+        if (d?.url) {
+          updateDraftField(fieldKey, String(d.url));
+          setToast('Archivo cargado. Recuerda guardar los cambios de esta página.');
+        } else {
+          setToast('No se pudo subir el archivo');
+        }
+      })
+      .finally(() => setPageUploadingKey(null));
+  };
+
+  const saveCurrentTabEdits = () => {
+    if (!invitationId || !currentTab || !sectionDirty) return;
+    setPageSaving(true);
+    const draft = pageDrafts[currentTab] || {};
+    const fields = Object.entries(draft).map(([field_key, field_value]) => ({
+      section: currentTab,
+      field_key,
+      field_value: field_value ?? '',
+    }));
+    fetch('/api/studies.php?action=save_admin_form_data_batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ study_invitation_id: invitationId, fields }),
+    })
+      .then((r) => r.json().catch(() => ({})))
+      .then((d) => {
+        if (d?.error) {
+          setToast(d.error);
+          return;
+        }
+        setFormData((prev) => ({
+          ...prev,
+          [currentTab]: {
+            ...(prev[currentTab] || {}),
+            ...draft,
+          },
+        }));
+        setToast('Cambios guardados');
+        setPageDrafts((prev) => {
+          const next = { ...prev };
+          delete next[currentTab];
+          return next;
+        });
+        setEditingTab((prev) => (prev === currentTab ? null : prev));
+      })
+      .finally(() => setPageSaving(false));
+  };
+
+  const renderEditableSection = (sectionName: string, sectionData: Record<string, string>) => {
+    const entries = getCandidateSectionEntries(sectionName, sectionData);
+    if (entries.length === 0) {
+      return <p style={{ color: '#9ca3af' }}>No hay campos editables en esta página.</p>;
+    }
+
+    return (
+      <div style={{ display: 'grid', gap: 16 }}>
+        <div style={{ padding: 14, borderRadius: 12, background: '#eff6ff', color: '#1e3a5f', border: '1px solid #bfdbfe', fontSize: 13 }}>
+          Modo edición activo. Los cambios que guardes aquí se reflejarán en el panel de empresa y en el PDF final regenerado del estudio.
+        </div>
+
+        {entries.map(([fieldKey, rawValue]) => {
+          const value = String(rawValue ?? '');
+          const options = getFieldOptions(fieldKey);
+          const fileField = isFileField(fieldKey, value);
+          const checkboxField = isBooleanCheckboxField(fieldKey, value);
+          const yesNoField = !checkboxField && isYesNoField(fieldKey, value);
+          const multilineField = !fileField && !options && isMultilineField(fieldKey, value);
+          const dateField = !fileField && !options && isDateField(fieldKey, value);
+          const downloadUrl = fileField && value ? documentDownloadApiUrl(value) : '';
+          const fileConfig = fileField ? getFileFieldConfig(fieldKey) : null;
+
+          return (
+            <div key={fieldKey} style={{ padding: 14, borderRadius: 12, border: '1px solid #e5e7eb', background: '#fff' }}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 800, color: '#0f172a', fontSize: 14 }}>
+                {formatFieldLabel(fieldKey)}
+              </label>
+
+              {fileField && fileConfig ? (
+                <div style={{ display: 'grid', gap: 10 }}>
+                  <div style={{ fontSize: 12, color: '#64748b' }}>{fileConfig.help}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <label style={{ cursor: pageUploadingKey === fieldKey ? 'wait' : 'pointer' }}>
+                      <input
+                        type="file"
+                        accept={fileConfig.accept}
+                        style={{ display: 'none' }}
+                        disabled={pageUploadingKey !== null}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          uploadEditableFieldFile(file, fieldKey);
+                          e.target.value = '';
+                        }}
+                      />
+                      <span style={{ display: 'inline-block', padding: '10px 16px', background: pageUploadingKey === fieldKey ? '#64748b' : '#1e40af', color: '#fff', borderRadius: 10, fontWeight: 800, fontSize: 13 }}>
+                        {pageUploadingKey === fieldKey ? 'Subiendo…' : 'Adjuntar archivo'}
+                      </span>
+                    </label>
+                    {value ? <span style={{ color: '#6b7280', fontSize: 13 }}>{value.replace(/^.*[/\\]/, '')}</span> : <span style={{ color: '#94a3b8', fontSize: 13 }}>Sin archivo</span>}
+                    {downloadUrl ? (
+                      <a href={downloadUrl} target="_blank" rel="noopener noreferrer" style={{ padding: '8px 12px', background: '#059669', color: '#fff', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 700 }}>
+                        Descargar actual
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+              ) : options ? (
+                <select
+                  value={value}
+                  onChange={(e) => updateDraftField(fieldKey, e.target.value)}
+                  style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                >
+                  <option value="">Selecciona una opción</option>
+                  {options.map((option) => (
+                    <option key={`${fieldKey}-${option.value}`} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              ) : checkboxField ? (
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 14, color: '#0f172a', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={['1', 'si', 'true'].includes(value.trim().toLowerCase())}
+                    onChange={(e) => updateDraftField(fieldKey, e.target.checked ? '1' : '0')}
+                  />
+                  Marcar como Sí
+                </label>
+              ) : yesNoField ? (
+                <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+                  {[
+                    { value: 'si', label: 'Sí' },
+                    { value: 'no', label: 'No' },
+                  ].map((option) => (
+                    <label key={`${fieldKey}-${option.value}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14 }}>
+                      <input
+                        type="radio"
+                        name={fieldKey}
+                        checked={value.trim().toLowerCase() === option.value}
+                        onChange={() => updateDraftField(fieldKey, option.value)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              ) : multilineField ? (
+                <textarea
+                  value={value}
+                  onChange={(e) => updateDraftField(fieldKey, e.target.value)}
+                  rows={4}
+                  style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                />
+              ) : (
+                <input
+                  type={dateField ? 'date' : fieldKey.includes('correo') ? 'email' : fieldKey.includes('telefono') ? 'tel' : 'text'}
+                  value={value}
+                  onChange={(e) => updateDraftField(fieldKey, e.target.value)}
+                  style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                />
+              )}
+            </div>
+          );
+        })}
+
+        {sectionDirty ? (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap', paddingTop: 8, borderTop: '1px solid #e5e7eb' }}>
+            <button
+              type="button"
+              onClick={cancelEditingCurrentTab}
+              disabled={pageSaving}
+              style={{ padding: '10px 14px', background: '#f8fafc', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: 10, cursor: pageSaving ? 'not-allowed' : 'pointer', fontWeight: 800 }}
+            >
+              Cancelar cambios
+            </button>
+            <button
+              type="button"
+              onClick={saveCurrentTabEdits}
+              disabled={pageSaving}
+              style={{ padding: '10px 14px', background: pageSaving ? '#9ca3af' : '#059669', color: '#fff', border: 'none', borderRadius: 10, cursor: pageSaving ? 'not-allowed' : 'pointer', fontWeight: 900 }}
+            >
+              {pageSaving ? 'Guardando…' : 'Guardar cambios de esta página'}
+            </button>
+          </div>
+        ) : null}
+
+        {sectionName === 'Historia Laboral' && (
+          <div style={{ marginTop: 8, paddingTop: 16, borderTop: '1px solid #e5e7eb' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <h4 style={{ margin: 0, fontSize: 14 }}>Notas del analista (referencias laborales)</h4>
+              <button type="button" onClick={() => setHlAdminOpen((s) => !s)} style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontSize: 13 }}>
+                {hlAdminOpen ? 'Ocultar' : 'Mostrar'}
+              </button>
+            </div>
+            {hlAdminOpen && (
+              <div style={{ marginTop: 12, display: 'grid', gap: 14 }}>
+                {buildHistoriaLaboralAdminBlocks(sectionData as Record<string, string>).map(({ label, prefix }) => {
+                  const k1 = `${prefix}_admin_comentarios_entrevistado`;
+                  const k2 = `${prefix}_admin_observaciones_internas`;
+                  const k3 = `${prefix}_admin_respaldo`;
+                  return (
+                    <div key={prefix} style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 10 }}>{label}</div>
+                      <div style={{ display: 'grid', gap: 10 }}>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: 4, fontWeight: 700, fontSize: 12 }}>ESPACIO 1: Comentarios del entrevistado</label>
+                          <textarea value={hlAdminFields[k1] ?? ''} onChange={(e) => setHlAdminFields((p) => ({ ...p, [k1]: e.target.value }))} rows={3} style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: 4, fontWeight: 700, fontSize: 12 }}>ESPACIO 2: Observaciones internas Working</label>
+                          <textarea value={hlAdminFields[k2] ?? ''} onChange={(e) => setHlAdminFields((p) => ({ ...p, [k2]: e.target.value }))} rows={3} style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: 6, fontWeight: 700, fontSize: 12 }}>SUBIR IMAGEN O PDF</label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                            <label style={{ cursor: hlAdminUploadingKey === k3 ? 'wait' : 'pointer' }}>
+                              <input
+                                type="file"
+                                accept=".pdf,application/pdf,image/*"
+                                style={{ display: 'none' }}
+                                disabled={hlAdminUploadingKey !== null}
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (!f) return;
+                                  uploadHistoriaLaboralAttachment(f, k3);
+                                  e.target.value = '';
+                                }}
+                              />
+                              <span style={{ display: 'inline-block', padding: '8px 12px', background: hlAdminUploadingKey === k3 ? '#64748b' : '#1e40af', color: '#fff', borderRadius: 10, fontSize: 12, fontWeight: 800 }}>
+                                {hlAdminUploadingKey === k3 ? 'Subiendo…' : 'Adjuntar'}
+                              </span>
+                            </label>
+                            {hlAdminFields[k3] ? (
+                              <a href={documentDownloadApiUrl(hlAdminFields[k3])} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#059669', fontWeight: 800, textDecoration: 'none' }}>
+                                Ver archivo
+                              </a>
+                            ) : (
+                              <span style={{ fontSize: 12, color: '#6b7280' }}>Sin archivo</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button type="button" onClick={saveHistoriaLaboralAdmin} disabled={hlAdminSaving} style={{ padding: '10px 14px', background: hlAdminSaving ? '#9ca3af' : '#059669', color: '#fff', border: 'none', borderRadius: 10, cursor: hlAdminSaving ? 'not-allowed' : 'pointer', fontWeight: 900 }}>
+                    {hlAdminSaving ? 'Guardando…' : 'Guardar notas de historia laboral'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderReadOnlySection = (sectionName: string, sectionData: Record<string, string>) => {
+    const entries = getCandidateSectionEntries(sectionName, sectionData);
+    if (entries.length === 0) {
+      return <p style={{ color: '#9ca3af' }}>â€”</p>;
+    }
+    if (sectionName === 'InformaciÃ³n del CÃ³nyuge, Familiares y Contacto') {
+      return renderConyugeFamiliaContactoTable(sectionData as Record<string, string>);
+    }
+    if (sectionName === 'Ingresos y SituaciÃ³n EconÃ³mica') {
+      return renderEconomicSituationSection(sectionData as Record<string, string>);
+    }
+    if (sectionName === 'InformaciÃ³n Legal y TrÃ¡mite de Carta de No Antecedentes Penales') {
+      return renderLegalSection(sectionData as Record<string, string>);
+    }
+    if (sectionName === 'Bienestar y Antecedentes Legales') {
+      return renderHabitosSection(sectionData as Record<string, string>);
+    }
+    if (sectionName === 'Entorno Social y Condiciones de Vivienda') {
+      return renderEntornoViviendaSection(sectionData as Record<string, string>);
+    }
+    const isDocumentosSection = sectionName.toLowerCase() === 'documentos';
+    return (
+      <div style={{ display: 'grid', gap: 12 }}>
+        {entries.map(([k, v]) => {
+          const valueStr = v != null && String(v).trim() !== '' ? String(v) : '';
+          const isDocField = isDocumentosSection && DOCUMENT_FIELD_KEYS.includes(k);
+          const isStoredPdf =
+            valueStr &&
+            (k.endsWith('_pdf') || k === 'identificacion_oficial_pdf' || /^cap_doc_/.test(k)) &&
+            !/^https?:\/\//i.test(valueStr);
+          const isStoredImage = valueStr && k === 'foto_participante' && !/^https?:\/\//i.test(valueStr);
+          const isStoredAttachment = valueStr && /_admin_respaldo$/.test(k) && !/^https?:\/\//i.test(valueStr);
+          const downloadUrl = (isDocField && valueStr) || isStoredPdf || isStoredImage || isStoredAttachment ? documentDownloadApiUrl(valueStr) : '';
+          return (
+            <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: 600, minWidth: 220 }}>{formatFieldLabel(k)}:</span>
+              {downloadUrl ? (
+                <>
+                  <span style={{ color: '#6b7280', fontSize: 13 }}>{valueStr.replace(/^.*[/\\]/, '')}</span>
+                  <a href={downloadUrl} target="_blank" rel="noopener noreferrer" download style={{ padding: '6px 12px', background: '#059669', color: '#fff', borderRadius: 6, textDecoration: 'none', fontSize: 13 }}>
+                    Descargar
+                  </a>
+                </>
+              ) : (
+                <span>{valueStr || 'â€”'}</span>
+              )}
+            </div>
+          );
+        })}
+
+        {sectionName === 'Historia Laboral' && (
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e5e7eb' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <h4 style={{ margin: 0, fontSize: 14 }}>Notas del analista (referencias laborales)</h4>
+              <button type="button" onClick={() => setHlAdminOpen((s) => !s)} style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontSize: 13 }}>
+                {hlAdminOpen ? 'Ocultar' : 'Mostrar'}
+              </button>
+            </div>
+            {hlAdminOpen && (
+              <div style={{ marginTop: 12, display: 'grid', gap: 14 }}>
+                {buildHistoriaLaboralAdminBlocks(sectionData as Record<string, string>).map(({ label, prefix }) => {
+                  const k1 = `${prefix}_admin_comentarios_entrevistado`;
+                  const k2 = `${prefix}_admin_observaciones_internas`;
+                  const k3 = `${prefix}_admin_respaldo`;
+                  return (
+                    <div key={prefix} style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 10 }}>{label}</div>
+                      <div style={{ display: 'grid', gap: 10 }}>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: 4, fontWeight: 700, fontSize: 12 }}>ESPACIO 1: Comentarios del entrevistado</label>
+                          <textarea value={hlAdminFields[k1] ?? ''} onChange={(e) => setHlAdminFields((p) => ({ ...p, [k1]: e.target.value }))} rows={3} style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: 4, fontWeight: 700, fontSize: 12 }}>ESPACIO 2: Observaciones internas Working</label>
+                          <textarea value={hlAdminFields[k2] ?? ''} onChange={(e) => setHlAdminFields((p) => ({ ...p, [k2]: e.target.value }))} rows={3} style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: 6, fontWeight: 700, fontSize: 12 }}>SUBIR IMAGEN O PDF</label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                            <label style={{ cursor: hlAdminUploadingKey === k3 ? 'wait' : 'pointer' }}>
+                              <input
+                                type="file"
+                                accept=".pdf,application/pdf,image/*"
+                                style={{ display: 'none' }}
+                                disabled={hlAdminUploadingKey !== null}
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (!f) return;
+                                  uploadHistoriaLaboralAttachment(f, k3);
+                                  e.target.value = '';
+                                }}
+                              />
+                              <span style={{ display: 'inline-block', padding: '8px 12px', background: hlAdminUploadingKey === k3 ? '#64748b' : '#1e40af', color: '#fff', borderRadius: 10, fontSize: 12, fontWeight: 800 }}>
+                                {hlAdminUploadingKey === k3 ? 'Subiendoâ€¦' : 'Adjuntar'}
+                              </span>
+                            </label>
+                            {hlAdminFields[k3] ? (
+                              <a href={documentDownloadApiUrl(hlAdminFields[k3])} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#059669', fontWeight: 800, textDecoration: 'none' }}>
+                                Ver archivo
+                              </a>
+                            ) : (
+                              <span style={{ fontSize: 12, color: '#6b7280' }}>Sin archivo</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button type="button" onClick={saveHistoriaLaboralAdmin} disabled={hlAdminSaving} style={{ padding: '10px 14px', background: hlAdminSaving ? '#9ca3af' : '#059669', color: '#fff', border: 'none', borderRadius: 10, cursor: hlAdminSaving ? 'not-allowed' : 'pointer', fontWeight: 900 }}>
+                    {hlAdminSaving ? 'Guardandoâ€¦' : 'Guardar notas de historia laboral'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (checking) return <p style={{ textAlign: 'center', padding: 24 }}>Comprobando…</p>;
   if (!isAdmin) {
     return (
@@ -813,6 +1745,7 @@ export default function AdminCandidateStudyViewPage() {
                 }}
               >
                 {t}
+                {pageDrafts[t] && !sectionsEqual(Object.fromEntries(getCandidateSectionEntries(t, formData[t] || {})), pageDrafts[t]) ? ' *' : ''}
               </button>
             ))}
           </div>
@@ -980,17 +1913,51 @@ export default function AdminCandidateStudyViewPage() {
             </div>
           ) : (
             <div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+                {isEditingCurrentTab ? (
+                  <span style={{ padding: '8px 12px', borderRadius: 999, background: '#dbeafe', color: '#1d4ed8', fontSize: 12, fontWeight: 800 }}>
+                    Edición directa habilitada en esta página
+                  </span>
+                ) : null}
+                {isEditingCurrentTab && !sectionDirty ? (
+                  <button type="button" onClick={cancelEditingCurrentTab} style={{ padding: '8px 12px', borderRadius: 10, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontWeight: 700 }}>
+                    Cancelar
+                  </button>
+                ) : null}
+              </div>
               {formLoading ? (
                 <p style={{ color: '#6b7280' }}>Cargando…</p>
               ) : (() => {
                 const sectionData = formData[currentTab] || {};
-                const entries = Object.entries(sectionData);
+                const entries = getCandidateSectionEntries(currentTab, sectionData);
                 if (entries.length === 0) return <p style={{ color: '#9ca3af' }}>—</p>;
                 if (currentTab === 'Información del Cónyuge, Familiares y Contacto') {
-                  return renderConyugeFamiliaContactoTable(sectionData as Record<string, string>);
+                  return isEditingCurrentTab
+                    ? renderEditableSection(currentTab, draftSectionData)
+                    : renderReadOnlySection(currentTab, sectionData);
                 }
                 if (currentTab === 'Ingresos y Situación Económica') {
-                  return renderEconomicSituationSection(sectionData as Record<string, string>);
+                  return isEditingCurrentTab
+                    ? renderEditableSection(currentTab, draftSectionData)
+                    : renderEconomicSituationSection(sectionData as Record<string, string>);
+                }
+                if (currentTab === 'Información Legal y Trámite de Carta de No Antecedentes Penales') {
+                  return isEditingCurrentTab
+                    ? renderEditableSection(currentTab, draftSectionData)
+                    : renderLegalSection(sectionData as Record<string, string>);
+                }
+                if (currentTab === 'Bienestar y Antecedentes Legales') {
+                  return isEditingCurrentTab
+                    ? renderEditableSection(currentTab, draftSectionData)
+                    : renderHabitosSection(sectionData as Record<string, string>);
+                }
+                if (currentTab === 'Entorno Social y Condiciones de Vivienda') {
+                  return isEditingCurrentTab
+                    ? renderEditableSection(currentTab, draftSectionData)
+                    : renderEntornoViviendaSection(sectionData as Record<string, string>);
+                }
+                if (isEditingCurrentTab) {
+                  return renderEditableSection(currentTab, draftSectionData);
                 }
                 const isDocumentosSection = currentTab.toLowerCase() === 'documentos';
                 return (
@@ -1032,34 +1999,7 @@ export default function AdminCandidateStudyViewPage() {
                         </div>
                         {hlAdminOpen && (
                           <div style={{ marginTop: 12, display: 'grid', gap: 14 }}>
-                            {(() => {
-                              const hl = sectionData as Record<string, string>;
-                              const filled = (prefix: string): boolean => {
-                                const candidates = Object.entries(hl).filter(([k, v]) => k.startsWith(prefix) && v != null && String(v).trim() !== '');
-                                // ignore admin-only fields if present in sectionData
-                                return candidates.some(([k]) => !/_admin_/.test(k));
-                              };
-                              const antCount = Math.max(
-                                1,
-                                Math.min(
-                                  3,
-                                  parseInt(String(hl['hl_ant_count'] || ''), 10) ||
-                                    // fallback: infer by checking if each block has at least one value
-                                    ([0, 1, 2].filter((i) => filled(`hl_ant_${i}_`)).length || 1)
-                                )
-                              );
-                              const showActual = filled('hl_actual_');
-                              const showAdic = String(hl['hl_empleos_adicionales'] || '').trim() === 'si';
-                              const adicCount = showAdic ? Math.max(1, Math.min(3, [0, 1, 2].filter((i) => filled(`hl_adic_${i}_`)).length || 1)) : 0;
-
-                              const blocks: { label: string; prefix: string }[] = [];
-                              if (showActual) blocks.push({ label: 'Empleo actual', prefix: 'hl_actual' });
-                              for (let i = 0; i < antCount; i++) blocks.push({ label: `Empleo anterior ${i + 1}`, prefix: `hl_ant_${i}` });
-                              for (let i = 0; i < adicCount; i++) blocks.push({ label: `Empleo adicional ${i + 1}`, prefix: `hl_adic_${i}` });
-
-                              // If no data at all, don't show any blocks (avoid clutter)
-                              return blocks;
-                            })().map(({ label, prefix }) => {
+                            {buildHistoriaLaboralAdminBlocks(sectionData as Record<string, string>).map(({ label, prefix }) => {
                               const k1 = `${prefix}_admin_comentarios_entrevistado`;
                               const k2 = `${prefix}_admin_observaciones_internas`;
                               const k3 = `${prefix}_admin_respaldo`;
@@ -1138,4 +2078,3 @@ export default function AdminCandidateStudyViewPage() {
     </div>
   );
 }
-

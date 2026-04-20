@@ -26,7 +26,6 @@ const PREFERRED_SECTIONS = [
   'Referencias Personales',
   'Escolaridad y Capacitación',
   'Historia Laboral',
-  'Datos Generales e Identificación',
   'Ingresos y Situación Económica',
   'Información Legal y Trámite de Carta de No Antecedentes Penales',
   'Bienestar y Antecedentes Legales',
@@ -54,7 +53,7 @@ function documentDownloadApiUrl(filePath: string): string {
 }
 
 function sectionTabs(formData: FormDataBySection): string[] {
-  const keys = Object.keys(formData);
+  const keys = Object.keys(formData).filter((k) => k.toLowerCase() !== 'datos generales e identificación');
   const ordered = PREFERRED_SECTIONS.filter((s) => keys.some((k) => k.toLowerCase() === s.toLowerCase() || k === s));
   const rest = keys.filter((k) => !PREFERRED_SECTIONS.some((s) => s.toLowerCase() === k.toLowerCase() || s === k));
   return [...ordered, ...rest];
@@ -126,7 +125,74 @@ function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;');
 }
 
+function buildHistoriaLaboralAdminBlocks(sectionData: Record<string, string>): Array<{ label: string; prefix: string }> {
+  const filled = (prefix: string): boolean =>
+    Object.entries(sectionData).some(
+      ([key, value]) => key.startsWith(`${prefix}_`) && String(value ?? '').trim() !== '' && !/_admin_/.test(key)
+    );
+
+  const blocks: Array<{ label: string; prefix: string }> = [];
+  const antCountRaw = parseInt(String(sectionData.hl_ant_count || ''), 10);
+  const configuredCount = Number.isFinite(antCountRaw) ? Math.max(0, Math.min(10, antCountRaw)) : 0;
+  const detectedIndexes = Array.from({ length: 10 }, (_, i) => i).filter((i) => filled(`hl_ant_${i}`));
+  const lastDetectedIndex = detectedIndexes.length > 0 ? Math.max(...detectedIndexes) : -1;
+  const totalAntBlocks = Math.max(configuredCount, lastDetectedIndex + 1, 1);
+
+  if (filled('hl_actual')) {
+    blocks.push({ label: 'Empleo actual', prefix: 'hl_actual' });
+  }
+
+  for (let i = 0; i < totalAntBlocks; i += 1) {
+    const prefix = `hl_ant_${i}`;
+    const isActual = ['1', 'si', 'true'].includes(String(sectionData[`${prefix}_a_actual`] || sectionData[`${prefix}_actual`] || '').trim().toLowerCase());
+    blocks.push({ label: isActual ? `Empleo ${i + 1} (actual)` : `Empleo ${i + 1}`, prefix });
+  }
+
+  for (let i = 0; i < 10; i += 1) {
+    const prefix = `hl_adic_${i}`;
+    if (filled(prefix)) {
+      blocks.push({ label: `Empleo adicional ${i + 1}`, prefix });
+    }
+  }
+
+  return blocks;
+}
+
 function formatFieldLabel(key: string): string {
+  const explicitLabels: Record<string, string> = {
+    dp_id_cedula_profesional: 'Identificacion oficial - Cedula Profesional',
+    dom_comprobante_domicilio_pdf: 'Comprobante de domicilio (no mayor a 3 meses)',
+    hl_constancia_imss_pdf: 'Constancia de semanas cotizadas (IMSS)',
+    hl_documentacion_adicional_pdf: 'Documentacion adicional',
+    al_legal: 'Antecedente legal declarado',
+    al_legal_texto: 'Detalle declarado',
+    cap_tramite: 'Autorizacion para tramite',
+    cap_doc_acta: 'Acta de nacimiento',
+    cap_doc_ine: 'Credencial para votar (INE)',
+    cap_doc_foto: 'Fotografia reciente con fondo blanco',
+    cap_doc_domicilio: 'Comprobante de domicilio',
+    bw_alcohol: '¿Consume alcohol?',
+    bw_tabaco: '¿Fuma?',
+    bw_sustancia_prohibida: '¿Consume alguna sustancia prohibida?',
+    vivi_zona: 'Zona de la vivienda',
+    vivi_zona_otro: 'Zona de la vivienda (otro)',
+    vivi_tipo: 'Tipo de vivienda',
+    vivi_colonia_tipo: 'Colonia / tipo de fraccionamiento',
+    vivi_colonia_otro: 'Colonia / tipo de fraccionamiento (otro)',
+    vivi_actividad_vecinal: 'Actividad vecinal predominante',
+    vivi_actividad_vecinal_otro: 'Actividad vecinal (otro)',
+    vivi_serv_agua: 'Servicio de agua',
+    vivi_serv_luz: 'Servicio de luz',
+    vivi_serv_alumbrado: 'Alumbrado publico',
+    vivi_serv_drenaje: 'Drenaje',
+    vivi_serv_pavimentacion: 'Pavimentacion',
+    vivi_serv_transporte: 'Transporte publico',
+    vivi_serv_areas_verdes_cuidadas: 'Areas verdes cuidadas',
+    vivi_serv_areas_verdes_descuidadas: 'Areas verdes descuidadas',
+    transporte_medio: 'Medio principal de transporte',
+    transporte_tiempo: 'Tiempo aproximado de traslado',
+  };
+  if (explicitLabels[key]) return explicitLabels[key];
   const refMatch = key.match(/^(\d+)_ref_(.+)$/);
   if (refMatch) {
     const num = parseInt(refMatch[1], 10) + 1;
@@ -1081,15 +1147,7 @@ export default function AdminStudyDetailPage() {
                               </div>
                               {hlAdminOpen && (
                                 <div style={{ marginTop: 12, display: 'grid', gap: 14 }}>
-                                  {[
-                                    { label: 'Empleo actual', prefix: 'hl_actual' },
-                                    { label: 'Empleo anterior 1', prefix: 'hl_ant_0' },
-                                    { label: 'Empleo anterior 2', prefix: 'hl_ant_1' },
-                                    { label: 'Empleo anterior 3', prefix: 'hl_ant_2' },
-                                    { label: 'Empleo adicional 1', prefix: 'hl_adic_0' },
-                                    { label: 'Empleo adicional 2', prefix: 'hl_adic_1' },
-                                    { label: 'Empleo adicional 3', prefix: 'hl_adic_2' },
-                                  ].map(({ label, prefix }) => {
+                                  {buildHistoriaLaboralAdminBlocks(sectionData as Record<string, string>).map(({ label, prefix }) => {
                                     const k1 = `${prefix}_admin_comentarios_entrevistado`;
                                     const k2 = `${prefix}_admin_observaciones_internas`;
                                     const k3 = `${prefix}_admin_respaldo`;

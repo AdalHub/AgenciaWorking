@@ -31,6 +31,15 @@ type ClientReport = {
   fecha_cierre?: string;
   analista?: string;
   verificacion_domiciliaria?: { fecha_visita?: string; tipo?: string; observaciones?: string } | null;
+  candidate_sections?: Array<{
+    title: string;
+    blocks: Array<{
+      title: string;
+      entries?: Array<{ label: string; value: string }>;
+      table?: { headers: string[]; rows: string[][] };
+    }>;
+  }>;
+  supporting_documents?: Array<{ label: string; file_path: string; name: string }>;
   semaforo?: { color: string; label: string } | null;
   show_semaforo?: boolean;
 };
@@ -50,6 +59,12 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
   const navigate = useNavigate();
   const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
   const creds = { credentials: 'include' as RequestCredentials };
+  const companyDocumentDownloadUrl = (filePath: string): string => {
+    const raw = String(filePath || '').trim();
+    if (!raw || /^https?:\/\//i.test(raw)) return '';
+    const normalized = raw.startsWith('uploads/') ? raw : `uploads/${raw.replace(/^\/+/, '')}`;
+    return `${API}/studies.php?action=download_document&file_path=${encodeURIComponent(normalized)}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
+  };
 
   const [study, setStudy] = useState<Study | null>(null);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -146,6 +161,47 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
     });
   };
 
+  const renderReportBlock = (block: { title: string; entries?: Array<{ label: string; value: string }>; table?: { headers: string[]; rows: string[][] } }, idx: number) => (
+    <div key={`${block.title}-${idx}`} style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14, background: '#f8fafc' }}>
+      <h4 style={{ margin: '0 0 10px', fontSize: 15, color: '#334155' }}>{block.title}</h4>
+      {block.entries && block.entries.length > 0 ? (
+        <div style={{ display: 'grid', gap: 8 }}>
+          {block.entries.map((entry, entryIdx) => (
+            <div key={`${entry.label}-${entryIdx}`} style={{ fontSize: 14, color: '#334155' }}>
+              <strong>{entry.label}:</strong> {entry.value || '—'}
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {block.table ? (
+        <div style={{ overflowX: 'auto', marginTop: block.entries && block.entries.length > 0 ? 12 : 0 }}>
+          <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                {block.table.headers.map((header) => (
+                  <th key={header} style={{ textAlign: 'left', padding: '8px 10px', background: '#e2e8f0', color: '#0f172a', fontSize: 12 }}>
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {block.table.rows.map((row, rowIdx) => (
+                <tr key={rowIdx}>
+                  {row.map((cell, cellIdx) => (
+                    <td key={`${rowIdx}-${cellIdx}`} style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', fontSize: 13, color: '#334155', verticalAlign: 'top' }}>
+                      {cell || '—'}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+    </div>
+  );
+
   if (loading || !study) {
     return (
       <main style={{ minHeight: '60vh', padding: 24, textAlign: 'center' }}>
@@ -185,8 +241,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
         </div>
 
         <div style={{ padding: 12, background: '#eff6ff', borderRadius: 8, marginBottom: 16, fontSize: 13, color: '#1e3a5f', border: '1px solid #93c5fd' }}>
-          <strong>Portal empresa:</strong> aquí solo se muestra el <strong>informe final para el cliente</strong> (resumen, resultado de la actualización, verificación domiciliaria y semáforo cuando aplique).
-          El formato completo del colaborador es uso interno de la agencia.
+          <strong>Portal empresa:</strong> aquí se muestra el <strong>informe final para el cliente</strong> junto con la información del candidato registrada en el estudio, en modo solo lectura.
         </div>
 
         <div style={{ display: 'flex', gap: 24 }}>
@@ -295,8 +350,57 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
                   )}
                 </section>
 
+                {report.candidate_sections && report.candidate_sections.length > 0 ? (
+                  <section style={{ marginBottom: 20 }}>
+                    <h3 style={{ margin: '0 0 12px', fontSize: 15, color: '#0f172a' }}>4. Respuestas del estudio</h3>
+                    <div style={{ display: 'grid', gap: 14 }}>
+                      {report.candidate_sections.map((section) => (
+                        <div key={section.title} style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, background: '#fff' }}>
+                          <h3 style={{ margin: '0 0 12px', fontSize: 15, color: '#0f172a' }}>{section.title}</h3>
+                          <div style={{ display: 'grid', gap: 12 }}>
+                            {section.blocks.map(renderReportBlock)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
+                <section style={{ marginBottom: 20 }}>
+                  <h3 style={{ margin: '0 0 8px', fontSize: 15, color: '#0f172a' }}>5. Documentacion de respaldo / validacion</h3>
+                  {report.supporting_documents && report.supporting_documents.length > 0 ? (
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      {report.supporting_documents.map((doc) => {
+                        const url = companyDocumentDownloadUrl(doc.file_path);
+                        return (
+                          <div key={`${doc.file_path}-${doc.label}`} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: 12, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                            <div style={{ flex: 1, minWidth: 220 }}>
+                              <div style={{ fontWeight: 700, color: '#0f172a' }}>{doc.label}</div>
+                              <div style={{ fontSize: 13, color: '#64748b' }}>{doc.name}</div>
+                            </div>
+                            {url ? (
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ padding: '8px 14px', background: '#0f766e', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 700, fontSize: 13 }}
+                              >
+                                Descargar
+                              </a>
+                            ) : (
+                              <span style={{ fontSize: 13, color: '#94a3b8' }}>No disponible</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p style={{ margin: 0, color: '#64748b' }}>Sin documentos adicionales registrados.</p>
+                  )}
+                </section>
+
                 <section>
-                  <h3 style={{ margin: '0 0 8px', fontSize: 15, color: '#0f172a' }}>4. Semáforo</h3>
+                  <h3 style={{ margin: '0 0 8px', fontSize: 15, color: '#0f172a' }}>6. Semáforo</h3>
                   {report.show_semaforo && report.semaforo ? (
                     <div
                       style={{

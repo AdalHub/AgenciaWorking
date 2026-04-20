@@ -61,7 +61,6 @@ const SECTIONS = [
   'Información del Cónyuge, Familiares y Contacto',
   'Referencias Personales',
   'Escolaridad y Capacitación',
-  'Datos Generales e Identificación',
   'Historia Laboral',
   'Ingresos y Situación Económica',
   'Información Legal y Trámite de Carta de No Antecedentes Penales',
@@ -263,7 +262,10 @@ export default function EstudioPage() {
       req('dp_curp');
       req('dp_rfc');
       total++;
-      const idOk = getField(sec, 'dp_id_ine') === '1' || getField(sec, 'dp_id_pasaporte') === '1';
+      const idOk =
+        getField(sec, 'dp_id_ine') === '1' ||
+        getField(sec, 'dp_id_pasaporte') === '1' ||
+        getField(sec, 'dp_id_cedula_profesional') === '1';
       if (idOk) filled++;
       req('dp_id_numero');
       req('dp_id_vigencia');
@@ -271,36 +273,6 @@ export default function EstudioPage() {
       if ((getField(sec, 'dp_identificacion_pdf') ?? '').trim()) filled++;
     } else if (sec === 'Autorización Actualización') {
       ['auth_nombre_declaracion', 'auth_empresa_solicitante', 'auth_nombre_firma', 'auth_firma_texto', 'auth_fecha'].forEach(req);
-    } else if (sec === 'Datos Generales e Identificación') {
-      reqYn('dg_estado_civil_cambio');
-      if (getField(sec, 'dg_estado_civil_cambio') === 'si') req('dg_estado_civil_actual');
-      reqYn('dg_tel_cambio');
-      if (getField(sec, 'dg_tel_cambio') === 'si') req('dg_tel_actual');
-      reqYn('dg_correo_cambio');
-      if (getField(sec, 'dg_correo_cambio') === 'si') req('dg_correo_actual');
-      reqYn('dg_dependientes');
-      if (getField(sec, 'dg_dependientes') === 'si') {
-        req('dg_num_dependientes');
-        total++;
-        const anyDep =
-          getField(sec, 'dg_dep_hijos') === '1' ||
-          getField(sec, 'dg_dep_conyuge') === '1' ||
-          getField(sec, 'dg_dep_padres') === '1' ||
-          getField(sec, 'dg_dep_otros') === '1';
-        if (anyDep) filled++;
-        if (getField(sec, 'dg_dep_otros') === '1') req('dg_dep_otros_texto');
-      }
-      reqYn('dg_id_cambio');
-      total++;
-      const idOk =
-        getField(sec, 'dg_id_ine') === '1' ||
-        getField(sec, 'dg_id_pasaporte') === '1' ||
-        (getField(sec, 'dg_id_otra') === '1' && (getField(sec, 'dg_id_otra_texto') ?? '').trim());
-      if (idOk) filled++;
-      if (getField(sec, 'dg_id_otra') === '1') req('dg_id_otra_texto');
-      req('dg_id_numero');
-      total++;
-      if ((getField(sec, 'identificacion_oficial_pdf') ?? '').trim()) filled++;
     } else if (sec === 'Domicilio') {
       ['dom_calle_numero', 'dom_colonia', 'dom_codigo_postal', 'dom_municipio_ciudad', 'dom_estado', 'dom_pais'].forEach(req);
       total++;
@@ -309,7 +281,9 @@ export default function EstudioPage() {
       if (getField(sec, 'dom_tipo_vivienda') === 'otro') req('dom_tipo_vivienda_otro');
       total++;
       if (['menos6', '6m_1a', '1a_2a', 'mas1a'].includes(getField(sec, 'dom_tiempo_residencia'))) filled++;
-      const tiempoMenor2 = ['menos6', '6m_1a', '1a_2a'].includes(getField(sec, 'dom_tiempo_residencia'));
+      total++;
+      if ((getField(sec, 'dom_comprobante_domicilio_pdf') ?? '').trim()) filled++;
+      const tiempoMenor2 = ['menos6', '6m_1a'].includes(getField(sec, 'dom_tiempo_residencia'));
       if (tiempoMenor2) {
         req('dom_anterior_completo');
         req('dom_anterior_periodo_de');
@@ -336,7 +310,7 @@ export default function EstudioPage() {
     } else if (sec === 'Historia Laboral') {
       // Single job section (3.1) uses hl_ant_* slots with an "Actual" toggle:
       // - When Actual is selected, end date (periodo_a) and motivo_termino are not required.
-      const antCount = Math.max(1, Math.min(3, parseInt(getField(sec, 'hl_ant_count') || '1', 10) || 1));
+      const antCount = Math.max(1, Math.min(10, parseInt(getField(sec, 'hl_ant_count') || '1', 10) || 1));
       if (getField(sec, 'hl_periodos_sin_empleo') === 'si') {
         total++;
         if (['busqueda', 'estudios', 'familiar', 'salud', 'otro'].includes(getField(sec, 'hl_periodos_sin_empleo_motivo'))) filled++;
@@ -354,11 +328,19 @@ export default function EstudioPage() {
           req(`hl_ant_${i}_motivo_termino`);
         }
 
-        // Reference fields are required for each employment.
-        req(`hl_ant_${i}_ref_nombre`);
-        req(`hl_ant_${i}_ref_puesto`);
-        req(`hl_ant_${i}_ref_telefono`);
+        total++;
+        const imssValue = getField(sec, `hl_ant_${i}_imss_registro`);
+        if (imssValue === 'si' || imssValue === 'no') filled++;
+
+        // Reference fields are required only for previous employments.
+        if (!isActual) {
+          req(`hl_ant_${i}_ref_nombre`);
+          req(`hl_ant_${i}_ref_puesto`);
+          req(`hl_ant_${i}_ref_telefono`);
+        }
       }
+      total++;
+      if ((getField(sec, 'hl_constancia_imss_pdf') ?? '').trim()) filled++;
     } else if (sec === 'Ingresos y Situación Económica') {
       total++;
       if (['menos10k', '10_15', '15_20', '20_30', '30_40', '40_50', 'mas50'].includes(getField(sec, 'ie_rango'))) filled++;
@@ -391,7 +373,6 @@ export default function EstudioPage() {
         req('cap_doc_acta');
         req('cap_doc_ine');
         req('cap_doc_foto');
-        req('cap_doc_domicilio');
       }
     } else if (sec === 'Entorno Social y Condiciones de Vivienda') {
       total++;
@@ -572,14 +553,6 @@ export default function EstudioPage() {
       });
   };
 
-  const uploadPdfIdentificacion = (file: File): Promise<string> => {
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-      return Promise.reject(new Error('Solo se permite archivo PDF.'));
-    }
-    if (file.size > 5 * 1024 * 1024) return Promise.reject(new Error('El PDF no debe superar 5 MB.'));
-    return uploadFile(file, 'identificacion_oficial_actualizacion');
-  };
-
   const uploadPhotoParticipante = (file: File): Promise<string> => {
     const ok = /^image\/(jpeg|jpg|png)$/i.test(file.type) || /\.(jpe?g|png)$/i.test(file.name);
     if (!ok) return Promise.reject(new Error('Solo se permiten imágenes PNG o JPG.'));
@@ -601,6 +574,33 @@ export default function EstudioPage() {
     }
     if (file.size > 5 * 1024 * 1024) return Promise.reject(new Error('El PDF no debe superar 5 MB.'));
     return uploadFile(file, 'escolaridad_documentacion');
+  };
+
+  const uploadDomicilioComprobante = (file: File): Promise<string> => {
+    const max = 5 * 1024 * 1024;
+    if (file.size > max) return Promise.reject(new Error('El archivo no debe superar 5 MB.'));
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isImage = /^image\/(jpeg|jpg|png|webp)$/i.test(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name);
+    if (!isPdf && !isImage) {
+      return Promise.reject(new Error('Solo se permiten archivos PDF o imagenes JPG, PNG o WEBP.'));
+    }
+    return uploadFile(file, 'domicilio_comprobante_actual');
+  };
+
+  const uploadHistoriaLaboralPdf = (
+    file: File,
+    kind: 'referencia_laboral' | 'constancia_imss' | 'documentacion_adicional'
+  ): Promise<string> => {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      return Promise.reject(new Error('Solo se permite archivo PDF.'));
+    }
+    if (file.size > 5 * 1024 * 1024) return Promise.reject(new Error('El PDF no debe superar 5 MB.'));
+    const types = {
+      referencia_laboral: 'historia_laboral_referencia_laboral',
+      constancia_imss: 'historia_laboral_constancia_imss',
+      documentacion_adicional: 'historia_laboral_documentacion_adicional',
+    } as const;
+    return uploadFile(file, types[kind]);
   };
 
   /** Carta penal: acta/INE/domicilio = PDF; foto = PDF o JPG/PNG (foto suele venir del teléfono). Máx. 5 MB. */
@@ -782,12 +782,13 @@ export default function EstudioPage() {
             </div>
           )}
 
-          {sec === 'Datos Generales e Identificación' && (
-            <SectionDatosGeneralesIdentificacion sec={sec} getField={getField} updateField={updateField} uploadPdfIdentificacion={uploadPdfIdentificacion} />
-          )}
-
           {sec === 'Domicilio' && (
-            <SectionDomicilio sec={sec} getField={getField} updateField={updateField} />
+            <SectionDomicilio
+              sec={sec}
+              getField={getField}
+              updateField={updateField}
+              uploadDomicilioComprobante={uploadDomicilioComprobante}
+            />
           )}
 
           {sec === 'Información del Cónyuge, Familiares y Contacto' && (
@@ -795,7 +796,12 @@ export default function EstudioPage() {
           )}
 
           {sec === 'Historia Laboral' && (
-            <SectionHistoriaLaboral sec={sec} getField={getField} updateField={updateField} />
+            <SectionHistoriaLaboral
+              sec={sec}
+              getField={getField}
+              updateField={updateField}
+              uploadHistoriaLaboralPdf={uploadHistoriaLaboralPdf}
+            />
           )}
 
           {sec === 'Ingresos y Situación Económica' && (
@@ -913,14 +919,17 @@ function SectionDomicilio({
   sec,
   getField,
   updateField,
+  uploadDomicilioComprobante,
 }: {
   sec: string;
   getField: (s: string, k: string) => string;
   updateField: (s: string, k: string, v: string) => void;
+  uploadDomicilioComprobante: (f: File) => Promise<string>;
 }) {
+  const [domComprobanteUploading, setDomComprobanteUploading] = useState(false);
   const inputStyle: React.CSSProperties = { width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' };
   const labelStyle = { display: 'block' as const, marginBottom: 4, fontWeight: 600, fontSize: 14 };
-  const tiempoMenor2 = ['menos6', '6m_1a', '1a_2a'].includes(getField(sec, 'dom_tiempo_residencia'));
+  const tiempoMenor2 = ['menos6', '6m_1a'].includes(getField(sec, 'dom_tiempo_residencia'));
 
   return (
     <div style={{ display: 'grid', gap: 22 }}>
@@ -955,12 +964,47 @@ function SectionDomicilio({
       <div style={{ padding: 20, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
         <p style={{ margin: '0 0 12px', fontWeight: 600, fontSize: 14 }}>Tiempo de residencia en el domicilio actual: *</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-          {[['menos6', 'Menos de 6 meses'], ['6m_1a', 'De 6 meses a 1 año'], ['1a_2a', 'De 1 año a 2 años'], ['mas1a', 'Más de 2 años']].map(([k, lab]) => (
+          {[['menos6', 'Menos de 1 año'], ['6m_1a', 'De 1 año a 2 años'], ['1a_2a', 'De 2 años a 5 años'], ['mas1a', 'Más de 5 años']].map(([k, lab]) => (
             <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
               <input type="radio" name="dom_tiempo_residencia" checked={getField(sec, 'dom_tiempo_residencia') === k} onChange={() => updateField(sec, 'dom_tiempo_residencia', k)} />
               {lab}
             </label>
           ))}
+        </div>
+      </div>
+
+      <div style={{ padding: 20, background: '#eff6ff', borderRadius: 12, border: '1px solid #93c5fd' }}>
+        <p style={{ margin: '0 0 10px', fontWeight: 700, color: '#1e3a5f' }}>Comprobante de domicilio con una antiguedad no mayor de 3 meses. *</p>
+        <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>Formato permitido: PDF o imagen. Peso máximo: 5 MB.</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <label style={{ cursor: domComprobanteUploading ? 'wait' : 'pointer' }}>
+            <input
+              type="file"
+              accept=".pdf,application/pdf,.png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+              style={{ display: 'none' }}
+              disabled={domComprobanteUploading}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                setDomComprobanteUploading(true);
+                uploadDomicilioComprobante(f)
+                  .then((url) => updateField(sec, 'dom_comprobante_domicilio_pdf', url))
+                  .catch((err) => alert(err?.message || 'Error al subir el archivo.'))
+                  .finally(() => {
+                    setDomComprobanteUploading(false);
+                    e.target.value = '';
+                  });
+              }}
+            />
+            <span style={{ display: 'inline-block', padding: '10px 18px', background: domComprobanteUploading ? '#64748b' : '#1e40af', color: '#fff', borderRadius: 8, fontWeight: 700 }}>
+              {domComprobanteUploading ? 'Subiendo…' : 'Subir archivo'}
+            </span>
+          </label>
+          {getField(sec, 'dom_comprobante_domicilio_pdf') ? (
+            <span style={{ padding: '6px 12px', background: '#d1fae5', borderRadius: 8, fontSize: 14, fontWeight: 600 }}>Archivo recibido ✓</span>
+          ) : (
+            <span style={{ color: '#b45309', fontSize: 14, fontWeight: 600 }}>Archivo requerido</span>
+          )}
         </div>
       </div>
 
@@ -1128,6 +1172,10 @@ function SectionDatosPersonalesContacto({
                 <input type="checkbox" checked={getField(sec, 'dp_id_pasaporte') === '1'} onChange={(e) => updateField(sec, 'dp_id_pasaporte', e.target.checked ? '1' : '')} />
                 Pasaporte
               </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                <input type="checkbox" checked={getField(sec, 'dp_id_cedula_profesional') === '1'} onChange={(e) => updateField(sec, 'dp_id_cedula_profesional', e.target.checked ? '1' : '')} />
+                Cedula Profesional
+              </label>
             </div>
           </div>
           <div>
@@ -1275,15 +1323,18 @@ function SectionHistoriaLaboral({
   sec,
   getField,
   updateField,
+  uploadHistoriaLaboralPdf,
 }: {
   sec: string;
   getField: (s: string, k: string) => string;
   updateField: (s: string, k: string, v: string) => void;
+  uploadHistoriaLaboralPdf: (f: File, kind: 'referencia_laboral' | 'constancia_imss' | 'documentacion_adicional') => Promise<string>;
 }) {
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const inputStyle: React.CSSProperties = { width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' };
   const labelReq = { display: 'block' as const, marginBottom: 4, fontWeight: 600, fontSize: 14 };
   const labelOpt = { display: 'block' as const, marginBottom: 4, fontWeight: 600, fontSize: 14, color: '#64748b' };
-  const antCount = Math.max(1, Math.min(3, parseInt(getField(sec, 'hl_ant_count') || '1', 10) || 1));
+  const antCount = Math.max(1, Math.min(10, parseInt(getField(sec, 'hl_ant_count') || '1', 10) || 1));
   const periodosSinSi = getField(sec, 'hl_periodos_sin_empleo') === 'si';
   const motivoOtro = getField(sec, 'hl_periodos_sin_empleo_motivo') === 'otro';
 
@@ -1295,10 +1346,13 @@ function SectionHistoriaLaboral({
   const onToggleJobActual = (i: number, checked: boolean) => {
     updateField(sec, `hl_ant_${i}_a_actual`, checked ? '1' : '');
     // Keep DB/stored data consistent with the UI:
-    // when Actual is selected, end date + motivo_termino are not needed.
+    // when Actual is selected, end date, termination reason, and reference contact data are not needed.
     if (checked) {
       maybeClearIfHasValue(`hl_ant_${i}_periodo_a`);
       maybeClearIfHasValue(`hl_ant_${i}_motivo_termino`);
+      maybeClearIfHasValue(`hl_ant_${i}_ref_nombre`);
+      maybeClearIfHasValue(`hl_ant_${i}_ref_puesto`);
+      maybeClearIfHasValue(`hl_ant_${i}_ref_telefono`);
     }
   };
 
@@ -1311,11 +1365,13 @@ function SectionHistoriaLaboral({
       'periodo_de',
       'a_actual',
       'periodo_a',
+      'imss_registro',
       'motivo_termino',
       'jefe',
       'ref_nombre',
       'ref_puesto',
       'ref_telefono',
+      'referencia_pdf',
       'observaciones',
     ];
     fields.forEach((f) => updateField(sec, `hl_ant_${jobIndex}_${f}`, ''));
@@ -1324,16 +1380,60 @@ function SectionHistoriaLaboral({
   const removeEmployment = (i: number) => {
     // Remove employment slots starting at index i (i>0 only).
     if (i <= 0) return;
-    for (let j = i; j < 3; j++) clearJobFields(j);
+    for (let j = i; j < 10; j++) clearJobFields(j);
     updateField(sec, 'hl_ant_count', String(i)); // keep slots [0..i-1]
+  };
+
+  const uploadPdfField = (
+    file: File,
+    fieldKey: string,
+    kind: 'referencia_laboral' | 'constancia_imss' | 'documentacion_adicional'
+  ) => {
+    if (!file) return;
+    setUploadingKey(fieldKey);
+    uploadHistoriaLaboralPdf(file, kind)
+      .then((url) => updateField(sec, fieldKey, url))
+      .catch((err) => alert(err?.message || 'Error al subir el PDF.'))
+      .finally(() => setUploadingKey(null));
   };
 
   return (
     <div style={{ display: 'grid', gap: 24 }}>
       <h2 style={{ margin: 0, fontSize: 18, color: '#111' }}>HISTORIA LABORAL</h2>
       <p style={{ margin: 0, fontSize: 14, color: '#475569' }}>
+        {'Favor de registrar su historial laboral iniciando por su empleo actual o el mas reciente, continuando hacia los anteriores.'}
+      </p>
+      <p style={{ margin: 0, fontSize: 14, color: '#334155', lineHeight: 1.6 }}>
+        {'Las referencias laborales de empleos anteriores podran ser contactadas como parte del proceso de validacion del estudio socioeconomico.'}
+      </p>
+      <div style={{ padding: 16, background: '#fff7ed', borderRadius: 12, border: '1px solid #fed7aa', color: '#7c2d12', lineHeight: 1.6 }}>
+        <p style={{ margin: '0 0 6px', fontWeight: 800 }}>Nota importante:</p>
+        <p style={{ margin: '0 0 8px', fontStyle: 'italic' }}>
+          {'"El empleo actual se registra unicamente con fines informativos y no sera contactado como referencia laboral."'}
+        </p>
+        <p style={{ margin: 0 }}>
+          {'La omision de referencia laboral del empleo actual es una practica estandar para evitar afectaciones al evaluado.'}
+        </p>
+      </div>
+      {false && (
+        <>
+      <p style={{ margin: 0, fontSize: 14, color: '#475569' }}>
         Favor de registrar su historial laboral iniciando por su empleo actual o el más reciente, continuando hacia los anteriores.
       </p>
+      <p style={{ margin: 0, fontSize: 14, color: '#334155', lineHeight: 1.6 }}>
+        Las referencias laborales de empleos anteriores podrÃ¡n ser contactadas como parte del proceso de validaciÃ³n del estudio socioeconÃ³mico.
+      </p>
+      <div style={{ padding: 16, background: '#fff7ed', borderRadius: 12, border: '1px solid #fed7aa', color: '#7c2d12', lineHeight: 1.6 }}>
+        <p style={{ margin: '0 0 6px', fontWeight: 800 }}>Nota importante:</p>
+        <p style={{ margin: '0 0 8px', fontStyle: 'italic' }}>
+          â€œEl empleo actual se registra Ãºnicamente con fines informativos y no serÃ¡ contactado como referencia laboral.â€
+        </p>
+        <p style={{ margin: 0 }}>
+          La omisiÃ³n de referencia laboral del empleo actual es una prÃ¡ctica estÃ¡ndar para evitar afectaciones al evaluado.
+        </p>
+      </div>
+        </>
+      )}
       <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>Los campos marcados con (*) son obligatorios.</p>
 
       {/* 3.1 ÚNICO SECCIÓN DE EMPLEOS (incluye empleo actual vía toggle "Actual") */}
@@ -1412,17 +1512,89 @@ function SectionHistoriaLaboral({
                 </div>
               )}
 
+              <YnRow
+                label={
+                  isJobActual(i)
+                    ? '\u00BFSu empleo actual cuenta con registros ante el Instituto Mexicano del Seguro Social (IMSS)? *'
+                    : '\u00BFEste empleo conto con registros ante el Instituto Mexicano del Seguro Social (IMSS)? *'
+                }
+                value={getField(sec, `hl_ant_${i}_imss_registro`)}
+                onChange={(v) => updateField(sec, `hl_ant_${i}_imss_registro`, v)}
+              />
+
+              {false && (
+              <YnRow
+                label={
+                  isJobActual(i)
+                    ? 'Â¿Su empleo actual cuenta con registros ante el Instituto Mexicano del Seguro Social (IMSS)? *'
+                    : 'Â¿Este empleo contÃ³ con registros ante el Instituto Mexicano del Seguro Social (IMSS)? *'
+                }
+                value={getField(sec, `hl_ant_${i}_imss_registro`)}
+                onChange={(v) => updateField(sec, `hl_ant_${i}_imss_registro`, v)}
+              />
+
+              )}
+
               <div>
                 <label style={labelOpt}>Nombre del jefe inmediato</label>
                 <input type="text" value={getField(sec, `hl_ant_${i}_jefe`)} onChange={(e) => updateField(sec, `hl_ant_${i}_jefe`, e.target.value)} placeholder="Jefe inmediato" style={inputStyle} />
               </div>
 
+              {isJobActual(i) ? (
+                <div style={{ padding: 12, background: '#f8fafc', borderRadius: 8, border: '1px solid #cbd5e1', color: '#475569', fontSize: 13, lineHeight: 1.6 }}>
+                  {'Para el empleo actual no se solicitan datos de referencia laboral de contacto.'}
+                </div>
+              ) : (
+                <div style={{ padding: 12, background: '#f1f5f9', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                  <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 13 }}>Referencia laboral *</p>
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    <div><label style={labelReq}>Nombre</label><input type="text" value={getField(sec, `hl_ant_${i}_ref_nombre`)} onChange={(e) => updateField(sec, `hl_ant_${i}_ref_nombre`, e.target.value)} placeholder="Nombre del referente" style={inputStyle} /></div>
+                    <div><label style={labelReq}>Puesto</label><input type="text" value={getField(sec, `hl_ant_${i}_ref_puesto`)} onChange={(e) => updateField(sec, `hl_ant_${i}_ref_puesto`, e.target.value)} placeholder="Puesto del referente" style={inputStyle} /></div>
+                    <div><label style={labelReq}>Telefono</label><input type="tel" value={getField(sec, `hl_ant_${i}_ref_telefono`)} onChange={(e) => updateField(sec, `hl_ant_${i}_ref_telefono`, e.target.value)} placeholder="Telefono" style={inputStyle} /></div>
+                  </div>
+                </div>
+              )}
+
+              {false && (
               <div style={{ padding: 12, background: '#f1f5f9', borderRadius: 8, border: '1px solid #e2e8f0' }}>
                 <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 13 }}>Referencia laboral *</p>
                 <div style={{ display: 'grid', gap: 10 }}>
                   <div><label style={labelReq}>Nombre</label><input type="text" value={getField(sec, `hl_ant_${i}_ref_nombre`)} onChange={(e) => updateField(sec, `hl_ant_${i}_ref_nombre`, e.target.value)} placeholder="Nombre del referente" style={inputStyle} /></div>
                   <div><label style={labelReq}>Puesto</label><input type="text" value={getField(sec, `hl_ant_${i}_ref_puesto`)} onChange={(e) => updateField(sec, `hl_ant_${i}_ref_puesto`, e.target.value)} placeholder="Puesto del referente" style={inputStyle} /></div>
                   <div><label style={labelReq}>Teléfono</label><input type="tel" value={getField(sec, `hl_ant_${i}_ref_telefono`)} onChange={(e) => updateField(sec, `hl_ant_${i}_ref_telefono`, e.target.value)} placeholder="Teléfono" style={inputStyle} /></div>
+                </div>
+              </div>
+
+              )}
+
+              <div style={{ padding: 14, background: '#eff6ff', borderRadius: 10, border: '1px solid #93c5fd' }}>
+                <p style={{ margin: '0 0 8px', fontWeight: 700, color: '#1e3a5f' }}>Carta de referencia laboral (opcional)</p>
+                <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>
+                  Si cuenta con una carta de referencia laboral o constancia emitida por este empleo, puede adjuntarla en formato PDF. Peso mÃ¡ximo: 5 MB.
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <label style={{ cursor: uploadingKey === `hl_ant_${i}_referencia_pdf` ? 'wait' : 'pointer' }}>
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      style={{ display: 'none' }}
+                      disabled={uploadingKey !== null}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        uploadPdfField(f, `hl_ant_${i}_referencia_pdf`, 'referencia_laboral');
+                        e.target.value = '';
+                      }}
+                    />
+                    <span style={{ display: 'inline-block', padding: '10px 18px', background: uploadingKey === `hl_ant_${i}_referencia_pdf` ? '#64748b' : '#1e40af', color: '#fff', borderRadius: 8, fontWeight: 700 }}>
+                      {uploadingKey === `hl_ant_${i}_referencia_pdf` ? 'Subiendoâ€¦' : 'Subir PDF'}
+                    </span>
+                  </label>
+                  {getField(sec, `hl_ant_${i}_referencia_pdf`) ? (
+                    <span style={{ padding: '6px 12px', background: '#d1fae5', borderRadius: 8, fontSize: 14, fontWeight: 600 }}>Archivo recibido âœ“</span>
+                  ) : (
+                    <span style={{ color: '#64748b', fontSize: 14 }}>Sin archivo</span>
+                  )}
                 </div>
               </div>
 
@@ -1434,9 +1606,9 @@ function SectionHistoriaLaboral({
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button
             type="button"
-            onClick={() => updateField(sec, 'hl_ant_count', String(Math.min(3, antCount + 1)))}
-            disabled={antCount >= 3}
-            style={{ padding: '10px 16px', background: antCount >= 3 ? '#9ca3af' : '#e2e8f0', border: '2px solid #475569', borderRadius: 8, cursor: antCount >= 3 ? 'not-allowed' : 'pointer', fontWeight: 800, color: '#0f172a', fontSize: 14 }}
+            onClick={() => updateField(sec, 'hl_ant_count', String(Math.min(10, antCount + 1)))}
+            disabled={antCount >= 10}
+            style={{ padding: '10px 16px', background: antCount >= 10 ? '#9ca3af' : '#e2e8f0', border: '2px solid #475569', borderRadius: 8, cursor: antCount >= 10 ? 'not-allowed' : 'pointer', fontWeight: 800, color: '#0f172a', fontSize: 14 }}
           >
             + Agregar otro empleo
           </button>
@@ -1493,6 +1665,97 @@ function SectionHistoriaLaboral({
           </>
         )}
       </div>
+
+      <div style={{ padding: 20, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', display: 'grid', gap: 18 }}>
+        <h3 style={{ margin: 0, fontSize: 16, color: '#0f172a' }}>{'3.3 DOCUMENTACION DE RESPALDO / VALIDACION'}</h3>
+
+        <div style={{ padding: 18, background: '#fff', borderRadius: 12, border: '1px solid #dbeafe', display: 'grid', gap: 14 }}>
+          <h4 style={{ margin: 0, fontSize: 18, color: '#111827' }}>{'Constancia de semanas cotizadas (IMSS)'}</h4>
+          <p style={{ margin: 0, fontSize: 15, color: '#334155', lineHeight: 1.8 }}>
+            {'Con la finalidad de validar la informacion laboral proporcionada, le solicitamos amablemente obtener y adjuntar su Constancia de Semanas Cotizadas del IMSS, la cual puede descargarse en formato PDF desde el portal oficial.'}
+          </p>
+          <div style={{ display: 'grid', gap: 10 }}>
+            <p style={{ margin: 0, fontWeight: 800, fontSize: 16, color: '#111827' }}>Instrucciones:</p>
+            <ol style={{ margin: 0, paddingLeft: 28, display: 'grid', gap: 10, color: '#334155', lineHeight: 1.7 }}>
+              <li>
+                <span>{'Ingrese a la pagina:'}</span>
+                <div style={{ marginTop: 4 }}>
+                  <a href="https://serviciosdigitales.imss.gob.mx/semanascotizadas-web/usuarios/IngresoAsegurado" target="_blank" rel="noopener noreferrer" style={{ color: '#1d4ed8', wordBreak: 'break-all' }}>
+                    https://serviciosdigitales.imss.gob.mx/semanascotizadas-web/usuarios/IngresoAsegurado
+                  </a>
+                </div>
+              </li>
+              <li>{'Capture su CURP, NSS y correo electronico.'}</li>
+              <li>{'Descargue el archivo en formato PDF.'}</li>
+              <li>{'Adjunte el documento a este estudio o envielo por el medio indicado.'}</li>
+            </ol>
+          </div>
+          <p style={{ margin: 0, fontSize: 15, color: '#334155', lineHeight: 1.7 }}>
+            <strong>Nota:</strong>{' Este documento es confidencial y sera utilizado unicamente para fines de validacion laboral.'}
+          </p>
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: getField(sec, 'hl_constancia_imss_pdf') ? '#166534' : '#92400e' }}>
+            {getField(sec, 'hl_constancia_imss_pdf') ? '\u2611 Documento adjunto' : '\u2610 Documento adjunto *'}
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <label style={{ cursor: uploadingKey === 'hl_constancia_imss_pdf' ? 'wait' : 'pointer' }}>
+              <input
+                type="file"
+                accept=".pdf,application/pdf"
+                style={{ display: 'none' }}
+                disabled={uploadingKey !== null}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  uploadPdfField(f, 'hl_constancia_imss_pdf', 'constancia_imss');
+                  e.target.value = '';
+                }}
+              />
+              <span style={{ display: 'inline-block', padding: '10px 18px', background: uploadingKey === 'hl_constancia_imss_pdf' ? '#64748b' : '#1e40af', color: '#fff', borderRadius: 8, fontWeight: 700 }}>
+                {uploadingKey === 'hl_constancia_imss_pdf' ? 'Subiendo...' : 'Subir PDF'}
+              </span>
+            </label>
+            {getField(sec, 'hl_constancia_imss_pdf') ? (
+              <span style={{ padding: '6px 12px', background: '#d1fae5', borderRadius: 8, fontSize: 14, fontWeight: 600 }}>Archivo recibido ✓</span>
+            ) : (
+              <span style={{ color: '#b45309', fontSize: 14, fontWeight: 600 }}>Archivo requerido</span>
+            )}
+          </div>
+        </div>
+
+        <div style={{ padding: 18, background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', display: 'grid', gap: 14 }}>
+          <h4 style={{ margin: 0, fontSize: 18, color: '#111827' }}>{'Documentacion adicional (opcional)'}</h4>
+          <p style={{ margin: 0, fontSize: 15, color: '#334155', lineHeight: 1.8 }}>
+            {'Puede adjuntar documentos que respalden su experiencia laboral (cartas de recomendacion, constancias, reconocimientos, etc.).'}
+          </p>
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: getField(sec, 'hl_documentacion_adicional_pdf') ? '#166534' : '#64748b' }}>
+            {getField(sec, 'hl_documentacion_adicional_pdf') ? '\u2611 Documento adjunto' : '\u2610 Documento adjunto (opcional)'}
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <label style={{ cursor: uploadingKey === 'hl_documentacion_adicional_pdf' ? 'wait' : 'pointer' }}>
+              <input
+                type="file"
+                accept=".pdf,application/pdf"
+                style={{ display: 'none' }}
+                disabled={uploadingKey !== null}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  uploadPdfField(f, 'hl_documentacion_adicional_pdf', 'documentacion_adicional');
+                  e.target.value = '';
+                }}
+              />
+              <span style={{ display: 'inline-block', padding: '10px 18px', background: uploadingKey === 'hl_documentacion_adicional_pdf' ? '#64748b' : '#1e40af', color: '#fff', borderRadius: 8, fontWeight: 700 }}>
+                {uploadingKey === 'hl_documentacion_adicional_pdf' ? 'Subiendo...' : 'Subir PDF'}
+              </span>
+            </label>
+            {getField(sec, 'hl_documentacion_adicional_pdf') ? (
+              <span style={{ padding: '6px 12px', background: '#d1fae5', borderRadius: 8, fontSize: 14, fontWeight: 600 }}>Archivo recibido ✓</span>
+            ) : (
+              <span style={{ color: '#64748b', fontSize: 14 }}>Sin archivo</span>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1517,9 +1780,9 @@ function SectionIngresosEconomicos({
     ['gasto_agua', 'Agua'],
     ['gasto_luz', 'Luz'],
     ['gasto_gas', 'Gas'],
-    ['gasto_tel_casa', 'Teléfono de casa'],
+    ['gasto_tel_casa', 'Teléfono de casa / Internet'],
     ['gasto_tel_celular', 'Teléfono celular'],
-    ['gasto_internet_tv', 'Internet / televisión (Izzi, Sky, etc.)'],
+    ['gasto_internet_tv', 'Suscripciones de streaming'],
     ['gasto_mantenimiento', 'Mantenimiento del hogar'],
     ['gasto_cuotas_condominio', 'Cuotas o mantenimiento (condominio)'],
     ['gasto_limpieza', 'Limpieza / artículos del hogar'],
@@ -1702,28 +1965,61 @@ function SectionIngresosEconomicos({
           ¿Ha tenido o tiene actualmente algún problema relevante con su historial crediticio (Buró de Crédito)?
         </p>
         <YnRow label="Buró de crédito (problema relevante) *" value={getField(sec, 'ie_buro_problema')} onChange={(v) => updateField(sec, 'ie_buro_problema', v)} />
-        {getField(sec, 'ie_buro_problema') === 'si' && (
-          <div style={{ marginTop: 12 }}>
-            <p style={{ margin: '0 0 10px', fontWeight: 600, fontSize: 13 }}>En caso afirmativo, indique de manera general (opcional):</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-              {[
-                ['ie_buro_atrasos', 'Atrasos de pago'],
-                ['ie_buro_reestructura', 'Reestructura / convenio'],
-                ['ie_buro_liquidado', 'Adeudo liquidado'],
-                ['ie_buro_otro', 'Otro'],
-              ].map(([k, lab]) => (
-                <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                  <input type="checkbox" checked={getField(sec, k) === '1'} onChange={(e) => updateField(sec, k, e.target.checked ? '1' : '')} />
-                  {lab}
-                </label>
-              ))}
-            </div>
-            {getField(sec, 'ie_buro_otro') === '1' && (
-              <div style={{ marginTop: 10 }}>
-                <label style={labelStyle}>Otro (especifique):</label>
-                <input type="text" value={getField(sec, 'ie_buro_otro_texto')} onChange={(e) => updateField(sec, 'ie_buro_otro_texto', e.target.value)} style={inputStyle} placeholder="Especifique" />
-              </div>
-            )}
+        <p style={{ margin: '12px 0 0', fontSize: 12, color: '#64748b', fontStyle: 'italic' }}>
+          Esta información es de carácter declarativo y no implica consulta a sociedades de información crediticia.
+        </p>
+      </div>
+
+      <div style={{ padding: 20, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+        <h3 style={{ margin: '0 0 12px', fontSize: 16, color: '#334155' }}>4.7 DETALLE GENERAL DEL HISTORIAL CREDITICIO (OPCIONAL)</h3>
+        <p style={{ margin: '0 0 10px', fontWeight: 600, fontSize: 13 }}>En caso afirmativo, indique de manera general (opcional):</p>
+        <div style={{ display: 'grid', gap: 10 }}>
+          {[
+            ['ie_buro_atrasos', 'Atrasos de pago'],
+            ['ie_buro_reestructura', 'Reestructura / convenio'],
+            ['ie_buro_liquidado', 'Adeudo liquidado'],
+            ['ie_buro_otro', 'Otro'],
+          ].map(([k, lab]) => {
+            const selected = getField(sec, k) === '1';
+            const disabled = getField(sec, 'ie_buro_problema') !== 'si';
+            return (
+            <label
+              key={k}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                cursor: disabled ? 'not-allowed' : 'pointer',
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: `1px solid ${selected ? '#60a5fa' : '#cbd5e1'}`,
+                background: selected ? '#dbeafe' : '#fff',
+                color: selected ? '#0f172a' : '#111827',
+                opacity: disabled ? 0.7 : 1,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={selected}
+                disabled={disabled}
+                onChange={(e) => updateField(sec, k, e.target.checked ? '1' : '')}
+                style={{ width: 18, height: 18, accentColor: '#2563eb', cursor: disabled ? 'not-allowed' : 'pointer', flexShrink: 0 }}
+              />
+              <span style={{ fontWeight: selected ? 700 : 500 }}>{lab}</span>
+            </label>
+          )})}
+        </div>
+        {getField(sec, 'ie_buro_otro') === '1' && (
+          <div style={{ marginTop: 10 }}>
+            <label style={labelStyle}>Otro:</label>
+            <input
+              type="text"
+              value={getField(sec, 'ie_buro_otro_texto')}
+              onChange={(e) => updateField(sec, 'ie_buro_otro_texto', e.target.value)}
+              style={inputStyle}
+              placeholder="Especifique"
+              disabled={getField(sec, 'ie_buro_problema') !== 'si'}
+            />
           </div>
         )}
         <p style={{ margin: '12px 0 0', fontSize: 12, color: '#64748b', fontStyle: 'italic' }}>
@@ -2130,7 +2426,6 @@ function SectionInformacionLegalCarta({
               {slot('Acta de nacimiento', 'PDF escaneado y legible.', 'cap_doc_acta', 'acta', '.pdf,application/pdf')}
               {slot('Credencial para votar (INE)', 'PDF escaneado y legible.', 'cap_doc_ine', 'ine', '.pdf,application/pdf')}
               {slot('Fotografía reciente con fondo blanco', 'De hombros hacia arriba, legible, sin lentes u objetos que cubran el rostro. (PDF o imagen)', 'cap_doc_foto', 'foto', '.pdf,application/pdf,image/*')}
-              {slot('Comprobante de domicilio (no mayor a 3 meses)', 'PDF escaneado y legible.', 'cap_doc_domicilio', 'domicilio', '.pdf,application/pdf')}
             </div>
           )}
         </div>
@@ -2378,133 +2673,6 @@ function SectionReferenciasPersonales({
       <p style={{ margin: 0, padding: 14, background: '#eff6ff', borderRadius: 10, border: '1px solid #93c5fd', fontSize: 14, color: '#1e3a8a', lineHeight: 1.5 }}>
         <strong>Nota importante:</strong> La referencia se solicita únicamente como contacto de carácter personal para fines administrativos y de integración del expediente laboral.
       </p>
-    </div>
-  );
-}
-
-function SectionDatosGeneralesIdentificacion({
-  sec,
-  getField,
-  updateField,
-  uploadPdfIdentificacion,
-}: {
-  sec: string;
-  getField: (s: string, k: string) => string;
-  updateField: (s: string, k: string, v: string) => void;
-  uploadPdfIdentificacion: (f: File) => Promise<string>;
-}) {
-  const [uploading, setUploading] = useState(false);
-  const handlePdf = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setUploading(true);
-    uploadPdfIdentificacion(f)
-      .then((url) => {
-        updateField(sec, 'identificacion_oficial_pdf', url);
-      })
-      .catch((err) => alert(err?.message || 'Error al subir el PDF.'))
-      .finally(() => {
-        setUploading(false);
-        e.target.value = '';
-      });
-  };
-  return (
-    <div style={{ display: 'grid', gap: 22 }}>
-      <h2 style={{ margin: 0, fontSize: 17, color: '#111' }}>1. DATOS GENERALES (ACTUALIZACIÓN)</h2>
-      <p style={{ margin: 0, fontSize: 14, color: '#64748b' }}>Indique si ha existido algún cambio desde su último estudio o ingreso:</p>
-
-      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-        <YnRow label="¿Cambio en estado civil?" value={getField(sec, 'dg_estado_civil_cambio')} onChange={(v) => updateField(sec, 'dg_estado_civil_cambio', v)} />
-        {getField(sec, 'dg_estado_civil_cambio') === 'si' && (
-          <div style={{ marginLeft: 8, marginBottom: 12 }}>
-            <label style={{ fontSize: 13, fontWeight: 600 }}>En caso afirmativo, indique el actual *</label>
-            <input type="text" value={getField(sec, 'dg_estado_civil_actual')} onChange={(e) => updateField(sec, 'dg_estado_civil_actual', e.target.value)} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
-          </div>
-        )}
-      </div>
-      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-        <YnRow label="¿Cambio en teléfono?" value={getField(sec, 'dg_tel_cambio')} onChange={(v) => updateField(sec, 'dg_tel_cambio', v)} />
-        {getField(sec, 'dg_tel_cambio') === 'si' && (
-          <div style={{ marginLeft: 8 }}>
-            <label style={{ fontSize: 13, fontWeight: 600 }}>Teléfono actual *</label>
-            <input type="tel" value={getField(sec, 'dg_tel_actual')} onChange={(e) => updateField(sec, 'dg_tel_actual', e.target.value)} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
-          </div>
-        )}
-      </div>
-      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-        <YnRow label="¿Cambio en correo electrónico?" value={getField(sec, 'dg_correo_cambio')} onChange={(v) => updateField(sec, 'dg_correo_cambio', v)} />
-        {getField(sec, 'dg_correo_cambio') === 'si' && (
-          <div style={{ marginLeft: 8 }}>
-            <label style={{ fontSize: 13, fontWeight: 600 }}>Correo actual *</label>
-            <input type="email" value={getField(sec, 'dg_correo_actual')} onChange={(e) => updateField(sec, 'dg_correo_actual', e.target.value)} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
-          </div>
-        )}
-      </div>
-
-      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-        <YnRow label="¿Cuenta actualmente con dependientes económicos?" value={getField(sec, 'dg_dependientes')} onChange={(v) => updateField(sec, 'dg_dependientes', v)} />
-        {getField(sec, 'dg_dependientes') === 'si' && (
-          <div style={{ marginTop: 12, display: 'grid', gap: 12 }}>
-            <div>
-              <label style={{ fontWeight: 600, fontSize: 13 }}>Número de dependientes *</label>
-              <input type="number" min={0} value={getField(sec, 'dg_num_dependientes')} onChange={(e) => updateField(sec, 'dg_num_dependientes', e.target.value)} style={{ width: 120, marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }} />
-            </div>
-            <div>
-              <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 13 }}>Tipo de dependientes (marque los que apliquen) *</p>
-              {[
-                ['dg_dep_hijos', 'Hijos'],
-                ['dg_dep_conyuge', 'Cónyuge / pareja'],
-                ['dg_dep_padres', 'Padres'],
-                ['dg_dep_otros', 'Otros (especifique)'],
-              ].map(([k, lab]) => (
-                <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={getField(sec, k) === '1'}
-                    onChange={(e) => updateField(sec, k, e.target.checked ? '1' : '')}
-                  />
-                  {lab}
-                </label>
-              ))}
-              {getField(sec, 'dg_dep_otros') === '1' && (
-                <input type="text" placeholder="Especifique otros" value={getField(sec, 'dg_dep_otros_texto')} onChange={(e) => updateField(sec, 'dg_dep_otros_texto', e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box', marginTop: 6 }} />
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-      <p style={{ margin: 0, fontSize: 12, color: '#64748b', fontStyle: 'italic' }}>Esta información se solicita únicamente para actualización del expediente laboral.</p>
-
-      <h2 style={{ margin: '12px 0 0', fontSize: 17, color: '#111' }}>IDENTIFICACIÓN OFICIAL (ACTUALIZACIÓN)</h2>
-      <YnRow label="¿Ha existido algún cambio en su identificación oficial desde su último estudio o ingreso?" value={getField(sec, 'dg_id_cambio')} onChange={(v) => updateField(sec, 'dg_id_cambio', v)} />
-      <div style={{ padding: 14, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-        <p style={{ margin: '0 0 10px', fontWeight: 600 }}>Identificación oficial vigente (marque una o más) *</p>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}><input type="checkbox" checked={getField(sec, 'dg_id_ine') === '1'} onChange={(e) => updateField(sec, 'dg_id_ine', e.target.checked ? '1' : '')} /> INE</label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}><input type="checkbox" checked={getField(sec, 'dg_id_pasaporte') === '1'} onChange={(e) => updateField(sec, 'dg_id_pasaporte', e.target.checked ? '1' : '')} /> Pasaporte</label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}><input type="checkbox" checked={getField(sec, 'dg_id_otra') === '1'} onChange={(e) => updateField(sec, 'dg_id_otra', e.target.checked ? '1' : '')} /> Otra</label>
-        {getField(sec, 'dg_id_otra') === '1' && <input type="text" placeholder="Especifique" value={getField(sec, 'dg_id_otra_texto')} onChange={(e) => updateField(sec, 'dg_id_otra_texto', e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box', marginBottom: 12 }} />}
-        <label style={{ fontWeight: 600, fontSize: 13 }}>Número de identificación *</label>
-        <input type="text" value={getField(sec, 'dg_id_numero')} onChange={(e) => updateField(sec, 'dg_id_numero', e.target.value)} style={{ width: '100%', marginTop: 6, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
-      </div>
-
-      <div style={{ padding: 16, background: '#eff6ff', borderRadius: 10, border: '1px solid #93c5fd' }}>
-        <p style={{ margin: '0 0 10px', fontWeight: 700, color: '#1e3a5f' }}>Identificación oficial en PDF (obligatorio)</p>
-        <p style={{ margin: '0 0 12px', fontSize: 14, color: '#334155', lineHeight: 1.5 }}>
-          Adjunte en <strong>formato PDF</strong> su identificación oficial vigente, con o sin cambio respecto al último estudio, para la actualización de su expediente laboral. La documentación se utilizará únicamente para esa finalidad.
-        </p>
-        <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>Formato permitido: PDF únicamente. Peso máximo: 5 MB.</p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <label style={{ cursor: uploading ? 'wait' : 'pointer' }}>
-            <input type="file" accept=".pdf,application/pdf" style={{ display: 'none' }} disabled={uploading} onChange={handlePdf} />
-            <span style={{ display: 'inline-block', padding: '10px 18px', background: uploading ? '#64748b' : '#1e40af', color: '#fff', borderRadius: 8, fontWeight: 700 }}>{uploading ? 'Subiendo…' : 'Subir PDF'}</span>
-          </label>
-          {getField(sec, 'identificacion_oficial_pdf') ? (
-            <span style={{ padding: '6px 12px', background: '#d1fae5', borderRadius: 8, fontSize: 14, fontWeight: 600 }}>Archivo recibido ✓</span>
-          ) : (
-            <span style={{ color: '#b45309', fontSize: 14, fontWeight: 600 }}>Archivo requerido</span>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
