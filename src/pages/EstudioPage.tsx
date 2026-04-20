@@ -1179,7 +1179,7 @@ function SectionDatosPersonalesContacto({
             </div>
           </div>
           <div>
-            <label style={labelStyle}>Número de identificación *</label>
+            <label style={labelStyle}>Número de identificación (IMSS) *</label>
             <input type="text" value={getField(sec, 'dp_id_numero')} onChange={(e) => updateField(sec, 'dp_id_numero', e.target.value)} placeholder="Número del documento" style={inputStyle} />
           </div>
           <div>

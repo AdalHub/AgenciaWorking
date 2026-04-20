@@ -145,19 +145,21 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
 
   const handleDownloadInformeEstudio = () => {
     if (!studyId) return;
-    const url = `${API}/studies.php?action=download_study_final_pdf&study_id=${studyId}&_ts=${Date.now()}${token ? '&token=' + encodeURIComponent(token) : ''}`;
-    fetch(url, { ...creds, cache: 'no-store' }).then((r) => {
-      if (!r.ok) {
-        r.json().then((d: { error?: string }) => setToast(d.error || 'No disponible')).catch(() => setToast('No disponible'));
-        return;
-      }
-      r.blob().then((blob) => {
+    const completedInvitations = invitations.filter((inv) => inv.status === 'completed');
+    if (completedInvitations.length === 0) {
+      setToast('No hay colaboradores completados para descargar.');
+      return;
+    }
+    setToast(`Descargando ${completedInvitations.length} PDF${completedInvitations.length === 1 ? '' : 's'} por colaborador.`);
+    completedInvitations.forEach((inv, idx) => {
+      window.setTimeout(() => {
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `informe-cliente-estudio-${studyId}-${Date.now()}.pdf`;
+        a.href = `${API}/studies.php?action=download_pdf&invitation_id=${inv.id}&_ts=${Date.now()}-${idx}${token ? '&token=' + encodeURIComponent(token) : ''}`;
+        a.download = `informe-cliente-${inv.id}-${Date.now()}-${idx}.pdf`;
+        document.body.appendChild(a);
         a.click();
-        URL.revokeObjectURL(a.href);
-      });
+        document.body.removeChild(a);
+      }, idx * 250);
     });
   };
 

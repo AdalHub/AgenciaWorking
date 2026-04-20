@@ -160,6 +160,7 @@ function buildHistoriaLaboralAdminBlocks(sectionData: Record<string, string>): A
 
 function formatFieldLabel(key: string): string {
   const explicitLabels: Record<string, string> = {
+    dp_id_numero: 'Número de identificación (IMSS)',
     dp_id_cedula_profesional: 'Identificacion oficial - Cedula Profesional',
     dom_comprobante_domicilio_pdf: 'Comprobante de domicilio (no mayor a 3 meses)',
     hl_constancia_imss_pdf: 'Constancia de semanas cotizadas (IMSS)',
@@ -595,6 +596,25 @@ export default function AdminStudyDetailPage() {
 
   const handleDownloadStudyFinalPdf = () => {
     if (!studyId) return;
+    const completedInvitations = invitations.filter((inv) => inv.status === 'completed');
+    if (completedInvitations.length === 0) {
+      setToast('No hay candidatos completados para descargar.');
+      return;
+    }
+    setDownloadFinalPdfLoading(true);
+    setToast(`Descargando ${completedInvitations.length} PDF${completedInvitations.length === 1 ? '' : 's'} finales por candidato.`);
+    completedInvitations.forEach((inv, idx) => {
+      window.setTimeout(() => {
+        const a = document.createElement('a');
+        a.href = `/api/studies.php?action=download_pdf&invitation_id=${inv.id}&_ts=${Date.now()}-${idx}`;
+        a.download = `estudio-${inv.id}-final-${Date.now()}-${idx}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }, idx * 250);
+    });
+    window.setTimeout(() => setDownloadFinalPdfLoading(false), Math.max(800, completedInvitations.length * 300));
+    return;
     setDownloadFinalPdfLoading(true);
     fetch(`/api/studies.php?action=download_study_final_pdf&study_id=${studyId}&_ts=${Date.now()}`, { credentials: 'include', cache: 'no-store' })
       .then((r) => {
@@ -776,6 +796,10 @@ export default function AdminStudyDetailPage() {
 
   const handleDownloadServerPdf = () => {
     if (!selectedInvId) return;
+    const selected = invitations.find((inv) => inv.id === selectedInvId);
+    if (!selected) return;
+    void handleDownloadAdminPdfForInvitation(selected);
+    return;
     setServerPdfLoading(true);
     window.open(`/api/studies.php?action=download_pdf&invitation_id=${selectedInvId}&_ts=${Date.now()}`, '_blank');
     setTimeout(() => setServerPdfLoading(false), 1500);
@@ -787,17 +811,21 @@ export default function AdminStudyDetailPage() {
       const res = await fetch(`/api/studies.php?action=download_pdf&invitation_id=${inv.id}&_ts=${Date.now()}`, { credentials: 'include', cache: 'no-store' });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setToast(d?.error || 'No se pudo descargar el PDF del candidato.');
+        setToast(d?.error || 'No se pudo descargar el PDF final del candidato.');
         return;
       }
+      const rendererVersion = res.headers.get('X-AW-PDF-Renderer');
       const blob = await res.blob();
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `estudio-${inv.id}-formato-completo-${Date.now()}.pdf`;
+      a.download = `estudio-${inv.id}-final-${Date.now()}.pdf`;
       a.click();
       URL.revokeObjectURL(a.href);
+      if (rendererVersion) {
+        setToast(`PDF final del candidato regenerado con versión ${rendererVersion}`);
+      }
     } catch {
-      setToast('No se pudo descargar el PDF del candidato.');
+      setToast('No se pudo descargar el PDF final del candidato.');
     } finally {
       setTimeout(() => setServerPdfLoading(false), 500);
     }
