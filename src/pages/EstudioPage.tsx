@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Header from '../components/header/header';
 import Footer from '../components/Footer/Footer';
@@ -1088,6 +1088,11 @@ function SectionDatosPersonalesContacto({
   uploadPhotoParticipante: (f: File) => Promise<string>;
 }) {
   const [pdfUploading, setPdfUploading] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const cameraCaptureInputRef = useRef<HTMLInputElement | null>(null);
   const inputStyle: React.CSSProperties = { width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' };
   const labelStyle = { display: 'block' as const, marginBottom: 4, fontWeight: 600, fontSize: 14 };
 
@@ -1103,6 +1108,89 @@ function SectionDatosPersonalesContacto({
         e.target.value = '';
       });
   };
+
+  const handlePhotoUpload = useCallback((file: File) => {
+    setFotoParticipanteUploading(true);
+    return uploadPhotoParticipante(file)
+      .then((url) => updateField(sec, 'foto_participante', url))
+      .catch((err) => alert(err?.message || 'Error al subir.'))
+      .finally(() => setFotoParticipanteUploading(false));
+  }, [sec, setFotoParticipanteUploading, updateField, uploadPhotoParticipante]);
+
+  const closeCamera = useCallback(() => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
+    }
+    setCameraStream(null);
+    setCameraOpen(false);
+    setCameraReady(false);
+  }, [cameraStream]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (cameraStream) {
+      video.srcObject = cameraStream;
+      video.play().catch(() => {});
+    } else {
+      video.srcObject = null;
+    }
+  }, [cameraStream]);
+
+  useEffect(() => () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
+    }
+  }, [cameraStream]);
+
+  const handleTakePhoto = useCallback(async () => {
+    if (fotoParticipanteUploading) return;
+    setCameraReady(false);
+    if (navigator.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+        setCameraStream(stream);
+        setCameraOpen(true);
+        return;
+      } catch {
+        // Fall through to native capture input below.
+      }
+    }
+    cameraCaptureInputRef.current?.click();
+  }, [fotoParticipanteUploading]);
+
+  const handleCapturedFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    handlePhotoUpload(f).finally(() => {
+      e.target.value = '';
+    });
+  }, [handlePhotoUpload]);
+
+  const handleCaptureFromCamera = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const width = video.videoWidth || 1280;
+    const height = video.videoHeight || 720;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      alert('No fue posible capturar la imagen. Intente nuevamente.');
+      return;
+    }
+    ctx.drawImage(video, 0, 0, width, height);
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        alert('No fue posible capturar la imagen. Intente nuevamente.');
+        return;
+      }
+      const file = new File([blob], `foto-participante-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      closeCamera();
+      void handlePhotoUpload(file);
+    }, 'image/jpeg', 0.92);
+  }, [closeCamera, handlePhotoUpload]);
 
   return (
     <div style={{ display: 'grid', gap: 22 }}>
@@ -1209,9 +1297,11 @@ function SectionDatosPersonalesContacto({
         <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>Puede subir su fotografía en formato PNG o JPG. Peso máximo: 5 MB.</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <label style={{ cursor: fotoParticipanteUploading ? 'wait' : 'pointer' }}>
-            <input type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" style={{ display: 'none' }} disabled={fotoParticipanteUploading} onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; setFotoParticipanteUploading(true); uploadPhotoParticipante(f).then((url) => { updateField(sec, 'foto_participante', url); }).catch((err) => alert(err?.message || 'Error al subir.')).finally(() => { setFotoParticipanteUploading(false); e.target.value = ''; }); }} />
+            <input type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" style={{ display: 'none' }} disabled={fotoParticipanteUploading} onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; handlePhotoUpload(f).finally(() => { e.target.value = ''; }); }} />
             <span style={{ display: 'inline-block', padding: '10px 18px', background: fotoParticipanteUploading ? '#64748b' : '#1e40af', color: '#fff', borderRadius: 8, fontWeight: 700 }}>{fotoParticipanteUploading ? 'Subiendo…' : 'Subir fotografía'}</span>
           </label>
+          <input ref={cameraCaptureInputRef} type="file" accept="image/*" capture="user" style={{ display: 'none' }} disabled={fotoParticipanteUploading} onChange={handleCapturedFile} />
+          <button type="button" onClick={() => { void handleTakePhoto(); }} disabled={fotoParticipanteUploading} style={{ padding: '10px 18px', background: fotoParticipanteUploading ? '#94a3b8' : '#0f766e', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: fotoParticipanteUploading ? 'not-allowed' : 'pointer' }}>Tomar foto</button>
           {getField(sec, 'foto_participante') ? (
             <span style={{ padding: '6px 12px', background: '#d1fae5', borderRadius: 8, fontSize: 14, fontWeight: 600 }}>Archivo recibido ✓</span>
           ) : (
@@ -1219,6 +1309,40 @@ function SectionDatosPersonalesContacto({
           )}
         </div>
       </div>
+      {cameraOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 1000 }}>
+          <div style={{ width: 'min(100%, 560px)', background: '#fff', borderRadius: 16, padding: 20, boxShadow: '0 24px 60px rgba(15, 23, 42, 0.3)', display: 'grid', gap: 16 }}>
+            <div>
+              <h3 style={{ margin: '0 0 6px', fontSize: 20, color: '#0f172a' }}>Tomar foto</h3>
+              <p style={{ margin: 0, fontSize: 14, color: '#64748b' }}>Permita el acceso a la camara para capturar una fotografia y subirla directamente a su estudio.</p>
+            </div>
+            <div style={{ borderRadius: 14, overflow: 'hidden', background: '#0f172a', minHeight: 280, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                onCanPlay={() => setCameraReady(true)}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: cameraReady ? 'block' : 'none' }}
+              />
+              {!cameraReady && <span style={{ color: '#e2e8f0', fontSize: 14 }}>Preparando camara...</span>}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+              <button type="button" onClick={closeCamera} style={{ padding: '10px 18px', background: '#e2e8f0', color: '#0f172a', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => { void handleCaptureFromCamera(); }}
+                disabled={!cameraReady || fotoParticipanteUploading}
+                style={{ padding: '10px 18px', background: !cameraReady || fotoParticipanteUploading ? '#94a3b8' : '#0f766e', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: !cameraReady || fotoParticipanteUploading ? 'not-allowed' : 'pointer' }}
+              >
+                {fotoParticipanteUploading ? 'Subiendo...' : 'Capturar y subir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
