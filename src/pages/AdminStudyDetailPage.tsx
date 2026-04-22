@@ -1005,6 +1005,12 @@ export default function AdminStudyDetailPage() {
                   >
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontWeight: 600, color: '#0f172a' }}>{inv.candidate_name?.trim() || inv.candidate_email || 'Anónimo'}</div>
+                      {inv.unique_code && (
+                        <div style={{ fontSize: 12, color: '#475569', marginTop: 4 }}>
+                          Código de acceso:{' '}
+                          <code style={{ background: '#f3f4f6', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>{inv.unique_code}</code>
+                        </div>
+                      )}
                       <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
                         <span style={{ padding: '2px 6px', borderRadius: 4, background: inv.status === 'completed' ? '#d1fae5' : inv.status === 'in_progress' ? '#dbeafe' : '#f3f4f6' }}>{inv.status}</span>
                       </div>
