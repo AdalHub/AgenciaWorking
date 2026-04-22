@@ -1016,9 +1016,11 @@ export default function AdminCandidateStudyViewPage() {
   const [concVerdict, setConcVerdict] = useState<string | null>(null);
   const [concResultado, setConcResultado] = useState<string | null>(null);
   const [concObsRel, setConcObsRel] = useState('');
+  const [concImageUrl, setConcImageUrl] = useState('');
   const [concFechaCierre, setConcFechaCierre] = useState('');
   const [concAnalista, setConcAnalista] = useState('');
   const [savingConc, setSavingConc] = useState(false);
+  const [uploadingConcImage, setUploadingConcImage] = useState(false);
 
   // Historia laboral admin notes
   const [hlAdminOpen, setHlAdminOpen] = useState(true);
@@ -1108,6 +1110,7 @@ export default function AdminCandidateStudyViewPage() {
         setConcVerdict(concRes?.verdict ?? null);
         setConcResultado(concRes?.resultado_actualizacion ?? null);
         setConcObsRel(concRes?.observaciones_relevantes ?? '');
+        setConcImageUrl(concRes?.analyst_image_url ?? '');
         setConcFechaCierre(concRes?.fecha_cierre_estudio ? String(concRes.fecha_cierre_estudio).slice(0, 10) : '');
         setConcAnalista(concRes?.analista_responsable ?? '');
 
@@ -1192,6 +1195,7 @@ export default function AdminCandidateStudyViewPage() {
         verdict: concVerdict,
         resultado_actualizacion: concResultado,
         observaciones_relevantes: concObsRel,
+        analyst_image_url: concImageUrl,
         fecha_cierre_estudio: concFechaCierre || null,
         analista_responsable: concAnalista,
       }),
@@ -1199,6 +1203,41 @@ export default function AdminCandidateStudyViewPage() {
       .then((r) => r.json().catch(() => ({})))
       .then((d) => setToast(d.error || 'Conclusión guardada'))
       .finally(() => setSavingConc(false));
+  };
+
+  const handleConclusionImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const max = 5 * 1024 * 1024;
+    const lower = file.name.toLowerCase();
+    const isImage = /^image\/(jpeg|jpg|png|webp)$/i.test(file.type) || /\.(jpe?g|png|webp)$/i.test(lower);
+    if (!isImage) {
+      setToast('Solo se permiten imÃ¡genes JPG, PNG o WebP');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > max) {
+      setToast('La imagen no debe superar 5 MB');
+      e.target.value = '';
+      return;
+    }
+    setUploadingConcImage(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    fetch('/api/upload.php', { method: 'POST', credentials: 'include', body: fd })
+      .then((r) => r.json().catch(() => ({})))
+      .then((d) => {
+        if (d?.url) {
+          setConcImageUrl(String(d.url));
+          setToast('Imagen cargada. Recuerda guardar las conclusiones.');
+        } else {
+          setToast('No se pudo subir la imagen');
+        }
+      })
+      .finally(() => {
+        setUploadingConcImage(false);
+        e.target.value = '';
+      });
   };
 
   const saveHistoriaLaboralAdmin = () => {
@@ -1794,6 +1833,25 @@ export default function AdminCandidateStudyViewPage() {
                 <div style={{ marginBottom: 12 }}>
                   <label style={{ display: 'block', marginBottom: 6, fontWeight: 700 }}>Observaciones relevantes (si aplica)</label>
                   <textarea value={concObsRel} onChange={(e) => setConcObsRel(e.target.value)} rows={3} style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: 'block', marginBottom: 6, fontWeight: 700 }}>Imagen de analista</label>
+                  <input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={handleConclusionImageUpload} disabled={uploadingConcImage} />
+                  {concImageUrl ? (
+                    <div style={{ marginTop: 8, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <span style={{ fontSize: 12, color: '#6b7280' }}>{concImageUrl.replace(/^.*[/\\]/, '')}</span>
+                      <a href={documentDownloadApiUrl(concImageUrl)} target="_blank" rel="noopener noreferrer" style={{ padding: '6px 10px', background: '#059669', color: '#fff', borderRadius: 8, textDecoration: 'none', fontSize: 12 }}>
+                        Descargar / Ver
+                      </a>
+                      <span style={{ fontSize: 12, color: '#475569', fontWeight: 700 }}>
+                        {uploadingConcImage ? 'Subiendo imagen…' : 'Puedes adjuntar nueva imagen para reemplazarla'}
+                      </span>
+                    </div>
+                  ) : (
+                    <p style={{ margin: '8px 0 0', fontSize: 12, color: '#475569', fontWeight: 700 }}>
+                      {uploadingConcImage ? 'Subiendo imagen…' : 'Suba y guarde para poder descargar despuÃ©s'}
+                    </p>
+                  )}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                   <div>
