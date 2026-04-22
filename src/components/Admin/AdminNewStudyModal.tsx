@@ -53,10 +53,11 @@ type Props = {
 };
 
 export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
+  const formatOptions = ['Socioeconomico Rev 26'];
   const [step, setStep] = useState(1);
   const [studyType, setStudyType] = useState<'private' | 'public'>('private');
   const [companyName, setCompanyName] = useState('');
-  const [formatVersion, setFormatVersion] = useState('Formato 2025');
+  const [formatVersion, setFormatVersion] = useState(formatOptions[0]);
   const [inviteSectionOpen, setInviteSectionOpen] = useState(false);
   const [invitedCompanyEmail, setInvitedCompanyEmail] = useState('');
   const [showVerdictToCompany, setShowVerdictToCompany] = useState(false);
@@ -301,12 +302,15 @@ export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
 
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Versión del formato</label>
-              <input
-                type="text"
+              <select
                 value={formatVersion}
                 onChange={(e) => setFormatVersion(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: 8, boxSizing: 'border-box' }}
-              />
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: 8, boxSizing: 'border-box', background: '#fff' }}
+              >
+                {formatOptions.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
             </div>
 
             {!inviteSectionOpen ? (
