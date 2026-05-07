@@ -1,442 +1,419 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const API = '/api';
-const STATUS_LABELS: Record<string, string> = {
-  pendiente_captura: 'Pendiente captura',
-  en_proceso: 'En proceso',
-  en_validacion: 'En validación',
-  concluido: 'Concluido',
-  cancelado: 'Cancelado',
-};
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  pendiente_captura: { bg: '#f3f4f6', text: '#374151' },
-  en_proceso: { bg: '#dbeafe', text: '#1d4ed8' },
-  en_validacion: { bg: '#fef3c7', text: '#b45309' },
-  concluido: { bg: '#d1fae5', text: '#065f46' },
-  cancelado: { bg: '#fee2e2', text: '#991b1b' },
+const FETCH_OPTIONS = { credentials: 'include' as RequestCredentials };
+const CLIENT_PROGRESS_TEXT = 'Proceso de verificación en curso';
+const CLIENT_INFO_TEXT =
+  'Detalle del estudio: El candidato ha completado la información requerida. Actualmente, el estudio se encuentra en proceso de revisión y validación por parte de nuestro equipo.';
+
+type Study = {
+  id: number;
+  company_name: string;
+  status: string;
 };
 
-type Study = { id: number; company_name: string; status: string; format_version?: string; show_verdict_to_company?: number };
-type Invitation = { id: number; candidate_name?: string; candidate_email?: string; candidate_phone?: string; status: string; completed_at?: string };
-
-type ClientReport = {
+type Invitation = {
+  id: number;
   candidate_name?: string;
   candidate_email?: string;
-  candidate_phone?: string;
-  status?: string;
-  resumen_actualizacion?: string;
-  resultado_actualizacion?: string | null;
-  observaciones_relevantes?: string;
-  fecha_cierre?: string;
-  analista?: string;
-  verificacion_domiciliaria?: { fecha_visita?: string; tipo?: string; observaciones?: string } | null;
-  candidate_sections?: Array<{
-    title: string;
-    blocks: Array<{
-      title: string;
-      entries?: Array<{ label: string; value: string }>;
-      table?: { headers: string[]; rows: string[][] };
-    }>;
-  }>;
-  supporting_documents?: Array<{ label: string; file_path: string; name: string }>;
-  semaforo?: { color: string; label: string } | null;
-  show_semaforo?: boolean;
+  status: string;
+  completed_at?: string;
 };
 
-function formatDate(d: string | null | undefined): string {
-  if (!d) return '—';
+type ProgressState = 'completed' | 'current' | 'upcoming';
+
+type ProgressStep = {
+  title: string;
+  subtitle: string;
+  state: ProgressState;
+};
+
+type Props = {
+  studyId: number;
+  token?: string | null;
+  backLink?: ReactNode;
+  isMagicLink?: boolean;
+};
+
+function formatDate(value: string | null | undefined): string {
+  if (!value) return '—';
   try {
-    return new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return new Date(value).toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
   } catch {
-    return String(d);
+    return String(value);
   }
 }
 
-type Props = { studyId: number; token?: string | null; backLink?: React.ReactNode; isMagicLink?: boolean };
+function getGeneralClientStatus(study: Study, invitations: Invitation[]) {
+  if (study.status === 'concluido') {
+    return { label: 'Informe disponible', bg: '#dcfce7', text: '#166534' };
+  }
+  if (study.status === 'cancelado') {
+    return { label: 'Estudio cancelado', bg: '#fee2e2', text: '#991b1b' };
+  }
+  if (invitations.some((inv) => inv.status === 'completed') || study.status === 'en_proceso' || study.status === 'en_validacion') {
+    return { label: CLIENT_PROGRESS_TEXT, bg: '#fef3c7', text: '#b45309' };
+  }
+  return { label: 'Registro del candidato', bg: '#e5e7eb', text: '#475569' };
+}
+
+function getCurrentProgressStep(studyStatus: string, invitationStatus?: string): number {
+  if (studyStatus === 'concluido') return 3;
+  if (invitationStatus !== 'completed') return 0;
+  if (studyStatus === 'en_validacion') return 2;
+  return 1;
+}
+
+function getProgressSteps(studyStatus: string, invitationStatus?: string): ProgressStep[] {
+  const current = getCurrentProgressStep(studyStatus, invitationStatus);
+  const baseSteps = [
+    {
+      title: 'Registro del candidato',
+      subtitle: current > 0 ? 'Completado' : current === 0 ? 'Etapa actual' : 'Pendiente',
+    },
+    {
+      title: 'Revisión de información',
+      subtitle: current > 1 ? 'Completado' : current === 1 ? 'En curso' : 'Etapa siguiente',
+    },
+    {
+      title: 'Validación interna',
+      subtitle: current > 2 ? 'Completado' : current === 2 ? 'En curso' : 'Etapa siguiente',
+    },
+    {
+      title: 'Informe disponible',
+      subtitle: current === 3 ? 'Disponible' : 'Se mostrará al concluir',
+    },
+  ];
+
+  return baseSteps.map((step, index) => ({
+    ...step,
+    state: index < current ? 'completed' : index === current ? 'current' : 'upcoming',
+  }));
+}
+
+function getCandidateStatusPills(studyStatus: string, invitation: Invitation) {
+  if (invitation.status === 'completed') {
+    return [
+      { label: 'Captura completada', bg: '#dcfce7', text: '#166534' },
+      studyStatus === 'concluido'
+        ? { label: 'Informe disponible', bg: '#dbeafe', text: '#1d4ed8' }
+        : { label: CLIENT_PROGRESS_TEXT, bg: '#fef3c7', text: '#b45309' },
+    ];
+  }
+
+  if (invitation.status === 'in_progress') {
+    return [{ label: 'Registro del candidato', bg: '#dbeafe', text: '#1d4ed8' }];
+  }
+
+  return [{ label: 'Registro del candidato', bg: '#e5e7eb', text: '#475569' }];
+}
+
+function ProgressMarker({ state }: { state: ProgressState }) {
+  const borderColor = state === 'completed' ? '#16a34a' : state === 'current' ? '#60a5fa' : '#d1d5db';
+  const background = state === 'completed' ? '#16a34a' : state === 'current' ? '#2563eb' : '#ffffff';
+
+  return (
+    <div
+      style={{
+        width: 22,
+        height: 22,
+        borderRadius: '50%',
+        border: `2px solid ${borderColor}`,
+        background,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#ffffff',
+        fontSize: 12,
+        fontWeight: 900,
+        boxSizing: 'border-box',
+        flexShrink: 0,
+      }}
+    >
+      {state === 'completed' ? '✓' : state === 'current' ? <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ffffff', display: 'block' }} /> : null}
+    </div>
+  );
+}
 
 export default function CompanyStudyDetailView({ studyId, token, backLink }: Props) {
   const navigate = useNavigate();
   const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
-  const creds = { credentials: 'include' as RequestCredentials };
-  const companyDocumentDownloadUrl = (filePath: string): string => {
-    const raw = String(filePath || '').trim();
-    if (!raw || /^https?:\/\//i.test(raw)) return '';
-    const normalized = raw.startsWith('uploads/') ? raw : `uploads/${raw.replace(/^\/+/, '')}`;
-    return `${API}/studies.php?action=download_document&file_path=${encodeURIComponent(normalized)}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
-  };
 
   const [study, setStudy] = useState<Study | null>(null);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedInvId, setSelectedInvId] = useState<number | null>(null);
-  const [report, setReport] = useState<ClientReport | null>(null);
-  const [reportLoading, setReportLoading] = useState(false);
   const [finalPdfAvailable, setFinalPdfAvailable] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     if (!studyId) return;
     setLoading(true);
+
     Promise.all([
-      fetch(`${API}/studies.php?action=get_study&id=${studyId}${tokenParam}`, creds).then((r) => r.json()),
-      fetch(`${API}/studies.php?action=list_invitations&study_id=${studyId}${tokenParam}`, creds).then((r) => r.json()),
+      fetch(`${API}/studies.php?action=get_study&id=${studyId}${tokenParam}`, FETCH_OPTIONS).then((r) => r.json()),
+      fetch(`${API}/studies.php?action=list_invitations&study_id=${studyId}${tokenParam}`, FETCH_OPTIONS).then((r) => r.json()),
     ])
       .then(([studyRes, invRes]) => {
-        if (studyRes.error) {
+        if (studyRes?.error) {
           if (!token) navigate('/empresa/dashboard');
           return;
         }
+
+        const nextInvitations = Array.isArray(invRes?.invitations) ? invRes.invitations : [];
         setStudy(studyRes);
-        setInvitations(invRes.invitations || []);
+        setInvitations(nextInvitations);
+
+        if (nextInvitations.length > 0) {
+          const firstCompleted = nextInvitations.find((inv: Invitation) => inv.status === 'completed');
+          setSelectedInvId((prev) => prev ?? firstCompleted?.id ?? nextInvitations[0].id);
+        }
       })
       .finally(() => setLoading(false));
-  }, [studyId, tokenParam, token, navigate]);
+  }, [navigate, studyId, token, tokenParam]);
 
   useEffect(() => {
     if (!studyId || !study || study.status !== 'concluido') {
       setFinalPdfAvailable(false);
       return;
     }
-    fetch(`${API}/studies.php?action=pdf_status_study&study_id=${studyId}${tokenParam}`, creds)
+
+    fetch(`${API}/studies.php?action=pdf_status_study&study_id=${studyId}${tokenParam}`, FETCH_OPTIONS)
       .then((r) => r.json())
-      .then((data) => setFinalPdfAvailable(!!(data && data.available)))
+      .then((data) => setFinalPdfAvailable(Boolean(data?.available)))
       .catch(() => setFinalPdfAvailable(false));
-  }, [studyId, study?.status, tokenParam]);
+  }, [study, studyId, tokenParam]);
 
-  useEffect(() => {
-    if (!selectedInvId) {
-      setReport(null);
-      return;
-    }
-    setReportLoading(true);
-    fetch(`${API}/studies.php?action=get_company_client_report&invitation_id=${selectedInvId}${tokenParam}`, creds)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.error) setReport(null);
-        else setReport(data);
-      })
-      .catch(() => setReport(null))
-      .finally(() => setReportLoading(false));
-  }, [selectedInvId, tokenParam]);
-
-  const selectedInv = invitations.find((i) => i.id === selectedInvId);
-  const completedCount = invitations.filter((i) => i.status === 'completed').length;
+  const selectedInv = useMemo(() => invitations.find((inv) => inv.id === selectedInvId) ?? null, [invitations, selectedInvId]);
+  const completedCount = invitations.filter((inv) => inv.status === 'completed').length;
   const totalCount = invitations.length;
-  const statusStyle = study ? STATUS_COLORS[study.status] || { bg: '#f3f4f6', text: '#374151' } : { bg: '#f3f4f6', text: '#374151' };
+  const generalStatus = study ? getGeneralClientStatus(study, invitations) : { label: 'Registro del candidato', bg: '#e5e7eb', text: '#475569' };
+  const selectedProgressSteps = selectedInv ? getProgressSteps(study?.status ?? '', selectedInv.status) : [];
+  const selectedCandidatePills = selectedInv ? getCandidateStatusPills(study?.status ?? '', selectedInv) : [];
 
   const handleDownloadInformeCandidato = () => {
     if (!selectedInvId || selectedInv?.status !== 'completed') return;
-    const url = `${API}/studies.php?action=download_pdf&invitation_id=${selectedInvId}&_ts=${Date.now()}${token ? '&token=' + encodeURIComponent(token) : ''}`;
-    fetch(url, { ...creds, cache: 'no-store' }).then((r) => {
-      if (!r.ok) {
-        r.json().then((d: { error?: string }) => setToast(d.error || 'No disponible')).catch(() => setToast('No disponible'));
-        return;
-      }
-      r.blob().then((blob) => {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `informe-cliente-${selectedInvId}-${Date.now()}.pdf`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-      });
-    });
+
+    const url = `${API}/studies.php?action=download_pdf&invitation_id=${selectedInvId}&_ts=${Date.now()}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
+    fetch(url, { ...FETCH_OPTIONS, cache: 'no-store' })
+      .then(async (response) => {
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          setToast(data?.error || 'No disponible');
+          return;
+        }
+
+        const blob = await response.blob();
+        const href = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = href;
+        link.download = `informe-cliente-${selectedInvId}-${Date.now()}.pdf`;
+        link.click();
+        URL.revokeObjectURL(href);
+      })
+      .catch(() => setToast('No disponible'));
   };
 
   const handleDownloadInformeEstudio = () => {
-    if (!studyId) return;
     const completedInvitations = invitations.filter((inv) => inv.status === 'completed');
     if (completedInvitations.length === 0) {
       setToast('No hay colaboradores completados para descargar.');
       return;
     }
+
     setToast(`Descargando ${completedInvitations.length} PDF${completedInvitations.length === 1 ? '' : 's'} por colaborador.`);
-    completedInvitations.forEach((inv, idx) => {
+    completedInvitations.forEach((inv, index) => {
       window.setTimeout(() => {
-        const a = document.createElement('a');
-        a.href = `${API}/studies.php?action=download_pdf&invitation_id=${inv.id}&_ts=${Date.now()}-${idx}${token ? '&token=' + encodeURIComponent(token) : ''}`;
-        a.download = `informe-cliente-${inv.id}-${Date.now()}-${idx}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }, idx * 250);
+        const link = document.createElement('a');
+        link.href = `${API}/studies.php?action=download_pdf&invitation_id=${inv.id}&_ts=${Date.now()}-${index}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
+        link.download = `informe-cliente-${inv.id}-${Date.now()}-${index}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }, index * 250);
     });
   };
-
-  const renderReportBlock = (block: { title: string; entries?: Array<{ label: string; value: string }>; table?: { headers: string[]; rows: string[][] } }, idx: number) => (
-    <div key={`${block.title}-${idx}`} style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14, background: '#f8fafc' }}>
-      <h4 style={{ margin: '0 0 10px', fontSize: 15, color: '#334155' }}>{block.title}</h4>
-      {block.entries && block.entries.length > 0 ? (
-        <div style={{ display: 'grid', gap: 8 }}>
-          {block.entries.map((entry, entryIdx) => (
-            <div key={`${entry.label}-${entryIdx}`} style={{ fontSize: 14, color: '#334155' }}>
-              <strong>{entry.label}:</strong> {entry.value || '—'}
-            </div>
-          ))}
-        </div>
-      ) : null}
-      {block.table ? (
-        <div style={{ overflowX: 'auto', marginTop: block.entries && block.entries.length > 0 ? 12 : 0 }}>
-          <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                {block.table.headers.map((header) => (
-                  <th key={header} style={{ textAlign: 'left', padding: '8px 10px', background: '#e2e8f0', color: '#0f172a', fontSize: 12 }}>
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {block.table.rows.map((row, rowIdx) => (
-                <tr key={rowIdx}>
-                  {row.map((cell, cellIdx) => (
-                    <td key={`${rowIdx}-${cellIdx}`} style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', fontSize: 13, color: '#334155', verticalAlign: 'top' }}>
-                      {cell || '—'}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-    </div>
-  );
 
   if (loading || !study) {
     return (
       <main style={{ minHeight: '60vh', padding: 24, textAlign: 'center' }}>
-        <p>Cargando…</p>
+        <p>Cargando...</p>
       </main>
     );
   }
 
   return (
     <main style={{ minHeight: '65vh', paddingTop: 24, paddingBottom: 48 }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
-        {backLink != null && (
-          <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'flex-end' }}>{backLink}</div>
-        )}
-        <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-          <h2 style={{ margin: '0 0 4px' }}>
-            {study.company_name}
-            {study.format_version ? ` · ${study.format_version}` : ''}
+      <div style={{ maxWidth: 1160, margin: '0 auto', padding: '0 20px' }}>
+        {backLink != null ? <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'flex-end' }}>{backLink}</div> : null}
+
+        <div style={{ marginBottom: 18, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+          <h2 style={{ margin: '0 0 4px', color: '#0f172a', fontSize: 32, fontWeight: 800 }}>
+            {study.company_name} · Estudio Socioeconómico
           </h2>
-          <span style={{ padding: '4px 8px', borderRadius: 6, background: statusStyle.bg, color: statusStyle.text, fontSize: 12 }}>
-            {STATUS_LABELS[study.status]}
+          <span style={{ padding: '6px 12px', borderRadius: 999, background: generalStatus.bg, color: generalStatus.text, fontSize: 13, fontWeight: 700 }}>
+            {generalStatus.label}
           </span>
-          {study.status === 'concluido' &&
-            (finalPdfAvailable ? (
+          {study.status === 'concluido' ? (
+            finalPdfAvailable ? (
               <button
                 type="button"
                 onClick={handleDownloadInformeEstudio}
-                style={{ padding: '8px 16px', background: '#059669', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14, fontWeight: 700 }}
+                style={{
+                  padding: '8px 16px',
+                  background: '#059669',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  fontWeight: 700,
+                }}
               >
-                Descargar informe final para cliente (todo el estudio)
+                Descargar informe final
               </button>
             ) : (
-              <span style={{ padding: '8px 12px', background: '#fef3c7', color: '#92400e', borderRadius: 6, fontSize: 13 }}>
-                Informe masivo disponible al cerrar el estudio con colaboradores completados
+              <span style={{ padding: '8px 12px', background: '#fef3c7', color: '#92400e', borderRadius: 8, fontSize: 13 }}>
+                El informe final estará disponible al concluir el estudio
               </span>
-            ))}
+            )
+          ) : null}
         </div>
 
-        <div style={{ padding: 12, background: '#eff6ff', borderRadius: 8, marginBottom: 16, fontSize: 13, color: '#1e3a5f', border: '1px solid #93c5fd' }}>
-          <strong>Portal empresa:</strong> aquí se muestra el <strong>informe final para el cliente</strong> junto con la información del candidato registrada en el estudio, en modo solo lectura.
+        <div
+          style={{
+            padding: 16,
+            background: '#eff6ff',
+            borderRadius: 12,
+            marginBottom: 18,
+            border: '1px solid #93c5fd',
+            color: '#1e3a5f',
+            lineHeight: 1.6,
+          }}
+        >
+          <strong>Detalle del estudio:</strong> {CLIENT_INFO_TEXT.replace('Detalle del estudio: ', '')}
         </div>
 
-        <div style={{ display: 'flex', gap: 24 }}>
-          <div style={{ width: '30%', flexShrink: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div style={{ width: 320, maxWidth: '100%', flexShrink: 0, background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 16 }}>
             <p style={{ margin: '0 0 12px', fontSize: 13, color: '#6b7280' }}>
               {completedCount} de {totalCount} colaboradores completados
             </p>
-            <div style={{ maxHeight: 400, overflowY: 'auto' }}>
-              {invitations.map((inv) => (
-                <div
-                  key={inv.id}
-                  onClick={() => setSelectedInvId(inv.id)}
-                  style={{
-                    padding: 12,
-                    borderBottom: '1px solid #e5e7eb',
-                    cursor: 'pointer',
-                    background: selectedInvId === inv.id ? '#eff6ff' : undefined,
-                  }}
-                >
-                  <div style={{ fontWeight: 500 }}>{inv.candidate_name?.trim() || inv.candidate_email || 'Anónimo'}</div>
-                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-                    <span
-                      style={{
-                        padding: '2px 6px',
-                        borderRadius: 4,
-                        background: inv.status === 'completed' ? '#d1fae5' : inv.status === 'in_progress' ? '#dbeafe' : '#f3f4f6',
-                      }}
-                    >
-                      {inv.status}
-                    </span>
-                    {inv.completed_at && <span style={{ marginLeft: 8 }}>{formatDate(inv.completed_at)}</span>}
-                  </div>
-                </div>
-              ))}
+            <div style={{ display: 'grid', gap: 12 }}>
+              {invitations.map((inv) => {
+                const pills = getCandidateStatusPills(study.status, inv);
+                return (
+                  <button
+                    key={inv.id}
+                    type="button"
+                    onClick={() => setSelectedInvId(inv.id)}
+                    style={{
+                      textAlign: 'left',
+                      padding: 14,
+                      borderRadius: 14,
+                      border: selectedInvId === inv.id ? '2px solid #93c5fd' : '1px solid #e5e7eb',
+                      background: selectedInvId === inv.id ? '#f8fbff' : '#ffffff',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>
+                      {inv.candidate_name?.trim() || inv.candidate_email || 'Anónimo'}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: inv.completed_at ? 8 : 0 }}>
+                      {pills.map((pill) => (
+                        <span key={pill.label} style={{ padding: '4px 8px', borderRadius: 999, background: pill.bg, color: pill.text, fontSize: 12, fontWeight: 700 }}>
+                          {pill.label}
+                        </span>
+                      ))}
+                    </div>
+                    {inv.completed_at ? <div style={{ fontSize: 12, color: '#64748b' }}>Fecha de conclusión: {formatDate(inv.completed_at)}</div> : null}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          <div style={{ flex: 1, minWidth: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+          <div style={{ flex: 1, minWidth: 280, background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 20 }}>
             {!selectedInv ? (
-              <p style={{ color: '#6b7280', textAlign: 'center', padding: 40 }}>Selecciona un colaborador para ver el informe para cliente</p>
-            ) : reportLoading ? (
-              <p style={{ color: '#6b7280' }}>Cargando informe…</p>
-            ) : !report ? (
-              <p style={{ color: '#9ca3af' }}>No se pudo cargar el informe.</p>
+              <p style={{ color: '#6b7280', textAlign: 'center', padding: 40 }}>Selecciona un colaborador para consultar el avance del estudio.</p>
             ) : (
               <>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #e5e7eb', alignItems: 'center' }}>
-                  <div>
-                    <strong>Nombre:</strong> {report.candidate_name?.trim() || '—'}
+                <section style={{ marginBottom: 22, border: '1px solid #e5e7eb', borderRadius: 14, padding: 18, background: '#ffffff' }}>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', marginBottom: 10 }}>
+                    {selectedInv.candidate_name?.trim() || selectedInv.candidate_email || 'Anónimo'}
                   </div>
-                  <div>
-                    <strong>Correo:</strong> {report.candidate_email || '—'}
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: selectedInv.completed_at ? 12 : 0 }}>
+                    {selectedCandidatePills.map((pill) => (
+                      <span key={pill.label} style={{ padding: '6px 10px', borderRadius: 999, background: pill.bg, color: pill.text, fontSize: 13, fontWeight: 700 }}>
+                        {pill.label}
+                      </span>
+                    ))}
                   </div>
-                  <div>
-                    <strong>Teléfono:</strong> {report.candidate_phone || '—'}
-                  </div>
-                  {selectedInv.status === 'completed' && (
-                    <button
-                      onClick={handleDownloadInformeCandidato}
-                      style={{ marginLeft: 'auto', padding: '8px 16px', background: '#1e40af', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 700 }}
-                    >
-                      PDF informe cliente (este colaborador)
-                    </button>
-                  )}
-                </div>
-
-                <section style={{ marginBottom: 20 }}>
-                  <h3 style={{ margin: '0 0 8px', fontSize: 15, color: '#0f172a' }}>1. Resumen de actualización</h3>
-                  <p style={{ margin: 0, whiteSpace: 'pre-wrap', color: '#334155', lineHeight: 1.55 }}>
-                    {report.resumen_actualizacion?.trim() || '—'}
-                  </p>
-                </section>
-
-                <section style={{ marginBottom: 20 }}>
-                  <h3 style={{ margin: '0 0 8px', fontSize: 15, color: '#0f172a' }}>2. Resultado de la actualización</h3>
-                  <p style={{ margin: 0, fontWeight: 600, color: '#1e293b' }}>{report.resultado_actualizacion || '—'}</p>
-                  {report.observaciones_relevantes?.trim() ? (
-                    <p style={{ margin: '8px 0 0', fontSize: 14, color: '#475569' }}>
-                      <em>Observaciones relevantes:</em> {report.observaciones_relevantes}
-                    </p>
-                  ) : null}
-                  {(report.fecha_cierre || report.analista) && (
-                    <p style={{ margin: '8px 0 0', fontSize: 13, color: '#64748b' }}>
-                      {report.fecha_cierre ? <>Cierre: {report.fecha_cierre} · </> : null}
-                      {report.analista ? <>Analista: {report.analista}</> : null}
-                    </p>
-                  )}
-                </section>
-
-                <section style={{ marginBottom: 20 }}>
-                  <h3 style={{ margin: '0 0 8px', fontSize: 15, color: '#0f172a' }}>3. Verificación domiciliaria</h3>
-                  {report.verificacion_domiciliaria ? (
-                    <div style={{ fontSize: 14, color: '#334155', lineHeight: 1.5 }}>
-                      <div>
-                        <strong>Fecha de visita:</strong> {report.verificacion_domiciliaria.fecha_visita || '—'}
-                      </div>
-                      <div>
-                        <strong>Tipo:</strong> {report.verificacion_domiciliaria.tipo || '—'}
-                      </div>
-                      <div style={{ marginTop: 6 }}>
-                        <strong>Observaciones:</strong> {report.verificacion_domiciliaria.observaciones || '—'}
-                      </div>
+                  {selectedInv.completed_at ? (
+                    <div style={{ paddingTop: 12, marginTop: 12, borderTop: '1px solid #e5e7eb', fontSize: 14, color: '#334155' }}>
+                      <strong>Fecha de conclusión:</strong> {formatDate(selectedInv.completed_at)}
                     </div>
-                  ) : (
-                    <p style={{ margin: 0, color: '#64748b' }}>Sin registro de visita.</p>
-                  )}
+                  ) : null}
                 </section>
 
-                {report.candidate_sections && report.candidate_sections.length > 0 ? (
-                  <section style={{ marginBottom: 20 }}>
-                    <h3 style={{ margin: '0 0 12px', fontSize: 15, color: '#0f172a' }}>4. Respuestas del estudio</h3>
-                    <div style={{ display: 'grid', gap: 14 }}>
-                      {report.candidate_sections.map((section) => (
-                        <div key={section.title} style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, background: '#fff' }}>
-                          <h3 style={{ margin: '0 0 12px', fontSize: 15, color: '#0f172a' }}>{section.title}</h3>
-                          <div style={{ display: 'grid', gap: 12 }}>
-                            {section.blocks.map(renderReportBlock)}
+                <section style={{ marginBottom: 22 }}>
+                  <h3 style={{ margin: '0 0 14px', fontSize: 18, color: '#0f172a' }}>Estatus del estudio</h3>
+                  <div style={{ display: 'grid', gap: 16 }}>
+                    {selectedProgressSteps.map((step, index) => {
+                      const titleColor = step.state === 'completed' ? '#166534' : step.state === 'current' ? '#0f172a' : '#475569';
+                      const subtitleColor = step.state === 'completed' ? '#4b5563' : step.state === 'current' ? '#2563eb' : '#9ca3af';
+
+                      return (
+                        <div key={step.title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                          <div style={{ display: 'grid', justifyItems: 'center' }}>
+                            <ProgressMarker state={step.state} />
+                            {index < selectedProgressSteps.length - 1 ? <div style={{ width: 2, minHeight: 28, background: '#d1d5db', marginTop: 4 }} /> : null}
+                          </div>
+                          <div style={{ paddingTop: 1 }}>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: titleColor }}>{step.title}</div>
+                            <div style={{ fontSize: 13, color: subtitleColor }}>{step.subtitle}</div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
-
-                <section style={{ marginBottom: 20 }}>
-                  <h3 style={{ margin: '0 0 8px', fontSize: 15, color: '#0f172a' }}>5. Documentacion de respaldo / validacion</h3>
-                  {report.supporting_documents && report.supporting_documents.length > 0 ? (
-                    <div style={{ display: 'grid', gap: 10 }}>
-                      {report.supporting_documents.map((doc) => {
-                        const url = companyDocumentDownloadUrl(doc.file_path);
-                        return (
-                          <div key={`${doc.file_path}-${doc.label}`} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: 12, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-                            <div style={{ flex: 1, minWidth: 220 }}>
-                              <div style={{ fontWeight: 700, color: '#0f172a' }}>{doc.label}</div>
-                              <div style={{ fontSize: 13, color: '#64748b' }}>{doc.name}</div>
-                            </div>
-                            {url ? (
-                              <a
-                                href={url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ padding: '8px 14px', background: '#0f766e', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 700, fontSize: 13 }}
-                              >
-                                Descargar
-                              </a>
-                            ) : (
-                              <span style={{ fontSize: 13, color: '#94a3b8' }}>No disponible</span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p style={{ margin: 0, color: '#64748b' }}>Sin documentos adicionales registrados.</p>
-                  )}
+                      );
+                    })}
+                  </div>
                 </section>
 
-                <section>
-                  <h3 style={{ margin: '0 0 8px', fontSize: 15, color: '#0f172a' }}>6. Semáforo</h3>
-                  {report.show_semaforo && report.semaforo ? (
-                    <div
-                      style={{
-                        padding: 16,
-                        borderRadius: 10,
-                        background:
-                          report.semaforo.color === 'verde' ? '#f0fdf4' : report.semaforo.color === 'amarillo' ? '#fefce8' : '#fef2f2',
-                        border: `2px solid ${report.semaforo.color === 'verde' ? '#16a34a' : report.semaforo.color === 'amarillo' ? '#ca8a04' : '#dc2626'}`,
-                      }}
+                {study.status === 'concluido' && selectedInv.status === 'completed' ? (
+                  <section style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      onClick={handleDownloadInformeCandidato}
+                      style={{ padding: '10px 16px', background: '#1e40af', color: '#ffffff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}
                     >
-                      <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#0f172a' }}>
-                        {report.semaforo.color === 'verde' ? '🟢' : report.semaforo.color === 'amarillo' ? '🟡' : '🔴'} {report.semaforo.label}
-                      </p>
-                    </div>
-                  ) : (
-                    <p style={{ margin: 0, fontSize: 14, color: '#64748b' }}>
-                      El semáforo no está habilitado para este estudio o aún no está asignado. Contacte a HR Capital Working si necesita el criterio cualitativo.
-                    </p>
-                  )}
-                </section>
+                      Descargar informe final del candidato
+                    </button>
+                    <span style={{ fontSize: 13, color: '#64748b' }}>El informe final ya se encuentra disponible.</span>
+                  </section>
+                ) : (
+                  <div style={{ paddingTop: 16, borderTop: '1px solid #e5e7eb', fontSize: 13, color: '#64748b' }}>
+                    El informe final se habilitará una vez concluida la validación interna.
+                  </div>
+                )}
               </>
             )}
           </div>
         </div>
       </div>
 
-      {toast && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, padding: 12, background: '#111', color: '#fff', borderRadius: 8, zIndex: 50 }}>
+      {toast ? (
+        <div style={{ position: 'fixed', bottom: 24, right: 24, padding: 12, background: '#111827', color: '#ffffff', borderRadius: 8, zIndex: 50 }}>
           {toast}
-          <button type="button" onClick={() => setToast(null)} style={{ marginLeft: 12, color: '#93c5fd' }}>
+          <button type="button" onClick={() => setToast(null)} style={{ marginLeft: 12, color: '#93c5fd', background: 'transparent', border: 'none', cursor: 'pointer' }}>
             Cerrar
           </button>
         </div>
-      )}
+      ) : null}
     </main>
   );
 }
