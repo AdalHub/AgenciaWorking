@@ -90,24 +90,28 @@ export default function EmpresaDashboard() {
         return;
       }
 
-      const pdfRes = await fetch(`/api/studies.php?action=download_study_final_pdf&study_id=${studyId}&_ts=${Date.now()}`, { credentials: 'include', cache: 'no-store' });
-      if (!pdfRes.ok) {
-        const ct = pdfRes.headers.get('content-type');
-        if (ct && ct.includes('application/json')) {
-          const e = await pdfRes.json().catch(() => ({}));
-          setToast(e.error || 'No se pudo descargar el PDF.');
-        } else {
-          setToast('No se pudo descargar el PDF.');
-        }
+      const invRes = await fetch(`/api/studies.php?action=list_invitations&study_id=${studyId}`, { credentials: 'include', cache: 'no-store' });
+      const invData = await invRes.json().catch(() => ({}));
+      const completedInvitations = Array.isArray(invData?.invitations)
+        ? invData.invitations.filter((inv: { id: number; status: string }) => inv.status === 'completed')
+        : [];
+
+      if (completedInvitations.length === 0) {
+        setToast('No hay colaboradores completados para descargar.');
         return;
       }
 
-      const blob = await pdfRes.blob();
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `estudio-${studyId}-final-${Date.now()}.pdf`;
-      a.click();
-      URL.revokeObjectURL(a.href);
+      setToast(`Descargando ${completedInvitations.length} PDF${completedInvitations.length === 1 ? '' : 's'} por colaborador.`);
+      completedInvitations.forEach((inv: { id: number }, index: number) => {
+        window.setTimeout(() => {
+          const a = document.createElement('a');
+          a.href = `/api/studies.php?action=download_pdf&invitation_id=${inv.id}&_ts=${Date.now()}-${index}`;
+          a.download = `estudio-${inv.id}-final-${Date.now()}-${index}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }, index * 250);
+      });
     } catch {
       setToast('Error de red al descargar el PDF.');
     } finally {

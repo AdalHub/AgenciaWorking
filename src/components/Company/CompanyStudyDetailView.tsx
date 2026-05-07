@@ -21,6 +21,17 @@ type Invitation = {
   completed_at?: string;
 };
 
+type DownloadableDocument = {
+  label: string;
+  file_path: string;
+  name: string;
+};
+
+type ClientReport = {
+  downloadable_documents?: DownloadableDocument[];
+  supporting_documents?: DownloadableDocument[];
+};
+
 type ProgressState = 'completed' | 'current' | 'upcoming';
 
 type ProgressStep = {
@@ -149,6 +160,8 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
   const [loading, setLoading] = useState(true);
   const [selectedInvId, setSelectedInvId] = useState<number | null>(null);
   const [finalPdfAvailable, setFinalPdfAvailable] = useState(false);
+  const [downloadableDocuments, setDownloadableDocuments] = useState<DownloadableDocument[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
@@ -190,11 +203,41 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
   }, [study, studyId, tokenParam]);
 
   const selectedInv = useMemo(() => invitations.find((inv) => inv.id === selectedInvId) ?? null, [invitations, selectedInvId]);
+
+  useEffect(() => {
+    if (!selectedInvId || !study || study.status !== 'concluido' || selectedInv?.status !== 'completed') {
+      setDownloadableDocuments([]);
+      setDocumentsLoading(false);
+      return;
+    }
+
+    setDocumentsLoading(true);
+    fetch(`${API}/studies.php?action=get_company_client_report&invitation_id=${selectedInvId}${tokenParam}`, FETCH_OPTIONS)
+      .then((r) => r.json())
+      .then((data: ClientReport & { error?: string }) => {
+        if (data?.error) {
+          setDownloadableDocuments([]);
+          return;
+        }
+        const docs = Array.isArray(data?.downloadable_documents)
+          ? data.downloadable_documents
+          : Array.isArray(data?.supporting_documents)
+            ? data.supporting_documents
+            : [];
+        setDownloadableDocuments(docs);
+      })
+      .catch(() => setDownloadableDocuments([]))
+      .finally(() => setDocumentsLoading(false));
+  }, [selectedInv?.status, selectedInvId, study, tokenParam]);
+
   const completedCount = invitations.filter((inv) => inv.status === 'completed').length;
   const totalCount = invitations.length;
   const generalStatus = study ? getGeneralClientStatus(study, invitations) : { label: 'Registro del candidato', bg: '#e5e7eb', text: '#475569' };
   const selectedProgressSteps = selectedInv ? getProgressSteps(study?.status ?? '', selectedInv.status) : [];
   const selectedCandidatePills = selectedInv ? getCandidateStatusPills(study?.status ?? '', selectedInv) : [];
+
+  const documentDownloadApiUrl = (filePath: string) =>
+    `${API}/studies.php?action=download_document&file_path=${encodeURIComponent(filePath)}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
 
   const handleDownloadInformeCandidato = () => {
     if (!selectedInvId || selectedInv?.status !== 'completed') return;
@@ -212,7 +255,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
         const href = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = href;
-        link.download = `informe-cliente-${selectedInvId}-${Date.now()}.pdf`;
+        link.download = `estudio-${selectedInvId}-final-${Date.now()}.pdf`;
         link.click();
         URL.revokeObjectURL(href);
       })
@@ -231,7 +274,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
       window.setTimeout(() => {
         const link = document.createElement('a');
         link.href = `${API}/studies.php?action=download_pdf&invitation_id=${inv.id}&_ts=${Date.now()}-${index}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
-        link.download = `informe-cliente-${inv.id}-${Date.now()}-${index}.pdf`;
+        link.download = `estudio-${inv.id}-final-${Date.now()}-${index}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -385,15 +428,69 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
                 </section>
 
                 {study.status === 'concluido' && selectedInv.status === 'completed' ? (
-                  <section style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-                    <button
-                      type="button"
-                      onClick={handleDownloadInformeCandidato}
-                      style={{ padding: '10px 16px', background: '#1e40af', color: '#ffffff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}
-                    >
-                      Descargar informe final del candidato
-                    </button>
-                    <span style={{ fontSize: 13, color: '#64748b' }}>El informe final ya se encuentra disponible.</span>
+                  <section style={{ display: 'grid', gap: 16 }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={handleDownloadInformeCandidato}
+                        style={{ padding: '10px 16px', background: '#1e40af', color: '#ffffff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}
+                      >
+                        Descargar informe final del candidato
+                      </button>
+                      <span style={{ fontSize: 13, color: '#64748b' }}>El informe final ya se encuentra disponible.</span>
+                    </div>
+
+                    <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 16 }}>
+                      <h4 style={{ margin: '0 0 10px', fontSize: 16, color: '#0f172a' }}>Documentos adjuntos disponibles</h4>
+                      <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>
+                        Aquí puede descargar los archivos adjuntos del candidato y del analista que se conservan fuera del PDF final.
+                      </p>
+                      {documentsLoading ? (
+                        <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>Cargando documentos...</p>
+                      ) : downloadableDocuments.length > 0 ? (
+                        <div style={{ display: 'grid', gap: 10 }}>
+                          {downloadableDocuments.map((doc, index) => (
+                            <div
+                              key={`${doc.file_path}-${index}`}
+                              style={{
+                                display: 'flex',
+                                gap: 12,
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                flexWrap: 'wrap',
+                                padding: 12,
+                                borderRadius: 10,
+                                border: '1px solid #e2e8f0',
+                                background: '#f8fafc',
+                              }}
+                            >
+                              <div style={{ flex: 1, minWidth: 220 }}>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{doc.label}</div>
+                                <div style={{ fontSize: 12, color: '#64748b' }}>{doc.name}</div>
+                              </div>
+                              <a
+                                href={documentDownloadApiUrl(doc.file_path)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  padding: '8px 14px',
+                                  background: '#0f766e',
+                                  color: '#ffffff',
+                                  borderRadius: 8,
+                                  textDecoration: 'none',
+                                  fontSize: 13,
+                                  fontWeight: 700,
+                                }}
+                              >
+                                Descargar
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>No hay documentos adjuntos adicionales para este candidato.</p>
+                      )}
+                    </div>
                   </section>
                 ) : (
                   <div style={{ paddingTop: 16, borderTop: '1px solid #e5e7eb', fontSize: 13, color: '#64748b' }}>
