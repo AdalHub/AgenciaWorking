@@ -20,6 +20,8 @@ type Invitation = {
   candidate_name?: string;
   candidate_email?: string;
   status: string;
+  sent_at?: string;
+  opened_at?: string;
   completed_at?: string;
 };
 
@@ -124,6 +126,42 @@ function getCandidateStatusPills(studyStatus: string, invitation: Invitation) {
   }
 
   return [{ label: 'Registro del candidato', bg: '#e5e7eb', text: '#475569' }];
+}
+
+function getInvitationLastUpdated(invitation: Invitation): string | null {
+  if (invitation.status === 'completed') {
+    return invitation.completed_at || invitation.opened_at || invitation.sent_at || null;
+  }
+  if (invitation.status === 'in_progress') {
+    return invitation.opened_at || invitation.sent_at || null;
+  }
+  return invitation.sent_at || null;
+}
+
+function getCandidateCurrentStatus(studyStatus: string, invitation: Invitation) {
+  if (studyStatus === 'concluido' && invitation.status === 'completed') {
+    return { label: 'Informe disponible', bg: '#dbeafe', text: '#1d4ed8' };
+  }
+  if (studyStatus === 'en_validacion' && invitation.status === 'completed') {
+    return { label: 'Validacion interna', bg: '#e0f2fe', text: '#075985' };
+  }
+  if (invitation.status === 'completed') {
+    return { label: CLIENT_PROGRESS_TEXT, bg: '#fef3c7', text: '#b45309' };
+  }
+  return { label: 'Registro del candidato', bg: '#e5e7eb', text: '#475569' };
+}
+
+function getCandidateProgressTag(studyStatus: string, invitation: Invitation) {
+  if (studyStatus === 'concluido' && invitation.status === 'completed') {
+    return { label: 'Estudio concluido', bg: '#dcfce7', text: '#166534' };
+  }
+  if (studyStatus === 'en_validacion' && invitation.status === 'completed') {
+    return { label: 'Revision final', bg: '#ede9fe', text: '#6d28d9' };
+  }
+  if (invitation.status === 'completed') {
+    return { label: 'Captura completada', bg: '#dcfce7', text: '#166534' };
+  }
+  return { label: 'Informacion pendiente', bg: '#fef3c7', text: '#b45309' };
 }
 
 function ProgressMarker({ state }: { state: ProgressState }) {
@@ -362,46 +400,93 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <div style={{ width: 320, maxWidth: '100%', flexShrink: 0, background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 16 }}>
-            <p style={{ margin: '0 0 12px', fontSize: 13, color: '#6b7280' }}>
-              {completedCount} de {totalCount} colaboradores completados
-            </p>
-            <div style={{ display: 'grid', gap: 12 }}>
-              {invitations.map((inv) => {
-                const pills = getCandidateStatusPills(study.status, inv);
-                return (
-                  <button
-                    key={inv.id}
-                    type="button"
-                    onClick={() => setSelectedInvId(inv.id)}
-                    style={{
-                      textAlign: 'left',
-                      padding: 14,
-                      borderRadius: 14,
-                      border: selectedInvId === inv.id ? '2px solid #93c5fd' : '1px solid #e5e7eb',
-                      background: selectedInvId === inv.id ? '#f8fbff' : '#ffffff',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>
-                      {inv.candidate_name?.trim() || inv.candidate_email || 'Sin nombre'}
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: inv.completed_at ? 8 : 0 }}>
-                      {pills.map((pill) => (
-                        <span key={pill.label} style={{ padding: '4px 8px', borderRadius: 999, background: pill.bg, color: pill.text, fontSize: 12, fontWeight: 700 }}>
-                          {pill.label}
-                        </span>
-                      ))}
-                    </div>
-                    {inv.completed_at ? <div style={{ fontSize: 12, color: '#64748b' }}>Fecha de conclusion: {formatDate(inv.completed_at)}</div> : null}
-                  </button>
-                );
-              })}
+        <div style={{ display: 'grid', gap: 18 }}>
+          <section style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+              <div>
+                <h3 style={{ margin: '0 0 4px', fontSize: 18, color: '#0f172a' }}>Colaboradores del estudio</h3>
+                <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>
+                  {completedCount} de {totalCount} colaboradores completados
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div style={{ flex: 1, minWidth: 280, background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 20 }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <th style={{ textAlign: 'left', padding: '10px 12px', fontSize: 13, color: '#475569' }}>Candidato / Estudio</th>
+                    <th style={{ textAlign: 'left', padding: '10px 12px', fontSize: 13, color: '#475569' }}>Estatus actual</th>
+                    <th style={{ textAlign: 'left', padding: '10px 12px', fontSize: 13, color: '#475569' }}>Avance</th>
+                    <th style={{ textAlign: 'left', padding: '10px 12px', fontSize: 13, color: '#475569' }}>Ultima actualizacion</th>
+                    <th style={{ textAlign: 'left', padding: '10px 12px', fontSize: 13, color: '#475569' }}>Accion</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invitations.map((inv) => {
+                    const currentStatus = getCandidateCurrentStatus(study.status, inv);
+                    const progressTag = getCandidateProgressTag(study.status, inv);
+                    const lastUpdated = getInvitationLastUpdated(inv);
+                    const isSelected = selectedInvId === inv.id;
+                    const actionLabel = study.status === 'concluido' && inv.status === 'completed' ? 'Ver informe' : 'Ver detalle';
+
+                    return (
+                      <tr
+                        key={inv.id}
+                        onClick={() => setSelectedInvId(inv.id)}
+                        style={{
+                          borderBottom: '1px solid #f1f5f9',
+                          background: isSelected ? '#f8fbff' : '#ffffff',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <td style={{ padding: '14px 12px', verticalAlign: 'top' }}>
+                          <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>
+                            {inv.candidate_name?.trim() || inv.candidate_email || 'Sin nombre'}
+                          </div>
+                          <div style={{ fontSize: 12, color: '#64748b' }}>{study.company_name}</div>
+                        </td>
+                        <td style={{ padding: '14px 12px', verticalAlign: 'top' }}>
+                          <span style={{ display: 'inline-flex', padding: '6px 10px', borderRadius: 999, background: currentStatus.bg, color: currentStatus.text, fontSize: 12, fontWeight: 700 }}>
+                            {currentStatus.label}
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 12px', verticalAlign: 'top' }}>
+                          <span style={{ display: 'inline-flex', padding: '6px 10px', borderRadius: 999, background: progressTag.bg, color: progressTag.text, fontSize: 12, fontWeight: 700 }}>
+                            {progressTag.label}
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 12px', verticalAlign: 'top', fontSize: 14, color: '#334155' }}>{formatDate(lastUpdated)}</td>
+                        <td style={{ padding: '14px 12px', verticalAlign: 'top' }}>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setSelectedInvId(inv.id);
+                            }}
+                            style={{
+                              padding: '8px 12px',
+                              borderRadius: 8,
+                              border: isSelected ? '1px solid #1d4ed8' : '1px solid #cbd5e1',
+                              background: isSelected ? '#1d4ed8' : '#ffffff',
+                              color: isSelected ? '#ffffff' : '#0f172a',
+                              fontSize: 13,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {actionLabel}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <div style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 20 }}>
             {!selectedInv ? (
               <p style={{ color: '#6b7280', textAlign: 'center', padding: 40 }}>Selecciona un colaborador para consultar el avance del estudio.</p>
             ) : (
@@ -417,9 +502,9 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
                       </span>
                     ))}
                   </div>
-                  {selectedInv.completed_at ? (
+                  {getInvitationLastUpdated(selectedInv) ? (
                     <div style={{ paddingTop: 12, marginTop: 12, borderTop: '1px solid #e5e7eb', fontSize: 14, color: '#334155' }}>
-                      <strong>Fecha de conclusion:</strong> {formatDate(selectedInv.completed_at)}
+                      <strong>Ultima actualizacion:</strong> {formatDate(getInvitationLastUpdated(selectedInv))}
                     </div>
                   ) : null}
                 </section>
