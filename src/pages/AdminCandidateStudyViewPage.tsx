@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 type Invitation = {
@@ -10,6 +10,12 @@ type Invitation = {
   status: string;
   unique_code?: string;
   code_expires_at?: string;
+};
+
+type AdditionalDocument = {
+  label: string;
+  file_path: string;
+  name: string;
 };
 
 type FormDataBySection = Record<string, Record<string, string>>;
@@ -218,6 +224,63 @@ function buildHistoriaLaboralAdminBlocks(sectionData: Record<string, string>): A
   return blocks;
 }
 
+function normalizeLooseKey(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function getSectionNameByNormalizedName(formData: FormDataBySection, normalizedName: string): string | null {
+  const match = Object.keys(formData || {}).find((key) => normalizeLooseKey(key) === normalizedName);
+  return match || null;
+}
+
+function displaySectionTitle(sectionName: string): string {
+  if (normalizeLooseKey(sectionName) === 'autorizacion_actualizacion') {
+    return 'Autorizacion del estudio';
+  }
+  return sectionName;
+}
+
+function isPersonalReferenceAdminKey(key: string): boolean {
+  return /^\d+_ref_admin_comentario$/.test(key);
+}
+
+function buildPersonalReferenceBlocks(sectionData: Record<string, string>): Array<{ index: number; title: string; entries: Array<[string, string]> }> {
+  const preferredOrder = [
+    'nombre_completo',
+    'parentesco',
+    'ocupacion',
+    'telefono',
+    'vive_con_evaluado',
+    'tiempo_conocer_anios',
+  ];
+
+  return [0, 1].map((index) => {
+    const entries = Object.entries(sectionData)
+      .filter(([key]) => key.startsWith(`${index}_ref_`) && !isPersonalReferenceAdminKey(key))
+      .sort(([a], [b]) => {
+        const aSub = a.replace(/^\d+_ref_/, '');
+        const bSub = b.replace(/^\d+_ref_/, '');
+        const aIdx = preferredOrder.indexOf(aSub);
+        const bIdx = preferredOrder.indexOf(bSub);
+        const aOrder = aIdx === -1 ? preferredOrder.length + 1 : aIdx;
+        const bOrder = bIdx === -1 ? preferredOrder.length + 1 : bIdx;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        return aSub.localeCompare(bSub);
+      });
+
+    return {
+      index,
+      title: `Referencia ${index + 1}`,
+      entries,
+    };
+  });
+}
+
 function formatFieldLabel(key: string): string {
   const explicitLabels: Record<string, string> = {
     dp_id_cedula_profesional: 'Identificacion oficial - Cedula Profesional',
@@ -251,6 +314,8 @@ function formatFieldLabel(key: string): string {
     vivi_serv_areas_verdes_descuidadas: 'Areas verdes descuidadas',
     transporte_medio: 'Medio principal de transporte',
     transporte_tiempo: 'Tiempo aproximado de traslado',
+    '0_ref_admin_comentario': 'Comentario del analista sobre la referencia 1',
+    '1_ref_admin_comentario': 'Comentario del analista sobre la referencia 2',
   };
   if (explicitLabels[key]) return explicitLabels[key];
   const refMatch = key.match(/^(\d+)_ref_(.+)$/);
@@ -357,7 +422,12 @@ function isAdminOnlyHistoriaLaboralKey(key: string): boolean {
 }
 
 function getCandidateSectionEntries(sectionName: string, sectionData: Record<string, string>): Array<[string, string]> {
-  return Object.entries(sectionData).filter(([key]) => !(sectionName === 'Historia Laboral' && isAdminOnlyHistoriaLaboralKey(key)));
+  const normalizedSection = normalizeLooseKey(sectionName);
+  return Object.entries(sectionData).filter(([key]) => {
+    if (sectionName === 'Historia Laboral' && isAdminOnlyHistoriaLaboralKey(key)) return false;
+    if (normalizedSection === 'referencias_personales' && isPersonalReferenceAdminKey(key)) return false;
+    return true;
+  });
 }
 
 function getFieldOptions(key: string): FieldOption[] | null {
@@ -1021,6 +1091,11 @@ export default function AdminCandidateStudyViewPage() {
   const [concAnalista, setConcAnalista] = useState('');
   const [savingConc, setSavingConc] = useState(false);
   const [uploadingConcImage, setUploadingConcImage] = useState(false);
+  const [additionalDocuments, setAdditionalDocuments] = useState<AdditionalDocument[]>([]);
+  const [uploadingAdditionalDocument, setUploadingAdditionalDocument] = useState(false);
+  const additionalDocumentInputRef = useRef<HTMLInputElement | null>(null);
+  const [personalReferenceComments, setPersonalReferenceComments] = useState<Record<number, string>>({ 0: '', 1: '' });
+  const [savingReferenceCommentIndex, setSavingReferenceCommentIndex] = useState<number | null>(null);
 
   // Historia laboral admin notes
   const [hlAdminOpen, setHlAdminOpen] = useState(true);
@@ -1106,11 +1181,23 @@ export default function AdminCandidateStudyViewPage() {
         setEditingTab(null);
         setPageDrafts({});
 
+        const referenceSection =
+          formRes && typeof formRes === 'object' && formRes !== null
+            ? (getSectionNameByNormalizedName(formRes as FormDataBySection, 'referencias_personales')
+              ? (formRes as FormDataBySection)[getSectionNameByNormalizedName(formRes as FormDataBySection, 'referencias_personales') as string]
+              : null)
+            : null;
+        setPersonalReferenceComments({
+          0: referenceSection && typeof referenceSection === 'object' ? String(referenceSection['0_ref_admin_comentario'] ?? '') : '',
+          1: referenceSection && typeof referenceSection === 'object' ? String(referenceSection['1_ref_admin_comentario'] ?? '') : '',
+        });
+
         setConcNotes(concRes?.analyst_notes ?? '');
         setConcVerdict(concRes?.verdict ?? null);
         setConcResultado(concRes?.resultado_actualizacion ?? null);
         setConcObsRel(concRes?.observaciones_relevantes ?? '');
         setConcImageUrl(concRes?.analyst_image_url ?? '');
+        setAdditionalDocuments(Array.isArray(concRes?.additional_documents) ? concRes.additional_documents : []);
         setConcFechaCierre(concRes?.fecha_cierre_estudio ? String(concRes.fecha_cierre_estudio).slice(0, 10) : '');
         setConcAnalista(concRes?.analista_responsable ?? '');
 
@@ -1240,6 +1327,68 @@ export default function AdminCandidateStudyViewPage() {
       });
   };
 
+  const handleAdditionalDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !invitationId) return;
+    const max = 5 * 1024 * 1024;
+    const lower = file.name.toLowerCase();
+    const isPdf = file.type === 'application/pdf' || lower.endsWith('.pdf');
+    const isImage = /^image\/(jpeg|jpg|png|webp)$/i.test(file.type) || /\.(jpe?g|png|webp)$/i.test(lower);
+    if (!isPdf && !isImage) {
+      setToast('Solo se permiten PDF o imágenes JPG, PNG o WebP');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > max) {
+      setToast('Cada archivo no debe superar 5 MB');
+      e.target.value = '';
+      return;
+    }
+    setUploadingAdditionalDocument(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    fetch('/api/upload.php', { method: 'POST', credentials: 'include', body: fd })
+      .then((r) => r.json().catch(() => ({})))
+      .then((uploadRes) => {
+        if (!uploadRes?.url) {
+          throw new Error('upload_failed');
+        }
+        return fetch('/api/studies.php?action=save_document', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            invitation_id: invitationId,
+            document_type: 'admin_additional_document',
+            file_path: String(uploadRes.url),
+            file_size: file.size,
+          }),
+        }).then((r) => r.json().catch(() => ({})));
+      })
+      .then((saved) => {
+        if (saved?.error) {
+          setToast(saved.error);
+          return;
+        }
+        const normalizedPath = String(saved?.file_path || '');
+        const normalizedName = normalizedPath ? normalizedPath.replace(/^.*[/\\]/, '') : file.name;
+        setAdditionalDocuments((prev) => [
+          ...prev,
+          {
+            label: 'Documento adicional (analista)',
+            file_path: normalizedPath,
+            name: normalizedName,
+          },
+        ]);
+        setToast('Documento adicional cargado correctamente');
+      })
+      .catch(() => setToast('No se pudo cargar el documento adicional'))
+      .finally(() => {
+        setUploadingAdditionalDocument(false);
+        e.target.value = '';
+      });
+  };
+
   const saveHistoriaLaboralAdmin = () => {
     if (!invitationId) return;
     setHlAdminSaving(true);
@@ -1258,6 +1407,45 @@ export default function AdminCandidateStudyViewPage() {
       .then((d) => setToast(d?.error || 'Notas de historia laboral guardadas'))
       .then(() => loadAll())
       .finally(() => setHlAdminSaving(false));
+  };
+
+  const savePersonalReferenceComment = (referenceIndex: number) => {
+    if (!invitationId) return;
+    const sectionName = getSectionNameByNormalizedName(formData, 'referencias_personales') || 'Referencias Personales';
+    const fieldKey = `${referenceIndex}_ref_admin_comentario`;
+    const fieldValue = personalReferenceComments[referenceIndex] ?? '';
+    setSavingReferenceCommentIndex(referenceIndex);
+    fetch('/api/studies.php?action=save_admin_form_data_batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        study_invitation_id: invitationId,
+        fields: [
+          {
+            section: sectionName,
+            field_key: fieldKey,
+            field_value: fieldValue,
+          },
+        ],
+      }),
+    })
+      .then((r) => r.json().catch(() => ({})))
+      .then((d) => {
+        if (d?.error) {
+          setToast(d.error);
+          return;
+        }
+        setFormData((prev) => ({
+          ...prev,
+          [sectionName]: {
+            ...(prev[sectionName] || {}),
+            [fieldKey]: fieldValue,
+          },
+        }));
+        setToast(`Comentario de la referencia ${referenceIndex + 1} guardado`);
+      })
+      .finally(() => setSavingReferenceCommentIndex(null));
   };
 
   const uploadHistoriaLaboralAttachment = (file: File, key: string) => {
@@ -1390,8 +1578,181 @@ export default function AdminCandidateStudyViewPage() {
       .finally(() => setPageSaving(false));
   };
 
+  const renderSectionSaveActions = () => (
+    sectionDirty ? (
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap', paddingTop: 8, borderTop: '1px solid #e5e7eb' }}>
+        <button
+          type="button"
+          onClick={cancelEditingCurrentTab}
+          disabled={pageSaving}
+          style={{ padding: '10px 14px', background: '#f8fafc', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: 10, cursor: pageSaving ? 'not-allowed' : 'pointer', fontWeight: 800 }}
+        >
+          Cancelar cambios
+        </button>
+        <button
+          type="button"
+          onClick={saveCurrentTabEdits}
+          disabled={pageSaving}
+          style={{ padding: '10px 14px', background: pageSaving ? '#9ca3af' : '#059669', color: '#fff', border: 'none', borderRadius: 10, cursor: pageSaving ? 'not-allowed' : 'pointer', fontWeight: 900 }}
+        >
+          {pageSaving ? 'Guardando…' : 'Guardar cambios de esta pagina'}
+        </button>
+      </div>
+    ) : null
+  );
+
+  const renderEditableFieldBlock = (fieldKey: string, rawValue: string) => {
+    const value = String(rawValue ?? '');
+    const options = getFieldOptions(fieldKey);
+    const fileField = isFileField(fieldKey, value);
+    const checkboxField = isBooleanCheckboxField(fieldKey, value);
+    const yesNoField = !checkboxField && isYesNoField(fieldKey, value);
+    const multilineField = !fileField && !options && isMultilineField(fieldKey, value);
+    const dateField = !fileField && !options && isDateField(fieldKey, value);
+    const downloadUrl = fileField && value ? documentDownloadApiUrl(value) : '';
+    const fileConfig = fileField ? getFileFieldConfig(fieldKey) : null;
+
+    return (
+      <div key={fieldKey} style={{ padding: 14, borderRadius: 12, border: '1px solid #e5e7eb', background: '#fff' }}>
+        <label style={{ display: 'block', marginBottom: 8, fontWeight: 800, color: '#0f172a', fontSize: 14 }}>
+          {formatFieldLabel(fieldKey)}
+        </label>
+
+        {fileField && fileConfig ? (
+          <div style={{ display: 'grid', gap: 10 }}>
+            <div style={{ fontSize: 12, color: '#64748b' }}>{fileConfig.help}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <label style={{ cursor: pageUploadingKey === fieldKey ? 'wait' : 'pointer' }}>
+                <input
+                  type="file"
+                  accept={fileConfig.accept}
+                  style={{ display: 'none' }}
+                  disabled={pageUploadingKey !== null}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    uploadEditableFieldFile(file, fieldKey);
+                    e.target.value = '';
+                  }}
+                />
+                <span style={{ display: 'inline-block', padding: '10px 16px', background: pageUploadingKey === fieldKey ? '#64748b' : '#1e40af', color: '#fff', borderRadius: 10, fontWeight: 800, fontSize: 13 }}>
+                  {pageUploadingKey === fieldKey ? 'Subiendo…' : 'Adjuntar archivo'}
+                </span>
+              </label>
+              {value ? <span style={{ color: '#6b7280', fontSize: 13 }}>{value.replace(/^.*[/\\]/, '')}</span> : <span style={{ color: '#94a3b8', fontSize: 13 }}>Sin archivo</span>}
+              {downloadUrl ? (
+                <a href={downloadUrl} target="_blank" rel="noopener noreferrer" style={{ padding: '8px 12px', background: '#059669', color: '#fff', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 700 }}>
+                  Descargar actual
+                </a>
+              ) : null}
+            </div>
+          </div>
+        ) : options ? (
+          <select
+            value={value}
+            onChange={(e) => updateDraftField(fieldKey, e.target.value)}
+            style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+          >
+            <option value="">Selecciona una opcion</option>
+            {options.map((option) => (
+              <option key={`${fieldKey}-${option.value}`} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        ) : checkboxField ? (
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 14, color: '#0f172a', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={['1', 'si', 'true'].includes(value.trim().toLowerCase())}
+              onChange={(e) => updateDraftField(fieldKey, e.target.checked ? '1' : '0')}
+            />
+            Marcar como Si
+          </label>
+        ) : yesNoField ? (
+          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+            {[
+              { value: 'si', label: 'Si' },
+              { value: 'no', label: 'No' },
+            ].map((option) => (
+              <label key={`${fieldKey}-${option.value}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14 }}>
+                <input
+                  type="radio"
+                  name={fieldKey}
+                  checked={value.trim().toLowerCase() === option.value}
+                  onChange={() => updateDraftField(fieldKey, option.value)}
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+        ) : multilineField ? (
+          <textarea
+            value={value}
+            onChange={(e) => updateDraftField(fieldKey, e.target.value)}
+            rows={4}
+            style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+          />
+        ) : (
+          <input
+            type={dateField ? 'date' : fieldKey.includes('correo') ? 'email' : fieldKey.includes('telefono') ? 'tel' : 'text'}
+            value={value}
+            onChange={(e) => updateDraftField(fieldKey, e.target.value)}
+            style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+          />
+        )}
+      </div>
+    );
+  };
+
+  const renderEditablePersonalReferencesSection = (sectionData: Record<string, string>) => (
+    <div style={{ display: 'grid', gap: 16 }}>
+      <div style={{ padding: 14, borderRadius: 12, background: '#eff6ff', color: '#1e3a5f', border: '1px solid #bfdbfe', fontSize: 13 }}>
+        Modo edicion activo. Los cambios que guardes aqui se reflejaran en el panel de empresa y en el PDF final regenerado del estudio.
+      </div>
+
+      {buildPersonalReferenceBlocks(sectionData).map(({ index, title, entries }) => (
+        <div key={`personal-reference-${index}`} style={{ padding: 14, borderRadius: 12, border: '1px solid #dbeafe', background: '#f8fafc', display: 'grid', gap: 12 }}>
+          <div style={{ fontWeight: 900, fontSize: 15, color: '#0f172a' }}>{title}</div>
+          {entries.length > 0 ? entries.map(([fieldKey, rawValue]) => renderEditableFieldBlock(fieldKey, String(rawValue ?? ''))) : (
+            <div style={{ padding: 14, borderRadius: 12, border: '1px dashed #cbd5e1', color: '#64748b', background: '#fff' }}>
+              No hay datos registrados para esta referencia.
+            </div>
+          )}
+          <div style={{ padding: 14, borderRadius: 12, border: '1px solid #bfdbfe', background: '#eff6ff' }}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 800, color: '#1e3a5f', fontSize: 14 }}>
+              {`Comentario del analista para la referencia ${index + 1}`}
+            </label>
+            <textarea
+              value={personalReferenceComments[index] ?? ''}
+              onChange={(e) => setPersonalReferenceComments((prev) => ({ ...prev, [index]: e.target.value }))}
+              rows={3}
+              placeholder={`Escribe el comentario del analista para la referencia ${index + 1}`}
+              style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #93c5fd', boxSizing: 'border-box', marginBottom: 10 }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => savePersonalReferenceComment(index)}
+                disabled={savingReferenceCommentIndex === index}
+                style={{ padding: '9px 12px', background: savingReferenceCommentIndex === index ? '#94a3b8' : '#0f766e', color: '#fff', border: 'none', borderRadius: 9, cursor: savingReferenceCommentIndex === index ? 'not-allowed' : 'pointer', fontWeight: 800, fontSize: 13 }}
+              >
+                {savingReferenceCommentIndex === index ? 'Guardando…' : 'Guardar comentario'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {renderSectionSaveActions()}
+    </div>
+  );
+
   const renderEditableSection = (sectionName: string, sectionData: Record<string, string>) => {
     const entries = getCandidateSectionEntries(sectionName, sectionData);
+    if (normalizeLooseKey(sectionName) === 'referencias_personales') {
+      return renderEditablePersonalReferencesSection(sectionData);
+    }
     if (entries.length === 0) {
       return <p style={{ color: '#9ca3af' }}>No hay campos editables en esta página.</p>;
     }
@@ -1783,7 +2144,7 @@ export default function AdminCandidateStudyViewPage() {
                   textOverflow: 'ellipsis',
                 }}
               >
-                {t}
+                {displaySectionTitle(t)}
                 {pageDrafts[t] && !sectionsEqual(Object.fromEntries(getCandidateSectionEntries(t, formData[t] || {})), pageDrafts[t]) ? ' *' : ''}
               </button>
             ))}
@@ -1816,7 +2177,7 @@ export default function AdminCandidateStudyViewPage() {
                   <label style={{ display: 'block', marginBottom: 6, fontWeight: 700 }}>Conclusiones del analista</label>
                   <textarea value={concNotes} onChange={(e) => setConcNotes(e.target.value)} rows={4} style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
                 </div>
-                <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 13 }}>Resultado de la actualización</p>
+                <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 13 }}>Resultado del estudio</p>
                 {[
                   { value: 'sin_observaciones', label: 'Información actualizada sin observaciones' },
                   { value: 'con_observaciones', label: 'Información actualizada con observaciones' },
@@ -1908,6 +2269,46 @@ export default function AdminCandidateStudyViewPage() {
                 </div>
 
                 <hr style={{ border: 'none', borderTop: '1px solid #cbd5e1', margin: '16px 0' }} />
+
+                <h4 style={{ margin: '0 0 10px', fontSize: 14 }}>DOCUMENTOS ADICIONALES</h4>
+                <div style={{ marginBottom: 12, padding: 14, background: '#fff', borderRadius: 10, border: '1px solid #cbd5e1' }}>
+                  <input
+                    ref={additionalDocumentInputRef}
+                    type="file"
+                    accept=".pdf,application/pdf,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                    onChange={handleAdditionalDocumentUpload}
+                    disabled={uploadingAdditionalDocument}
+                    style={{ display: 'none' }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: additionalDocuments.length > 0 ? 12 : 0 }}>
+                    <div style={{ fontSize: 13, color: '#475569' }}>Puede adjuntar PDF o imágenes de respaldo. Máximo 5 MB por archivo.</div>
+                    <button
+                      type="button"
+                      onClick={() => additionalDocumentInputRef.current?.click()}
+                      disabled={uploadingAdditionalDocument}
+                      style={{ padding: '8px 14px', background: uploadingAdditionalDocument ? '#94a3b8' : '#0f766e', color: '#fff', border: 'none', borderRadius: 8, cursor: uploadingAdditionalDocument ? 'not-allowed' : 'pointer', fontWeight: 800 }}
+                    >
+                      {uploadingAdditionalDocument ? 'Cargando…' : 'Agregar documento'}
+                    </button>
+                  </div>
+                  {additionalDocuments.length > 0 ? (
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      {additionalDocuments.map((doc, idx) => (
+                        <div key={`${doc.file_path}-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: 12, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                          <div style={{ flex: 1, minWidth: 220 }}>
+                            <div style={{ fontWeight: 700, color: '#0f172a' }}>{doc.label}</div>
+                            <div style={{ fontSize: 13, color: '#64748b' }}>{doc.name}</div>
+                          </div>
+                          <a href={documentDownloadApiUrl(doc.file_path)} target="_blank" rel="noopener noreferrer" style={{ padding: '8px 12px', background: '#059669', color: '#fff', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 700 }}>
+                            Descargar / Ver
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>Aún no hay documentos adicionales cargados.</p>
+                  )}
+                </div>
 
                 <p style={{ margin: '0 0 10px', fontWeight: 700, fontSize: 13 }}>
                   Semáforo (opcional – visibilidad empresa según configuración)

@@ -1278,7 +1278,7 @@ export default function AdminStudyDetailPage() {
                         <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Conclusiones del analista</label>
                         <textarea value={concNotes} onChange={(e) => setConcNotes(e.target.value)} rows={4} placeholder="Conclusiones…" style={{ width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #cbd5e1' }} />
                       </div>
-                      <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 13 }}>Resultado de la actualización</p>
+                      <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 13 }}>Resultado del estudio</p>
                       {[
                         { value: 'sin_observaciones', label: 'Información actualizada sin observaciones' },
                         { value: 'con_observaciones', label: 'Información actualizada con observaciones' },
