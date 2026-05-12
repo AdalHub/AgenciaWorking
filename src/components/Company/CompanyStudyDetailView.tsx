@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 
 const API = '/api';
 const FETCH_OPTIONS = { credentials: 'include' as RequestCredentials };
-const CLIENT_PROGRESS_TEXT = 'Proceso de verificación en curso';
+const CLIENT_PROGRESS_TEXT = 'Proceso de verificacion en curso';
 const CLIENT_INFO_TEXT =
-  'Detalle del estudio: El candidato ha completado la información requerida. Actualmente, el estudio se encuentra en proceso de revisión y validación por parte de nuestro equipo.';
+  'Detalle del estudio: El candidato ha completado la informacion requerida. Actualmente, el estudio se encuentra en proceso de revision y validacion por parte de nuestro equipo.';
+const CLIENT_FINAL_INFO_TEXT =
+  'Detalle del estudio: Este estudio ya cuenta con informes finales disponibles para consulta y descarga en el portal. Puede revisar el detalle de cada candidato y descargar su informe correspondiente.';
 
 type Study = {
   id: number;
@@ -48,7 +50,7 @@ type Props = {
 };
 
 function formatDate(value: string | null | undefined): string {
-  if (!value) return '—';
+  if (!value) return '-';
   try {
     return new Date(value).toLocaleDateString('es-MX', {
       day: '2-digit',
@@ -88,16 +90,16 @@ function getProgressSteps(studyStatus: string, invitationStatus?: string): Progr
       subtitle: current > 0 ? 'Completado' : current === 0 ? 'Etapa actual' : 'Pendiente',
     },
     {
-      title: 'Revisión de información',
+      title: 'Revision de informacion',
       subtitle: current > 1 ? 'Completado' : current === 1 ? 'En curso' : 'Etapa siguiente',
     },
     {
-      title: 'Validación interna',
+      title: 'Validacion interna',
       subtitle: current > 2 ? 'Completado' : current === 2 ? 'En curso' : 'Etapa siguiente',
     },
     {
       title: 'Informe disponible',
-      subtitle: current === 3 ? 'Disponible' : 'Se mostrará al concluir',
+      subtitle: current === 3 ? 'Disponible' : 'Se mostrara al concluir',
     },
   ];
 
@@ -232,9 +234,12 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
 
   const completedCount = invitations.filter((inv) => inv.status === 'completed').length;
   const totalCount = invitations.length;
+  const inProcessCount = Math.max(totalCount - completedCount, 0);
+  const reportAvailableCount = study?.status === 'concluido' ? completedCount : 0;
   const generalStatus = study ? getGeneralClientStatus(study, invitations) : { label: 'Registro del candidato', bg: '#e5e7eb', text: '#475569' };
   const selectedProgressSteps = selectedInv ? getProgressSteps(study?.status ?? '', selectedInv.status) : [];
   const selectedCandidatePills = selectedInv ? getCandidateStatusPills(study?.status ?? '', selectedInv) : [];
+  const topInfoText = study?.status === 'concluido' && reportAvailableCount > 0 ? CLIENT_FINAL_INFO_TEXT : CLIENT_INFO_TEXT;
 
   const documentDownloadApiUrl = (filePath: string) =>
     `${API}/studies.php?action=download_document&file_path=${encodeURIComponent(filePath)}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
@@ -297,7 +302,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
 
         <div style={{ marginBottom: 18, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
           <h2 style={{ margin: '0 0 4px', color: '#0f172a', fontSize: 32, fontWeight: 800 }}>
-            {study.company_name} · Estudio Socioeconómico
+            {study.company_name} - Estudio Socioeconomico
           </h2>
           <span style={{ padding: '6px 12px', borderRadius: 999, background: generalStatus.bg, color: generalStatus.text, fontSize: 13, fontWeight: 700 }}>
             {generalStatus.label}
@@ -322,7 +327,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
               </button>
             ) : (
               <span style={{ padding: '8px 12px', background: '#fef3c7', color: '#92400e', borderRadius: 8, fontSize: 13 }}>
-                El informe final estará disponible al concluir el estudio
+                El informe final estara disponible al concluir el estudio.
               </span>
             )
           ) : null}
@@ -339,7 +344,22 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
             lineHeight: 1.6,
           }}
         >
-          <strong>Detalle del estudio:</strong> {CLIENT_INFO_TEXT.replace('Detalle del estudio: ', '')}
+          <strong>Detalle del estudio:</strong> {topInfoText.replace('Detalle del estudio: ', '')}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 18 }}>
+          <div style={{ padding: 14, borderRadius: 12, background: '#f8fafc', border: '1px solid #e5e7eb' }}>
+            <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>Candidatos en proceso</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>{inProcessCount}</div>
+          </div>
+          <div style={{ padding: 14, borderRadius: 12, background: '#f8fafc', border: '1px solid #e5e7eb' }}>
+            <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>Capturas completadas</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>{completedCount}</div>
+          </div>
+          <div style={{ padding: 14, borderRadius: 12, background: '#f8fafc', border: '1px solid #e5e7eb' }}>
+            <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>Informes disponibles</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: reportAvailableCount > 0 ? '#166534' : '#0f172a' }}>{reportAvailableCount}</div>
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -365,7 +385,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
                     }}
                   >
                     <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>
-                      {inv.candidate_name?.trim() || inv.candidate_email || 'Anónimo'}
+                      {inv.candidate_name?.trim() || inv.candidate_email || 'Sin nombre'}
                     </div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: inv.completed_at ? 8 : 0 }}>
                       {pills.map((pill) => (
@@ -374,7 +394,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
                         </span>
                       ))}
                     </div>
-                    {inv.completed_at ? <div style={{ fontSize: 12, color: '#64748b' }}>Fecha de conclusión: {formatDate(inv.completed_at)}</div> : null}
+                    {inv.completed_at ? <div style={{ fontSize: 12, color: '#64748b' }}>Fecha de conclusion: {formatDate(inv.completed_at)}</div> : null}
                   </button>
                 );
               })}
@@ -388,7 +408,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
               <>
                 <section style={{ marginBottom: 22, border: '1px solid #e5e7eb', borderRadius: 14, padding: 18, background: '#ffffff' }}>
                   <div style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', marginBottom: 10 }}>
-                    {selectedInv.candidate_name?.trim() || selectedInv.candidate_email || 'Anónimo'}
+                    {selectedInv.candidate_name?.trim() || selectedInv.candidate_email || 'Sin nombre'}
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: selectedInv.completed_at ? 12 : 0 }}>
                     {selectedCandidatePills.map((pill) => (
@@ -399,7 +419,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
                   </div>
                   {selectedInv.completed_at ? (
                     <div style={{ paddingTop: 12, marginTop: 12, borderTop: '1px solid #e5e7eb', fontSize: 14, color: '#334155' }}>
-                      <strong>Fecha de conclusión:</strong> {formatDate(selectedInv.completed_at)}
+                      <strong>Fecha de conclusion:</strong> {formatDate(selectedInv.completed_at)}
                     </div>
                   ) : null}
                 </section>
@@ -437,13 +457,13 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
                       >
                         Descargar informe final del candidato
                       </button>
-                      <span style={{ fontSize: 13, color: '#64748b' }}>El informe final ya se encuentra disponible.</span>
+                      <span style={{ fontSize: 13, color: '#64748b' }}>El informe final de este candidato ya se encuentra disponible para consulta y descarga.</span>
                     </div>
 
                     <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 16 }}>
                       <h4 style={{ margin: '0 0 10px', fontSize: 16, color: '#0f172a' }}>Documentos adjuntos disponibles</h4>
                       <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>
-                        Aquí puede descargar los archivos adjuntos del candidato y del analista que se conservan fuera del PDF final.
+                        Aqui puede descargar los archivos adjuntos del candidato y del analista que se conservan fuera del PDF final.
                       </p>
                       {documentsLoading ? (
                         <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>Cargando documentos...</p>
@@ -494,7 +514,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
                   </section>
                 ) : (
                   <div style={{ paddingTop: 16, borderTop: '1px solid #e5e7eb', fontSize: 13, color: '#64748b' }}>
-                    El informe final se habilitará una vez concluida la validación interna.
+                    El informe final se habilitara una vez concluida la validacion interna.
                   </div>
                 )}
               </>

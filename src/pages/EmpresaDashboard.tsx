@@ -14,9 +14,9 @@ type Study = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  pendiente_captura: 'Pendiente captura',
+  pendiente_captura: 'Pendiente de captura',
   en_proceso: 'En proceso',
-  en_validacion: 'En validación',
+  en_validacion: 'En validacion',
   concluido: 'Concluido',
   cancelado: 'Cancelado',
 };
@@ -30,7 +30,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 };
 
 function formatDate(d?: string | null): string {
-  if (!d) return '—';
+  if (!d) return '-';
   try {
     return new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
   } catch {
@@ -65,7 +65,7 @@ export default function EmpresaDashboard() {
         const studiesRes = await fetch('/api/studies.php?action=list_studies', { credentials: 'include' });
         const studiesData = await studiesRes.json();
         setStudies(Array.isArray(studiesData.studies) ? studiesData.studies : []);
-      } catch (err) {
+      } catch {
         setError('No fue posible cargar tus estudios.');
         navigate('/');
       } finally {
@@ -78,6 +78,7 @@ export default function EmpresaDashboard() {
   const ongoingStudies = useMemo(() => studies.filter((s) => s.status !== 'concluido'), [studies]);
   const previousStudies = useMemo(() => studies.filter((s) => s.status === 'concluido'), [studies]);
   const visibleStudies = tab === 'ongoing' ? ongoingStudies : previousStudies;
+  const profileStatusLabel = user?.is_profile_complete ? 'Completo' : 'Incompleto';
 
   const handleDownloadFinalPdf = async (studyId: number) => {
     setDownloadLoadingId(studyId);
@@ -86,7 +87,7 @@ export default function EmpresaDashboard() {
       const statusRes = await fetch(`/api/studies.php?action=pdf_status_study&study_id=${studyId}`, { credentials: 'include' });
       const statusData = await statusRes.json().catch(() => ({}));
       if (!statusData?.available) {
-        setToast('El PDF final aún no está disponible para este estudio.');
+        setToast('El informe final aun no esta disponible para este estudio.');
         return;
       }
 
@@ -113,7 +114,7 @@ export default function EmpresaDashboard() {
         }, index * 250);
       });
     } catch {
-      setToast('Error de red al descargar el PDF.');
+      setToast('Error de red al descargar el informe.');
     } finally {
       setDownloadLoadingId(null);
     }
@@ -123,7 +124,7 @@ export default function EmpresaDashboard() {
     return (
       <>
         <Header />
-        <main style={{ minHeight: '65vh', paddingTop: 80, textAlign: 'center' }}><p>Cargando…</p></main>
+        <main style={{ minHeight: '65vh', paddingTop: 80, textAlign: 'center' }}><p>Cargando...</p></main>
         <Footer />
       </>
     );
@@ -151,17 +152,28 @@ export default function EmpresaDashboard() {
                 gap: 8,
               }}
             >
-              <span>Completa el perfil de tu empresa para acceder a todas las funciones.</span>
+              <span>Completa el perfil de tu empresa para habilitar todas las funciones del portal.</span>
               <Link
                 to="/empresa/onboarding"
-                style={{ color: '#1d4ed8', fontWeight: 600, textDecoration: 'underline' }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '10px 14px',
+                  background: '#f59e0b',
+                  color: '#111827',
+                  fontWeight: 800,
+                  textDecoration: 'none',
+                  borderRadius: 10,
+                  border: '1px solid #d97706',
+                }}
               >
-                Completar ahora
+                Completar perfil
               </Link>
             </div>
           )}
 
-          <h1 style={{ marginBottom: 20, fontSize: '1.75rem' }}>Company Dashboard</h1>
+          <h1 style={{ marginBottom: 20, fontSize: '1.75rem' }}>Panel de empresa</h1>
           <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
             <aside style={{ width: 260, flexShrink: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 12 }}>
               <button
@@ -179,7 +191,7 @@ export default function EmpresaDashboard() {
                   marginBottom: 6,
                 }}
               >
-                View ongoing studies
+                Estudios en proceso
               </button>
               <button
                 type="button"
@@ -195,28 +207,44 @@ export default function EmpresaDashboard() {
                   color: tab === 'previous' ? '#fff' : '#111827',
                 }}
               >
-                View previous studies
+                Estudios concluidos
               </button>
             </aside>
 
             <section style={{ flex: 1, minWidth: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
               <h2 style={{ margin: '0 0 12px', fontSize: 18 }}>
-                {tab === 'ongoing' ? 'Ongoing studies' : 'Previous studies'}
+                {tab === 'ongoing' ? 'Estudios en proceso' : 'Estudios concluidos'}
               </h2>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 18 }}>
+                <div style={{ padding: 14, borderRadius: 12, background: '#f8fafc', border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>Estudios en proceso</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>{ongoingStudies.length}</div>
+                </div>
+                <div style={{ padding: 14, borderRadius: 12, background: '#f8fafc', border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>Estudios concluidos</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>{previousStudies.length}</div>
+                </div>
+                <div style={{ padding: 14, borderRadius: 12, background: '#f8fafc', border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>Perfil de empresa</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: user.is_profile_complete ? '#166534' : '#b45309' }}>{profileStatusLabel}</div>
+                </div>
+              </div>
+
               {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
               {visibleStudies.length === 0 ? (
                 <p style={{ color: '#6b7280', margin: 0 }}>
-                  {tab === 'ongoing' ? 'No tienes estudios en curso.' : 'No tienes estudios concluidos.'}
+                  {tab === 'ongoing' ? 'No tienes estudios en proceso.' : 'No tienes estudios concluidos.'}
                 </p>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                        <th style={{ textAlign: 'left', padding: 10, fontSize: 13, color: '#4b5563' }}>Estudio</th>
+                        <th style={{ textAlign: 'left', padding: 10, fontSize: 13, color: '#4b5563' }}>Folio</th>
                         <th style={{ textAlign: 'left', padding: 10, fontSize: 13, color: '#4b5563' }}>Progreso</th>
-                        <th style={{ textAlign: 'left', padding: 10, fontSize: 13, color: '#4b5563' }}>Estado</th>
-                        <th style={{ textAlign: 'left', padding: 10, fontSize: 13, color: '#4b5563' }}>Concluido</th>
+                        <th style={{ textAlign: 'left', padding: 10, fontSize: 13, color: '#4b5563' }}>Estatus</th>
+                        <th style={{ textAlign: 'left', padding: 10, fontSize: 13, color: '#4b5563' }}>Fecha de conclusion</th>
                         <th style={{ textAlign: 'left', padding: 10, fontSize: 13, color: '#4b5563' }}>Acciones</th>
                       </tr>
                     </thead>
@@ -228,8 +256,8 @@ export default function EmpresaDashboard() {
                         return (
                           <tr key={study.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                             <td style={{ padding: 10 }}>
-                              <div style={{ fontWeight: 600 }}>{study.company_name || `Estudio #${study.id}`}</div>
-                              <div style={{ fontSize: 12, color: '#6b7280' }}>ID: {study.id}</div>
+                              <div style={{ fontWeight: 600 }}>{study.company_name || `Folio #${study.id}`}</div>
+                              <div style={{ fontSize: 12, color: '#6b7280' }}>ID interno: {study.id}</div>
                             </td>
                             <td style={{ padding: 10 }}>{completed} / {total}</td>
                             <td style={{ padding: 10 }}>
@@ -252,7 +280,7 @@ export default function EmpresaDashboard() {
                                     cursor: 'pointer',
                                   }}
                                 >
-                                  Ver candidatos
+                                  Ver detalle
                                 </button>
                                 {study.status === 'concluido' ? (
                                   <button
@@ -268,7 +296,7 @@ export default function EmpresaDashboard() {
                                       cursor: downloadLoadingId === study.id ? 'not-allowed' : 'pointer',
                                     }}
                                   >
-                                    {downloadLoadingId === study.id ? 'Descargando...' : 'Descargar PDF'}
+                                    {downloadLoadingId === study.id ? 'Descargando...' : 'Descargar informes'}
                                   </button>
                                 ) : null}
                               </div>
