@@ -77,7 +77,7 @@ export default function Footer() {
         <ContactInfo>
           <ContactRow>
             <span>Contact us: </span>
-            <a href="tel:+528342574327">834-257-4327</a>
+            <a href="tel:+528341472218">834-147-2218</a>
             <br />
             <a href="tel:+528994612756">899-461-2756</a>
             <br />

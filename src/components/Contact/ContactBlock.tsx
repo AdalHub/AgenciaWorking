@@ -76,7 +76,7 @@ export default function ContactBlock() {
             <Title>Contact Us</Title>
             <Details>
               <p>C. Zacatecas #806 , Fracc Valle de Aguayo , Cd. Victoria, Tamaulipas MX 87020</p>
-              <p>Phone: <a href="tel:+528342574327">834-257-4327</a></p>
+              <p>Phone: <a href="tel:+528341472218">834-147-2218</a></p>
               <p>Phone: <a href="tel:+528994612756">899-461-2756</a></p>
               <p>Email: Info@agenciaworking.com</p>
             </Details>
