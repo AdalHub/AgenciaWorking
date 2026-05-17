@@ -48,7 +48,14 @@ type Invitation = {
   unique_code: string;
   code_expires_at?: string;
   status: string;
-  study?: { id: number; company_name?: string; study_type?: string; status: string };
+  study?: {
+    id: number;
+    company_name?: string;
+    study_type?: string;
+    status: string;
+    require_address_verification?: number | boolean;
+    require_criminal_record_letter?: number | boolean;
+  };
 };
 
 type FormDataBySection = Record<string, Record<string, string>>;
@@ -90,6 +97,8 @@ export default function EstudioPage() {
   const [fotoParticipanteUploading, setFotoParticipanteUploading] = useState(false);
 
   const isInvitationCompleted = invitation?.status === 'completed';
+  const requiresAddressVerification = invitation?.study?.require_address_verification !== 0 && invitation?.study?.require_address_verification !== false;
+  const requiresCriminalRecordLetter = invitation?.study?.require_criminal_record_letter !== 0 && invitation?.study?.require_criminal_record_letter !== false;
 
   // When moving between pages, always start at top
   useEffect(() => {
@@ -293,13 +302,15 @@ export default function EstudioPage() {
         if (motivoOk) filled++;
         if (getField(sec, 'dom_anterior_motivo') === 'otro') req('dom_anterior_motivo_otro');
       }
-      total++;
-      if (getField(sec, 'dom_visita') === 'autorizo' || getField(sec, 'dom_visita') === 'no_autorizo') filled++;
-      if (getField(sec, 'dom_visita') === 'autorizo') {
-        req('dom_visita_op1_fecha');
-        req('dom_visita_op1_hora');
-        req('dom_visita_op2_fecha');
-        req('dom_visita_op2_hora');
+      if (requiresAddressVerification) {
+        total++;
+        if (getField(sec, 'dom_visita') === 'autorizo' || getField(sec, 'dom_visita') === 'no_autorizo') filled++;
+        if (getField(sec, 'dom_visita') === 'autorizo') {
+          req('dom_visita_op1_fecha');
+          req('dom_visita_op1_hora');
+          req('dom_visita_op2_fecha');
+          req('dom_visita_op2_hora');
+        }
       }
     } else if (sec === 'Información del Cónyuge, Familiares y Contacto') {
       req('contacto_telefono_celular');
@@ -367,12 +378,14 @@ export default function EstudioPage() {
     } else if (sec === 'Información Legal y Trámite de Carta de No Antecedentes Penales') {
       reqYn('al_legal');
       // al_legal_texto is optional when "si"
-      total++;
-      if (getField(sec, 'cap_tramite') === 'autorizo' || getField(sec, 'cap_tramite') === 'no_autorizo') filled++;
-      if (getField(sec, 'cap_tramite') === 'autorizo') {
-        req('cap_doc_acta');
-        req('cap_doc_ine');
-        req('cap_doc_foto');
+      if (requiresCriminalRecordLetter) {
+        total++;
+        if (getField(sec, 'cap_tramite') === 'autorizo' || getField(sec, 'cap_tramite') === 'no_autorizo') filled++;
+        if (getField(sec, 'cap_tramite') === 'autorizo') {
+          req('cap_doc_acta');
+          req('cap_doc_ine');
+          req('cap_doc_foto');
+        }
       }
     } else if (sec === 'Entorno Social y Condiciones de Vivienda') {
       total++;
@@ -788,6 +801,7 @@ export default function EstudioPage() {
               getField={getField}
               updateField={updateField}
               uploadDomicilioComprobante={uploadDomicilioComprobante}
+              requireAddressVerification={requiresAddressVerification}
             />
           )}
 
@@ -827,6 +841,7 @@ export default function EstudioPage() {
               getField={getField}
               updateField={updateField}
               uploadCapFile={uploadCapFile}
+              requireCriminalRecordLetter={requiresCriminalRecordLetter}
             />
           )}
 
@@ -920,11 +935,13 @@ function SectionDomicilio({
   getField,
   updateField,
   uploadDomicilioComprobante,
+  requireAddressVerification,
 }: {
   sec: string;
   getField: (s: string, k: string) => string;
   updateField: (s: string, k: string, v: string) => void;
   uploadDomicilioComprobante: (f: File) => Promise<string>;
+  requireAddressVerification: boolean;
 }) {
   const [domComprobanteUploading, setDomComprobanteUploading] = useState(false);
   const inputStyle: React.CSSProperties = { width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' };
@@ -1036,7 +1053,7 @@ function SectionDomicilio({
         </div>
       )}
 
-      <div style={{ padding: 20, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+      {requireAddressVerification ? <div style={{ padding: 20, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
         <h3 style={{ margin: '0 0 12px', fontSize: 16, color: '#334155' }}>1.4.2. AUTORIZACIÓN PARA VERIFICACIÓN DOMICILIARIA</h3>
         <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: '#334155' }}>
           Autorizo a HR Capital Working, S.A. de C.V. a realizar una visita domiciliaria con fines de verificación socioeconómica, la cual consistirá únicamente en la toma de fotografía del exterior del domicilio señalado por mí, así como la validación del entorno habitacional inmediato.
@@ -1065,7 +1082,7 @@ function SectionDomicilio({
           <button type="button" onClick={() => updateField(sec, 'dom_visita', 'autorizo')} style={{ padding: '10px 18px', borderRadius: 8, border: getField(sec, 'dom_visita') === 'autorizo' ? '2px solid #14532d' : '2px solid #64748b', background: getField(sec, 'dom_visita') === 'autorizo' ? '#15803d' : '#f1f5f9', color: getField(sec, 'dom_visita') === 'autorizo' ? '#ffffff' : '#0f172a', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Autorizo la visita domiciliaria</button>
           <button type="button" onClick={() => updateField(sec, 'dom_visita', 'no_autorizo')} style={{ padding: '10px 18px', borderRadius: 8, border: getField(sec, 'dom_visita') === 'no_autorizo' ? '2px solid #7f1d1d' : '2px solid #64748b', background: getField(sec, 'dom_visita') === 'no_autorizo' ? '#b91c1c' : '#f1f5f9', color: getField(sec, 'dom_visita') === 'no_autorizo' ? '#ffffff' : '#0f172a', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>No autorizo la visita domiciliaria</button>
         </div>
-      </div>
+      </div> : null}
     </div>
   );
 }
@@ -2452,11 +2469,13 @@ function SectionInformacionLegalCarta({
   getField,
   updateField,
   uploadCapFile,
+  requireCriminalRecordLetter,
 }: {
   sec: string;
   getField: (s: string, k: string) => string;
   updateField: (s: string, k: string, v: string) => void;
   uploadCapFile: (f: File, k: 'acta' | 'ine' | 'foto' | 'domicilio') => Promise<string>;
+  requireCriminalRecordLetter: boolean;
 }) {
   const autoriza = getField(sec, 'cap_tramite') === 'autorizo';
   const inputStyle: React.CSSProperties = { width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' };
@@ -2517,7 +2536,7 @@ function SectionInformacionLegalCarta({
         </p>
       </div>
 
-      <div style={{ padding: 20, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+      {requireCriminalRecordLetter ? <div style={{ padding: 20, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
         <h3 style={{ margin: '0 0 10px', fontSize: 16, color: '#334155' }}>5.2 TRÁMITE DE CARTA DE NO ANTECEDENTES PENALES</h3>
         <p style={{ margin: '0 0 10px', fontSize: 13, color: '#64748b' }}>
           <strong>Objetivo:</strong> Gestionar, en caso de ser requerido por la empresa solicitante, la obtención de la Carta de No Antecedentes Penales emitida por la autoridad competente. El resultado del trámite será integrado al expediente del estudio.
@@ -2557,7 +2576,7 @@ function SectionInformacionLegalCarta({
         <p style={{ margin: '12px 0 0', fontSize: 12, color: '#64748b' }}>
           El trámite se realiza conforme a los lineamientos de la autoridad competente y a la documentación proporcionada por el evaluado.
         </p>
-      </div>
+      </div> : null}
     </div>
   );
 }

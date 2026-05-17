@@ -58,6 +58,8 @@ export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
   const [studyType, setStudyType] = useState<'private' | 'public'>('private');
   const [companyName, setCompanyName] = useState('');
   const [formatVersion, setFormatVersion] = useState(formatOptions[0]);
+  const [requireAddressVerification, setRequireAddressVerification] = useState(true);
+  const [requireCriminalRecordLetter, setRequireCriminalRecordLetter] = useState(true);
   const [inviteSectionOpen, setInviteSectionOpen] = useState(false);
   const [invitedCompanyEmail, setInvitedCompanyEmail] = useState('');
   const [showVerdictToCompany, setShowVerdictToCompany] = useState(false);
@@ -112,6 +114,8 @@ export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
           company_name: companyName,
           study_type: 'private',
           format_version: formatVersion,
+          require_address_verification: requireAddressVerification,
+          require_criminal_record_letter: requireCriminalRecordLetter,
           invited_company_email: invitedCompanyEmail.trim() || null,
           show_verdict_to_company: showVerdictToCompany,
         }),
@@ -177,6 +181,8 @@ export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
           company_name: companyName,
           study_type: 'public',
           format_version: formatVersion,
+          require_address_verification: requireAddressVerification,
+          require_criminal_record_letter: requireCriminalRecordLetter,
           invited_company_email: invitedCompanyEmail.trim() || null,
           show_verdict_to_company: showVerdictToCompany,
         }),
@@ -311,6 +317,25 @@ export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
+            </div>
+
+            <div style={{ marginBottom: 16, padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f8fafc', display: 'grid', gap: 10 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 600 }}>
+                <input
+                  type="checkbox"
+                  checked={requireAddressVerification}
+                  onChange={(e) => setRequireAddressVerification(e.target.checked)}
+                />
+                Requerir verificación domiciliaria
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 600 }}>
+                <input
+                  type="checkbox"
+                  checked={requireCriminalRecordLetter}
+                  onChange={(e) => setRequireCriminalRecordLetter(e.target.checked)}
+                />
+                Requerir trámite de carta de no antecedentes penales
+              </label>
             </div>
 
             {!inviteSectionOpen ? (
