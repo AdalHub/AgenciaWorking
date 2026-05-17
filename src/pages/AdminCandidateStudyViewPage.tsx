@@ -285,6 +285,8 @@ function formatFieldLabel(key: string): string {
   const explicitLabels: Record<string, string> = {
     dp_id_cedula_profesional: 'Identificacion oficial - Cedula Profesional',
     dom_comprobante_domicilio_pdf: 'Comprobante de domicilio (no mayor a 3 meses)',
+    dom_comprobante_domicilio_fecha: 'Fecha del comprobante de domicilio',
+    auth_firma_imagen: 'Firma',
     hl_constancia_imss_pdf: 'Constancia de semanas cotizadas (IMSS)',
     hl_documentacion_adicional_pdf: 'Documentacion adicional',
     al_legal: 'Antecedente legal declarado',
@@ -463,14 +465,14 @@ function isYesNoField(key: string, value: string): boolean {
 }
 
 function isFileField(key: string, value: string): boolean {
-  if (key === 'foto_participante') return true;
+  if (key === 'foto_participante' || key === 'auth_firma_imagen') return true;
   if (/_pdf$/i.test(key) || /^cap_doc_/i.test(key)) return true;
   if (value.trim() && /^uploads\//i.test(value.trim())) return true;
   return false;
 }
 
 function getFileFieldConfig(key: string): { accept: string; help: string } {
-  if (key === 'foto_participante') {
+  if (key === 'foto_participante' || key === 'auth_firma_imagen') {
     return { accept: '.png,.jpg,.jpeg,image/png,image/jpeg', help: 'Imagen JPG o PNG. Máximo 5 MB.' };
   }
   if (key === 'dom_comprobante_domicilio_pdf' || key === 'cap_doc_foto') {
@@ -512,6 +514,7 @@ function renderConyugeFamiliaContactoTable(sectionData: Record<string, string>) 
   const familyColumns: Array<{ key: string; label: string }> = [
     { key: 'nombre_completo', label: 'Nombre completo' },
     { key: 'parentesco', label: 'Parentesco' },
+    { key: 'fallecido', label: 'Fallecido' },
     { key: 'edad', label: 'Edad' },
     { key: 'estado_civil', label: 'Estado civil' },
     { key: 'ocupacion', label: 'Ocupación / profesión' },
@@ -520,13 +523,24 @@ function renderConyugeFamiliaContactoTable(sectionData: Record<string, string>) 
     { key: 'observaciones', label: 'Observaciones' },
   ];
 
-  const familyRows = Array.from({ length: 6 }, (_, idx) => {
+  const familyCountRaw = parseInt(normalizeText(sectionData.fam_count), 10);
+  const detectedFamilyIndexes = Object.keys(sectionData)
+    .map((key) => {
+      const match = key.match(/^(\d+)_fam_/);
+      return match ? parseInt(match[1], 10) : -1;
+    })
+    .filter((idx) => idx >= 0);
+  const familyCount = Math.max(1, Math.min(30, familyCountRaw || 0, 30), detectedFamilyIndexes.length ? Math.max(...detectedFamilyIndexes) + 1 : 1);
+
+  const familyRows = Array.from({ length: familyCount }, (_, idx) => {
     const row: Record<string, string> = {};
     familyColumns.forEach((c) => {
       const primary = normalizeText(sectionData[`${idx}_fam_${c.key}`]);
       const legacyOcup =
         c.key === 'ocupacion' ? normalizeText(sectionData[`${idx}_fam_ocupacion_profesion`]) : '';
-      row[c.key] = primary || legacyOcup;
+      row[c.key] = c.key === 'fallecido'
+        ? (['1', 'si', 'true'].includes(primary.toLowerCase()) ? 'Si' : '')
+        : (primary || legacyOcup);
     });
     const hasData = familyColumns.some((c) => row[c.key] !== '');
     return { idx, row, hasData };
@@ -542,9 +556,10 @@ function renderConyugeFamiliaContactoTable(sectionData: Record<string, string>) 
   ];
 
   const renderedKeys = new Set<string>();
+  renderedKeys.add('fam_count');
   spouseRows.forEach((r) => renderedKeys.add(r.key));
   contactRows.forEach((r) => renderedKeys.add(r.key));
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 30; i++) {
     familyColumns.forEach((c) => renderedKeys.add(`${i}_fam_${c.key}`));
   }
   const extraEntries = Object.entries(sectionData).filter(([k, v]) => !renderedKeys.has(k) && normalizeText(v) !== '');
@@ -1511,7 +1526,7 @@ export default function AdminCandidateStudyViewPage() {
     const lower = file.name.toLowerCase();
     const isPdf = file.type === 'application/pdf' || lower.endsWith('.pdf');
     const isImage = /^image\/(jpeg|jpg|png|webp)$/i.test(file.type) || /\.(jpe?g|png|webp)$/i.test(lower);
-    if (fieldKey === 'foto_participante' && !isImage) {
+    if ((fieldKey === 'foto_participante' || fieldKey === 'auth_firma_imagen') && !isImage) {
       setToast('Solo se permiten imágenes JPG o PNG para la fotografía');
       return;
     }
@@ -1990,13 +2005,21 @@ export default function AdminCandidateStudyViewPage() {
             valueStr &&
             (k.endsWith('_pdf') || k === 'identificacion_oficial_pdf' || /^cap_doc_/.test(k)) &&
             !/^https?:\/\//i.test(valueStr);
-          const isStoredImage = valueStr && k === 'foto_participante' && !/^https?:\/\//i.test(valueStr);
+          const isStoredImage = valueStr && (k === 'foto_participante' || k === 'auth_firma_imagen') && !/^https?:\/\//i.test(valueStr);
           const isStoredAttachment = valueStr && /_admin_respaldo$/.test(k) && !/^https?:\/\//i.test(valueStr);
           const downloadUrl = (isDocField && valueStr) || isStoredPdf || isStoredImage || isStoredAttachment ? documentDownloadApiUrl(valueStr) : '';
+          const inlineImageUrl = isStoredImage ? (valueStr.startsWith('http') ? valueStr : `/api/${valueStr.replace(/^\/+/, '')}`) : '';
           return (
             <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 600, minWidth: 220 }}>{formatFieldLabel(k)}:</span>
-              {downloadUrl ? (
+              {isStoredImage ? (
+                <div style={{ display: 'grid', gap: 8 }}>
+                  <img src={inlineImageUrl} alt={formatFieldLabel(k)} style={{ maxWidth: 320, maxHeight: 140, objectFit: 'contain', borderRadius: 8, border: '1px solid #e5e7eb', background: '#fff' }} />
+                  <a href={downloadUrl} target="_blank" rel="noopener noreferrer" download style={{ padding: '6px 12px', background: '#059669', color: '#fff', borderRadius: 6, textDecoration: 'none', fontSize: 13, width: 'fit-content' }}>
+                    Descargar
+                  </a>
+                </div>
+              ) : downloadUrl ? (
                 <>
                   <span style={{ color: '#6b7280', fontSize: 13 }}>{valueStr.replace(/^.*[/\\]/, '')}</span>
                   <a href={downloadUrl} target="_blank" rel="noopener noreferrer" download style={{ padding: '6px 12px', background: '#059669', color: '#fff', borderRadius: 6, textDecoration: 'none', fontSize: 13 }}>
@@ -2428,7 +2451,7 @@ export default function AdminCandidateStudyViewPage() {
                         valueStr &&
                         (k.endsWith('_pdf') || k === 'identificacion_oficial_pdf' || /^cap_doc_/.test(k)) &&
                         !/^https?:\/\//i.test(valueStr);
-                      const isStoredImage = valueStr && k === 'foto_participante' && !/^https?:\/\//i.test(valueStr);
+                      const isStoredImage = valueStr && (k === 'foto_participante' || k === 'auth_firma_imagen') && !/^https?:\/\//i.test(valueStr);
                       const isStoredAttachment = valueStr && /_admin_respaldo$/.test(k) && !/^https?:\/\//i.test(valueStr);
                       const downloadUrl = (isDocField && valueStr) || isStoredPdf || isStoredImage || isStoredAttachment ? documentDownloadApiUrl(valueStr) : '';
                       return (

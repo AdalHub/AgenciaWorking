@@ -280,8 +280,12 @@ export default function EstudioPage() {
       req('dp_id_vigencia');
       total++;
       if ((getField(sec, 'dp_identificacion_pdf') ?? '').trim()) filled++;
+      total++;
+      if ((getField(sec, 'foto_participante') ?? '').trim()) filled++;
     } else if (sec === 'Autorización Actualización') {
-      ['auth_nombre_declaracion', 'auth_empresa_solicitante', 'auth_nombre_firma', 'auth_firma_texto', 'auth_fecha'].forEach(req);
+      ['auth_nombre_declaracion', 'auth_empresa_solicitante', 'auth_nombre_firma', 'auth_fecha'].forEach(req);
+      total++;
+      if ((getField(sec, 'auth_firma_texto') ?? '').trim() || (getField(sec, 'auth_firma_imagen') ?? '').trim()) filled++;
     } else if (sec === 'Domicilio') {
       ['dom_calle_numero', 'dom_colonia', 'dom_codigo_postal', 'dom_municipio_ciudad', 'dom_estado', 'dom_pais'].forEach(req);
       total++;
@@ -290,6 +294,17 @@ export default function EstudioPage() {
       if (getField(sec, 'dom_tipo_vivienda') === 'otro') req('dom_tipo_vivienda_otro');
       total++;
       if (['menos6', '6m_1a', '1a_2a', 'mas1a'].includes(getField(sec, 'dom_tiempo_residencia'))) filled++;
+      total++;
+      {
+        const fechaComprobante = (getField(sec, 'dom_comprobante_domicilio_fecha') ?? '').trim();
+        if (fechaComprobante) {
+          const selected = new Date(`${fechaComprobante}T00:00:00`);
+          const cutoff = new Date();
+          cutoff.setHours(0, 0, 0, 0);
+          cutoff.setMonth(cutoff.getMonth() - 3);
+          if (!Number.isNaN(selected.getTime()) && selected >= cutoff) filled++;
+        }
+      }
       total++;
       if ((getField(sec, 'dom_comprobante_domicilio_pdf') ?? '').trim()) filled++;
       const tiempoMenor2 = ['menos6', '6m_1a'].includes(getField(sec, 'dom_tiempo_residencia'));
@@ -573,6 +588,13 @@ export default function EstudioPage() {
     return uploadFile(file, 'foto_participante');
   };
 
+  const uploadSignatureImage = (file: File): Promise<string> => {
+    const ok = /^image\/(jpeg|jpg|png)$/i.test(file.type) || /\.(jpe?g|png)$/i.test(file.name);
+    if (!ok) return Promise.reject(new Error('Solo se permiten imÃ¡genes PNG o JPG para la firma.'));
+    if (file.size > 5 * 1024 * 1024) return Promise.reject(new Error('La imagen de la firma no debe superar 5 MB.'));
+    return uploadFile(file, 'autorizacion_firma');
+  };
+
   const uploadPdfIdentificacionOficial = (file: File): Promise<string> => {
     if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
       return Promise.reject(new Error('Solo se permite archivo PDF.'));
@@ -789,7 +811,7 @@ export default function EstudioPage() {
               <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 20, display: 'grid', gap: 14 }}>
                 <div><label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Empresa solicitante del estudio: *</label><input type="text" value={getField(sec, 'auth_empresa_solicitante')} onChange={(e) => updateField(sec, 'auth_empresa_solicitante', e.target.value)} placeholder="Nombre de la empresa" style={{ width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' }} /></div>
                 <div><label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Nombre completo del evaluado: *</label><input type="text" value={getField(sec, 'auth_nombre_firma')} onChange={(e) => updateField(sec, 'auth_nombre_firma', e.target.value)} placeholder="Nombre completo" style={{ width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' }} /></div>
-                <div><label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Firma: *</label><input type="text" value={getField(sec, 'auth_firma_texto')} onChange={(e) => updateField(sec, 'auth_firma_texto', e.target.value)} placeholder="Escriba su nombre completo a modo de firma" style={{ width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' }} /></div>
+                <SignatureField sec={sec} getField={getField} updateField={updateField} uploadSignatureImage={uploadSignatureImage} />
                 <div><label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Fecha: *</label><input type="date" value={getField(sec, 'auth_fecha')} onChange={(e) => updateField(sec, 'auth_fecha', e.target.value)} style={{ width: '100%', maxWidth: 280, padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' }} /></div>
               </div>
             </div>
@@ -947,6 +969,16 @@ function SectionDomicilio({
   const inputStyle: React.CSSProperties = { width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' };
   const labelStyle = { display: 'block' as const, marginBottom: 4, fontWeight: 600, fontSize: 14 };
   const tiempoMenor2 = ['menos6', '6m_1a'].includes(getField(sec, 'dom_tiempo_residencia'));
+  const comprobanteFecha = getField(sec, 'dom_comprobante_domicilio_fecha');
+  const comprobanteVencido = (() => {
+    if (!comprobanteFecha) return false;
+    const selected = new Date(`${comprobanteFecha}T00:00:00`);
+    if (Number.isNaN(selected.getTime())) return false;
+    const cutoff = new Date();
+    cutoff.setHours(0, 0, 0, 0);
+    cutoff.setMonth(cutoff.getMonth() - 3);
+    return selected < cutoff;
+  })();
 
   return (
     <div style={{ display: 'grid', gap: 22 }}>
@@ -994,6 +1026,15 @@ function SectionDomicilio({
         <p style={{ margin: '0 0 10px', fontWeight: 700, color: '#1e3a5f' }}>Comprobante de domicilio con una antiguedad no mayor de 3 meses. *</p>
         <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>Formato permitido: PDF o imagen. Peso máximo: 5 MB.</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ marginBottom: 12, width: '100%' }}>
+            <label style={labelStyle}>Fecha del comprobante de domicilio *</label>
+            <input type="date" value={comprobanteFecha} onChange={(e) => updateField(sec, 'dom_comprobante_domicilio_fecha', e.target.value)} style={{ ...inputStyle, maxWidth: 260 }} />
+            {comprobanteVencido ? (
+              <p style={{ margin: '10px 0 0', padding: '10px 12px', borderRadius: 8, background: '#fee2e2', border: '1px solid #fca5a5', color: '#b91c1c', fontSize: 13, fontWeight: 700 }}>
+                La fecha del comprobante de domicilio debe corresponder a un documento con una antigüedad no mayor a 3 meses.
+              </p>
+            ) : null}
+          </div>
           <label style={{ cursor: domComprobanteUploading ? 'wait' : 'pointer' }}>
             <input
               type="file"
@@ -1310,7 +1351,7 @@ function SectionDatosPersonalesContacto({
       </div>
 
       <div style={{ padding: 16, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-        <p style={{ margin: '0 0 10px', fontWeight: 600, fontSize: 14 }}>Fotografía del empleado <span style={{ color: '#64748b', fontWeight: 500 }}>(opcional)</span></p>
+        <p style={{ margin: '0 0 10px', fontWeight: 600, fontSize: 14 }}>Fotografía del empleado *</p>
         <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>Puede subir su fotografía en formato PNG o JPG. Peso máximo: 5 MB.</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <label style={{ cursor: fotoParticipanteUploading ? 'wait' : 'pointer' }}>
@@ -1322,7 +1363,7 @@ function SectionDatosPersonalesContacto({
           {getField(sec, 'foto_participante') ? (
             <span style={{ padding: '6px 12px', background: '#d1fae5', borderRadius: 8, fontSize: 14, fontWeight: 600 }}>Archivo recibido ✓</span>
           ) : (
-            <span style={{ color: '#64748b', fontSize: 14 }}>Sin archivo</span>
+            <span style={{ color: '#b45309', fontSize: 14, fontWeight: 600 }}>Archivo requerido</span>
           )}
         </div>
       </div>
@@ -1364,6 +1405,215 @@ function SectionDatosPersonalesContacto({
   );
 }
 
+function SignatureField({
+  sec,
+  getField,
+  updateField,
+  uploadSignatureImage,
+}: {
+  sec: string;
+  getField: (s: string, k: string) => string;
+  updateField: (s: string, k: string, v: string) => void;
+  uploadSignatureImage: (f: File) => Promise<string>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<'draw' | 'type'>('draw');
+  const [typedValue, setTypedValue] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [canvasReady, setCanvasReady] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isDrawingRef = useRef(false);
+  const currentText = getField(sec, 'auth_firma_texto');
+  const currentImage = getField(sec, 'auth_firma_imagen');
+
+  const resetCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    const width = canvas.clientWidth || 520;
+    const height = 220;
+    canvas.width = Math.floor(width * ratio);
+    canvas.height = Math.floor(height * ratio);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.scale(ratio, ratio);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2.5;
+    setCanvasReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open || mode !== 'draw') return;
+    setCanvasReady(false);
+    const t = window.setTimeout(() => resetCanvas(), 0);
+    return () => window.clearTimeout(t);
+  }, [open, mode, resetCanvas]);
+
+  const openModal = () => {
+    setTypedValue(currentText || getField(sec, 'auth_nombre_firma') || '');
+    setMode(currentImage ? 'draw' : currentText ? 'type' : 'draw');
+    setOpen(true);
+  };
+
+  const pointFromEvent = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  };
+
+  const onPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    const point = pointFromEvent(event);
+    if (!canvas || !ctx || !point) return;
+    isDrawingRef.current = true;
+    canvas.setPointerCapture(event.pointerId);
+    ctx.beginPath();
+    ctx.moveTo(point.x, point.y);
+  };
+
+  const onPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawingRef.current) return;
+    const ctx = canvasRef.current?.getContext('2d');
+    const point = pointFromEvent(event);
+    if (!ctx || !point) return;
+    ctx.lineTo(point.x, point.y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = (event?: React.PointerEvent<HTMLCanvasElement>) => {
+    if (event && canvasRef.current?.hasPointerCapture(event.pointerId)) {
+      canvasRef.current.releasePointerCapture(event.pointerId);
+    }
+    isDrawingRef.current = false;
+  };
+
+  const saveTyped = () => {
+    const clean = typedValue.trim();
+    if (!clean) {
+      alert('Escriba su firma para continuar.');
+      return;
+    }
+    updateField(sec, 'auth_firma_texto', clean);
+    updateField(sec, 'auth_firma_imagen', '');
+    setOpen(false);
+  };
+
+  const saveDrawn = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !canvasReady) {
+      alert('La firma aun no esta lista. Intente nuevamente.');
+      return;
+    }
+    setSaving(true);
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        setSaving(false);
+        alert('No fue posible guardar la firma.');
+        return;
+      }
+      const file = new File([blob], `firma-${Date.now()}.png`, { type: 'image/png' });
+      uploadSignatureImage(file)
+        .then((url) => {
+          updateField(sec, 'auth_firma_imagen', url);
+          updateField(sec, 'auth_firma_texto', '');
+          setOpen(false);
+        })
+        .catch((err) => alert(err?.message || 'No fue posible guardar la firma.'))
+        .finally(() => setSaving(false));
+    }, 'image/png');
+  };
+
+  return (
+    <>
+      <div style={{ display: 'grid', gap: 10 }}>
+        <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Firma: *</label>
+        {currentImage ? (
+          <div style={{ padding: 12, borderRadius: 10, border: '1px solid #cbd5e1', background: '#fff' }}>
+            <img src={currentImage.startsWith('http') ? currentImage : `${API}/${currentImage.replace(/^\/+/, '')}`} alt="Firma" style={{ display: 'block', maxWidth: '100%', maxHeight: 140, objectFit: 'contain' }} />
+          </div>
+        ) : currentText ? (
+          <div style={{ padding: 14, borderRadius: 10, border: '1px solid #cbd5e1', background: '#fff', fontSize: 24, fontFamily: '"Brush Script MT", "Segoe Script", cursive', color: '#0f172a' }}>
+            {currentText}
+          </div>
+        ) : (
+          <div style={{ padding: 14, borderRadius: 10, border: '1px dashed #cbd5e1', background: '#fff', color: '#64748b' }}>Sin firma registrada</div>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <button type="button" onClick={openModal} style={{ padding: '10px 16px', background: '#1e40af', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>
+            {currentImage || currentText ? 'Actualizar firma' : 'Firmar'}
+          </button>
+          <span style={{ fontSize: 13, color: '#64748b' }}>Puede dibujar su firma o escribirla desde cualquier dispositivo.</span>
+        </div>
+      </div>
+
+      {open && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 1000 }}>
+          <div style={{ width: 'min(100%, 760px)', background: '#fff', borderRadius: 18, padding: 20, boxShadow: '0 24px 60px rgba(15, 23, 42, 0.28)', display: 'grid', gap: 16 }}>
+            <div>
+              <h3 style={{ margin: '0 0 6px', fontSize: 22, color: '#0f172a' }}>Registrar firma</h3>
+              <p style={{ margin: 0, color: '#64748b', fontSize: 14 }}>Seleccione si desea dibujar su firma o escribirla en formato digital.</p>
+            </div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button type="button" onClick={() => setMode('draw')} style={{ padding: '10px 14px', borderRadius: 999, border: mode === 'draw' ? '2px solid #1d4ed8' : '1px solid #cbd5e1', background: mode === 'draw' ? '#dbeafe' : '#fff', color: '#0f172a', fontWeight: 700, cursor: 'pointer' }}>
+                Dibujar firma
+              </button>
+              <button type="button" onClick={() => setMode('type')} style={{ padding: '10px 14px', borderRadius: 999, border: mode === 'type' ? '2px solid #1d4ed8' : '1px solid #cbd5e1', background: mode === 'type' ? '#dbeafe' : '#fff', color: '#0f172a', fontWeight: 700, cursor: 'pointer' }}>
+                Escribir firma
+              </button>
+            </div>
+
+            {mode === 'draw' ? (
+              <div style={{ display: 'grid', gap: 12 }}>
+                <div style={{ border: '1px solid #cbd5e1', borderRadius: 14, overflow: 'hidden', background: '#fff' }}>
+                  <canvas
+                    ref={canvasRef}
+                    onPointerDown={onPointerDown}
+                    onPointerMove={onPointerMove}
+                    onPointerUp={stopDrawing}
+                    onPointerLeave={stopDrawing}
+                    style={{ width: '100%', height: 220, display: 'block', touchAction: 'none', background: '#fff' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 13, color: '#64748b' }}>Firme dentro del recuadro. Funciona con mouse, touch o stylus.</span>
+                  <button type="button" onClick={resetCanvas} style={{ padding: '8px 12px', background: '#e2e8f0', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer', color: '#0f172a' }}>
+                    Limpiar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, fontWeight: 700 }}>Escriba su firma</label>
+                  <input type="text" value={typedValue} onChange={(e) => setTypedValue(e.target.value)} placeholder="Escriba su nombre completo" style={{ width: '100%', padding: 12, boxSizing: 'border-box', borderRadius: 10, border: '1px solid #cbd5e1' }} />
+                </div>
+                <div style={{ padding: 16, borderRadius: 12, border: '1px solid #cbd5e1', background: '#fff', fontSize: 34, fontFamily: '"Brush Script MT", "Segoe Script", cursive', color: '#0f172a', minHeight: 86, display: 'flex', alignItems: 'center' }}>
+                  {typedValue.trim() || 'Vista previa de la firma'}
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+              <button type="button" onClick={() => setOpen(false)} style={{ padding: '10px 16px', background: '#e2e8f0', color: '#0f172a', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>
+                Cancelar
+              </button>
+              <button type="button" onClick={mode === 'draw' ? saveDrawn : saveTyped} disabled={saving} style={{ padding: '10px 16px', background: saving ? '#94a3b8' : '#059669', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
+                {saving ? 'Guardando...' : 'Guardar firma'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 function SectionInformacionConyugeFamiliaresContacto({
   sec,
   getField,
@@ -1375,6 +1625,17 @@ function SectionInformacionConyugeFamiliaresContacto({
 }) {
   const inputStyle: React.CSSProperties = { width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' };
   const labelStyle = { display: 'block' as const, marginBottom: 4, fontWeight: 600, fontSize: 14 };
+  const familyCount = Math.max(1, Math.min(30, parseInt(getField(sec, 'fam_count') || '1', 10) || 1));
+
+  const toggleFamilyFallecido = (idx: number, checked: boolean) => {
+    updateField(sec, `${idx}_fam_fallecido`, checked ? '1' : '');
+    if (checked) {
+      ['edad', 'estado_civil', 'ocupacion', 'domicilio_ciudad_estado', 'telefono'].forEach((key) => {
+        updateField(sec, `${idx}_fam_${key}`, '');
+      });
+      updateField(sec, `${idx}_fam_ocupacion_profesion`, '');
+    }
+  };
 
   return (
     <div style={{ display: 'grid', gap: 24 }}>
@@ -1406,13 +1667,32 @@ function SectionInformacionConyugeFamiliaresContacto({
       <h2 style={{ margin: '16px 0 0', fontSize: 18, color: '#111' }}>1.4.4. DATOS GENERALES DE LOS FAMILIARES DEL PARTICIPANTE</h2>
       <p style={{ margin: 0, fontSize: 14, color: '#64748b' }}>(Padres y hermanos – información declarativa)</p>
 
+      <p style={{ margin: 0, padding: 14, background: '#fef3c7', borderRadius: 10, border: '1px solid #fcd34d', fontSize: 14, color: '#92400e', lineHeight: 1.5 }}>
+        <strong>Nota:</strong> En caso de que alguno de los familiares haya fallecido, favor de indicarlo en la columna correspondiente de observaciones o parentesco.
+      </p>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+        <button
+          type="button"
+          onClick={() => {
+            if (familyCount >= 30) return;
+            updateField(sec, 'fam_count', String(familyCount + 1));
+          }}
+          disabled={familyCount >= 30}
+          style={{ padding: '10px 16px', background: familyCount >= 30 ? '#94a3b8' : '#1e40af', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: familyCount >= 30 ? 'not-allowed' : 'pointer' }}
+        >
+          Agregar familiar
+        </button>
+      </div>
+
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', minWidth: 720, borderCollapse: 'collapse', fontSize: 13 }}>
+        <table style={{ width: '100%', minWidth: 1100, borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
               <th style={{ padding: '10px 8px', textAlign: 'left', fontWeight: 700, width: 80 }}>Familiar</th>
               <th style={{ padding: '10px 8px', textAlign: 'left', fontWeight: 700 }}>Nombre completo</th>
               <th style={{ padding: '10px 8px', textAlign: 'left', fontWeight: 700 }}>Parentesco</th>
+              <th style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 700, width: 92 }}>Fallecido</th>
               <th style={{ padding: '10px 8px', textAlign: 'left', fontWeight: 700, width: 60 }}>Edad</th>
               <th style={{ padding: '10px 8px', textAlign: 'left', fontWeight: 700 }}>Estado civil</th>
               <th style={{ padding: '10px 8px', textAlign: 'left', fontWeight: 700 }}>Ocupación / profesión</th>
@@ -1422,23 +1702,39 @@ function SectionInformacionConyugeFamiliaresContacto({
             </tr>
           </thead>
           <tbody>
-            {[0, 1, 2, 3, 4, 5].map((idx) => (
+            {Array.from({ length: familyCount }, (_, idx) => idx).map((idx) => (
               <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0', verticalAlign: 'top' }}>
                 <td style={{ padding: '8px', fontWeight: 600, color: '#475569' }}>{idx + 1}</td>
-                {['nombre_completo', 'parentesco', 'edad', 'estado_civil', 'ocupacion', 'domicilio_ciudad_estado', 'telefono', 'observaciones'].map((key) => (
+                {['nombre_completo', 'parentesco'].map((key) => (
                   <td key={key} style={{ padding: '6px 8px' }}>
-                    <input type="text" value={getField(sec, `${idx}_fam_${key}`)} onChange={(e) => updateField(sec, `${idx}_fam_${key}`, e.target.value)} placeholder={key === 'observaciones' ? 'Ej. Fallecido' : ''} style={{ width: '100%', padding: 8, boxSizing: 'border-box', borderRadius: 6, border: '1px solid #e2e8f0', fontSize: 14, minWidth: key === 'nombre_completo' || key === 'domicilio_ciudad_estado' ? 140 : 80 }} />
+                    <input type="text" value={getField(sec, `${idx}_fam_${key}`)} onChange={(e) => updateField(sec, `${idx}_fam_${key}`, e.target.value)} style={{ width: '100%', padding: 8, boxSizing: 'border-box', borderRadius: 6, border: '1px solid #e2e8f0', fontSize: 14, minWidth: 140 }} />
                   </td>
                 ))}
+                <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                  <input type="checkbox" checked={getField(sec, `${idx}_fam_fallecido`) === '1'} onChange={(e) => toggleFamilyFallecido(idx, e.target.checked)} />
+                </td>
+                {['edad', 'estado_civil', 'ocupacion', 'domicilio_ciudad_estado', 'telefono'].map((key) => {
+                  const fallecido = getField(sec, `${idx}_fam_fallecido`) === '1';
+                  return (
+                    <td key={key} style={{ padding: '6px 8px' }}>
+                      <input
+                        type="text"
+                        value={getField(sec, `${idx}_fam_${key}`)}
+                        onChange={(e) => updateField(sec, `${idx}_fam_${key}`, e.target.value)}
+                        disabled={fallecido}
+                        style={{ width: '100%', padding: 8, boxSizing: 'border-box', borderRadius: 6, border: '1px solid #e2e8f0', fontSize: 14, minWidth: key === 'domicilio_ciudad_estado' ? 160 : 80, background: fallecido ? '#e5e7eb' : '#fff', color: fallecido ? '#6b7280' : '#111827', cursor: fallecido ? 'not-allowed' : 'text' }}
+                      />
+                    </td>
+                  );
+                })}
+                <td style={{ padding: '6px 8px' }}>
+                  <input type="text" value={getField(sec, `${idx}_fam_observaciones`)} onChange={(e) => updateField(sec, `${idx}_fam_observaciones`, e.target.value)} placeholder="Observaciones" style={{ width: '100%', padding: 8, boxSizing: 'border-box', borderRadius: 6, border: '1px solid #e2e8f0', fontSize: 14, minWidth: 140 }} />
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-
-      <p style={{ margin: 0, padding: 14, background: '#fef3c7', borderRadius: 10, border: '1px solid #fcd34d', fontSize: 14, color: '#92400e', lineHeight: 1.5 }}>
-        <strong>Nota:</strong> En caso de que alguno de los familiares haya fallecido, favor de indicarlo en la columna correspondiente de observaciones o parentesco.
-      </p>
 
       <hr style={{ border: 'none', borderTop: '2px solid #e2e8f0', margin: '24px 0' }} />
       <p style={{ margin: 0, fontSize: 14, color: '#64748b', fontWeight: 600 }}>Final del formulario</p>
