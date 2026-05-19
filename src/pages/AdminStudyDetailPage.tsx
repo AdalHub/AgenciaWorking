@@ -60,7 +60,7 @@ function sectionTabs(formData: FormDataBySection): string[] {
 }
 
 type Study = { id: number; company_name: string; study_type: string; status: string; show_verdict_to_company?: number; deletion_scheduled_at?: string | null; [k: string]: any };
-type Invitation = { id: number; candidate_name?: string; candidate_email?: string; candidate_phone?: string; status: string; unique_code?: string; code_expires_at?: string; completed_at?: string; [k: string]: any };
+type Invitation = { id: number; candidate_name?: string; candidate_email?: string; candidate_phone?: string; status: string; is_cancelled?: number; unique_code?: string; code_expires_at?: string; completed_at?: string; opened_at?: string; [k: string]: any };
 type FormDataBySection = Record<string, Record<string, string>>;
 
 function formatDate(d: string | null | undefined): string {
@@ -391,6 +391,41 @@ export default function AdminStudyDetailPage() {
       .then((d) => {
         if (d.invitations) setInvitations(d.invitations);
       });
+  };
+
+  const handleToggleInvitationCancelled = async (inv: Invitation) => {
+    const nextCancelled = !Boolean(inv.is_cancelled);
+    const confirmMessage = nextCancelled
+      ? '¿Cancelar este candidato? Su codigo de acceso dejara de funcionar hasta reactivarlo.'
+      : '¿Reactivar este candidato? Su codigo de acceso volvera a funcionar.';
+    if (!window.confirm(confirmMessage)) return;
+
+    const restoreStatus = inv.completed_at
+      ? 'completed'
+      : inv.opened_at
+        ? 'in_progress'
+        : 'pending';
+
+    const payload = nextCancelled
+      ? { id: inv.id, is_cancelled: 1 }
+      : { id: inv.id, is_cancelled: 0, status: restoreStatus };
+
+    try {
+      const response = await fetch('/api/studies.php?action=update_invitation', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data?.error) {
+        throw new Error(data?.error || 'No se pudo actualizar el candidato.');
+      }
+      setToast(nextCancelled ? 'Candidato cancelado.' : 'Candidato reactivado.');
+      reloadInvitations();
+    } catch (error: any) {
+      setToast(error?.message || 'No se pudo actualizar el candidato.');
+    }
   };
 
   useEffect(() => {
@@ -1013,10 +1048,19 @@ export default function AdminStudyDetailPage() {
                         </div>
                       )}
                       <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-                        <span style={{ padding: '2px 6px', borderRadius: 4, background: inv.status === 'completed' ? '#d1fae5' : inv.status === 'in_progress' ? '#dbeafe' : '#f3f4f6' }}>{inv.status}</span>
+                        <span style={{ padding: '2px 6px', borderRadius: 4, background: inv.is_cancelled ? '#fee2e2' : inv.status === 'completed' ? '#d1fae5' : inv.status === 'in_progress' ? '#dbeafe' : '#f3f4f6', color: inv.is_cancelled ? '#991b1b' : '#111827' }}>
+                          {inv.is_cancelled ? 'cancelado' : inv.status}
+                        </span>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleInvitationCancelled(inv)}
+                        style={{ padding: '8px 12px', background: inv.is_cancelled ? '#1d4ed8' : '#dc2626', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 800 }}
+                      >
+                        {inv.is_cancelled ? 'Reactivar' : 'Cancelar'}
+                      </button>
                       <button
                         type="button"
                         onClick={() => navigate(`/admin/studies/${studyId}/candidates/${inv.id}/view?back=study`)}
@@ -1051,7 +1095,9 @@ export default function AdminStudyDetailPage() {
                     <div><strong>Nombre:</strong> {selectedInv.candidate_name?.trim() || '—'}</div>
                     <div><strong>Correo:</strong> {selectedInv.candidate_email || '—'}</div>
                     <div><strong>Teléfono:</strong> {selectedInv.candidate_phone || '—'}</div>
-                    <span style={{ padding: '4px 8px', borderRadius: 6, background: selectedInv.status === 'completed' ? '#d1fae5' : '#dbeafe', fontSize: 12 }}>{selectedInv.status}</span>
+                    <span style={{ padding: '4px 8px', borderRadius: 6, background: selectedInv.is_cancelled ? '#fee2e2' : selectedInv.status === 'completed' ? '#d1fae5' : '#dbeafe', color: selectedInv.is_cancelled ? '#991b1b' : '#111827', fontSize: 12 }}>
+                      {selectedInv.is_cancelled ? 'cancelado' : selectedInv.status}
+                    </span>
                     {selectedInv.unique_code && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         Código: <code style={{ background: '#f3f4f6', padding: '2px 6px', borderRadius: 4 }}>{selectedInv.unique_code}</code>

@@ -13,6 +13,7 @@ type Study = {
   id: number;
   company_name: string;
   status: string;
+  updated_at?: string;
 };
 
 type Invitation = {
@@ -20,6 +21,7 @@ type Invitation = {
   candidate_name?: string;
   candidate_email?: string;
   status: string;
+  is_cancelled?: number;
   sent_at?: string;
   opened_at?: string;
   completed_at?: string;
@@ -77,6 +79,10 @@ function getGeneralClientStatus(study: Study, invitations: Invitation[]) {
   return { label: 'Registro del candidato', bg: '#e5e7eb', text: '#475569' };
 }
 
+function isInvitationCancelledForCompany(studyStatus: string, invitation: Invitation): boolean {
+  return (invitation.is_cancelled ?? 0) === 1 || (studyStatus === 'concluido' && invitation.status !== 'completed');
+}
+
 function getCurrentProgressStep(studyStatus: string, invitationStatus?: string): number {
   if (studyStatus === 'concluido') return 3;
   if (invitationStatus !== 'completed') return 0;
@@ -112,6 +118,9 @@ function getProgressSteps(studyStatus: string, invitationStatus?: string): Progr
 }
 
 function getCandidateStatusPills(studyStatus: string, invitation: Invitation) {
+  if (isInvitationCancelledForCompany(studyStatus, invitation)) {
+    return [{ label: 'Cancelado', bg: '#fee2e2', text: '#991b1b' }];
+  }
   if (invitation.status === 'completed') {
     return [
       { label: 'Captura completada', bg: '#dcfce7', text: '#166534' },
@@ -128,7 +137,13 @@ function getCandidateStatusPills(studyStatus: string, invitation: Invitation) {
   return [{ label: 'Registro del candidato', bg: '#e5e7eb', text: '#475569' }];
 }
 
-function getInvitationLastUpdated(invitation: Invitation): string | null {
+function getInvitationLastUpdated(study: Study, invitation: Invitation): string | null {
+  if (study.status === 'concluido' && invitation.status !== 'completed') {
+    return study.updated_at || invitation.opened_at || invitation.sent_at || null;
+  }
+  if ((invitation.is_cancelled ?? 0) === 1) {
+    return invitation.completed_at || invitation.opened_at || invitation.sent_at || null;
+  }
   if (invitation.status === 'completed') {
     return invitation.completed_at || invitation.opened_at || invitation.sent_at || null;
   }
@@ -139,6 +154,9 @@ function getInvitationLastUpdated(invitation: Invitation): string | null {
 }
 
 function getCandidateCurrentStatus(studyStatus: string, invitation: Invitation) {
+  if (isInvitationCancelledForCompany(studyStatus, invitation)) {
+    return { label: 'Cancelado', bg: '#fee2e2', text: '#991b1b' };
+  }
   if (studyStatus === 'concluido' && invitation.status === 'completed') {
     return { label: 'Informe disponible', bg: '#dbeafe', text: '#1d4ed8' };
   }
@@ -152,6 +170,9 @@ function getCandidateCurrentStatus(studyStatus: string, invitation: Invitation) 
 }
 
 function getCandidateProgressTag(studyStatus: string, invitation: Invitation) {
+  if (isInvitationCancelledForCompany(studyStatus, invitation)) {
+    return { label: 'Cancelado', bg: '#fee2e2', text: '#991b1b' };
+  }
   if (studyStatus === 'concluido' && invitation.status === 'completed') {
     return { label: 'Estudio concluido', bg: '#dcfce7', text: '#166534' };
   }
@@ -223,7 +244,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
         setInvitations(nextInvitations);
 
         if (nextInvitations.length > 0) {
-          const firstCompleted = nextInvitations.find((inv: Invitation) => inv.status === 'completed');
+          const firstCompleted = nextInvitations.find((inv: Invitation) => inv.status === 'completed' && !isInvitationCancelledForCompany(studyRes.status, inv));
           setSelectedInvId((prev) => prev ?? firstCompleted?.id ?? nextInvitations[0].id);
         }
       })
@@ -245,7 +266,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
   const selectedInv = useMemo(() => invitations.find((inv) => inv.id === selectedInvId) ?? null, [invitations, selectedInvId]);
 
   useEffect(() => {
-    if (!selectedInvId || !study || study.status !== 'concluido' || selectedInv?.status !== 'completed') {
+    if (!selectedInvId || !study || study.status !== 'concluido' || selectedInv?.status !== 'completed' || isInvitationCancelledForCompany(study.status, selectedInv)) {
       setDownloadableDocuments([]);
       setDocumentsLoading(false);
       return;
@@ -270,9 +291,11 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
       .finally(() => setDocumentsLoading(false));
   }, [selectedInv?.status, selectedInvId, study, tokenParam]);
 
-  const completedCount = invitations.filter((inv) => inv.status === 'completed').length;
+  const studyStatus = study?.status ?? '';
+  const cancelledCount = invitations.filter((inv) => isInvitationCancelledForCompany(studyStatus, inv)).length;
+  const completedCount = invitations.filter((inv) => inv.status === 'completed' && !isInvitationCancelledForCompany(studyStatus, inv)).length;
   const totalCount = invitations.length;
-  const inProcessCount = Math.max(totalCount - completedCount, 0);
+  const inProcessCount = Math.max(totalCount - completedCount - cancelledCount, 0);
   const reportAvailableCount = study?.status === 'concluido' ? completedCount : 0;
   const generalStatus = study ? getGeneralClientStatus(study, invitations) : { label: 'Registro del candidato', bg: '#e5e7eb', text: '#475569' };
   const selectedProgressSteps = selectedInv ? getProgressSteps(study?.status ?? '', selectedInv.status) : [];
@@ -283,7 +306,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
     `${API}/studies.php?action=download_document&file_path=${encodeURIComponent(filePath)}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
 
   const handleDownloadInformeCandidato = () => {
-    if (!selectedInvId || selectedInv?.status !== 'completed') return;
+    if (!selectedInvId || !selectedInv || selectedInv.status !== 'completed' || !study || isInvitationCancelledForCompany(study.status, selectedInv)) return;
 
     const url = `${API}/studies.php?action=download_pdf&invitation_id=${selectedInvId}&_ts=${Date.now()}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
     fetch(url, { ...FETCH_OPTIONS, cache: 'no-store' })
@@ -306,7 +329,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
   };
 
   const handleDownloadInformeEstudio = () => {
-    const completedInvitations = invitations.filter((inv) => inv.status === 'completed');
+    const completedInvitations = invitations.filter((inv) => inv.status === 'completed' && !isInvitationCancelledForCompany(studyStatus, inv));
     if (completedInvitations.length === 0) {
       setToast('No hay colaboradores completados para descargar.');
       return;
@@ -398,6 +421,10 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
             <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>Informes disponibles</div>
             <div style={{ fontSize: 24, fontWeight: 800, color: reportAvailableCount > 0 ? '#166534' : '#0f172a' }}>{reportAvailableCount}</div>
           </div>
+          <div style={{ padding: 14, borderRadius: 12, background: '#f8fafc', border: '1px solid #e5e7eb' }}>
+            <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>Candidatos cancelados</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: cancelledCount > 0 ? '#991b1b' : '#0f172a' }}>{cancelledCount}</div>
+          </div>
         </div>
 
         <div style={{ display: 'grid', gap: 18 }}>
@@ -426,9 +453,13 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
                   {invitations.map((inv) => {
                     const currentStatus = getCandidateCurrentStatus(study.status, inv);
                     const progressTag = getCandidateProgressTag(study.status, inv);
-                    const lastUpdated = getInvitationLastUpdated(inv);
+                    const lastUpdated = getInvitationLastUpdated(study, inv);
                     const isSelected = selectedInvId === inv.id;
-                    const actionLabel = study.status === 'concluido' && inv.status === 'completed' ? 'Ver informe' : 'Ver detalle';
+                    const actionLabel = isInvitationCancelledForCompany(study.status, inv)
+                      ? 'Ver detalle'
+                      : study.status === 'concluido' && inv.status === 'completed'
+                        ? 'Ver informe'
+                        : 'Ver detalle';
 
                     return (
                       <tr
@@ -502,9 +533,9 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
                       </span>
                     ))}
                   </div>
-                  {getInvitationLastUpdated(selectedInv) ? (
+                  {getInvitationLastUpdated(study, selectedInv) ? (
                     <div style={{ paddingTop: 12, marginTop: 12, borderTop: '1px solid #e5e7eb', fontSize: 14, color: '#334155' }}>
-                      <strong>Ultima actualizacion:</strong> {formatDate(getInvitationLastUpdated(selectedInv))}
+                      <strong>Ultima actualizacion:</strong> {formatDate(getInvitationLastUpdated(study, selectedInv))}
                     </div>
                   ) : null}
                 </section>
@@ -532,7 +563,13 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
                   </div>
                 </section>
 
-                {study.status === 'concluido' && selectedInv.status === 'completed' ? (
+                {isInvitationCancelledForCompany(study.status, selectedInv) ? (
+                  <section style={{ display: 'grid', gap: 12 }}>
+                    <div style={{ padding: 14, borderRadius: 12, background: '#fff1f2', border: '1px solid #fecdd3', color: '#9f1239', lineHeight: 1.6 }}>
+                      Este candidato fue marcado como cancelado o no concluyo su captura antes del cierre del estudio. Su informe final no se encuentra disponible.
+                    </div>
+                  </section>
+                ) : study.status === 'concluido' && selectedInv.status === 'completed' ? (
                   <section style={{ display: 'grid', gap: 16 }}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
                       <button
