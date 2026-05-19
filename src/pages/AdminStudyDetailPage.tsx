@@ -162,6 +162,7 @@ function formatFieldLabel(key: string): string {
   const explicitLabels: Record<string, string> = {
     dp_id_numero: 'Número de identificación (IMSS)',
     dp_id_cedula_profesional: 'Identificacion oficial - Cedula Profesional',
+    dp_constancia_situacion_fiscal_pdf: 'Constancia de Situacion Fiscal Actualizada',
     dom_comprobante_domicilio_pdf: 'Comprobante de domicilio (no mayor a 3 meses)',
     hl_constancia_imss_pdf: 'Constancia de semanas cotizadas (IMSS)',
     hl_documentacion_adicional_pdf: 'Documentacion adicional',

@@ -284,6 +284,7 @@ function buildPersonalReferenceBlocks(sectionData: Record<string, string>): Arra
 function formatFieldLabel(key: string): string {
   const explicitLabels: Record<string, string> = {
     dp_id_cedula_profesional: 'Identificacion oficial - Cedula Profesional',
+    dp_constancia_situacion_fiscal_pdf: 'Constancia de Situacion Fiscal Actualizada',
     dom_comprobante_domicilio_pdf: 'Comprobante de domicilio (no mayor a 3 meses)',
     dom_comprobante_domicilio_fecha: 'Fecha del comprobante de domicilio',
     auth_firma_imagen: 'Firma',
@@ -504,6 +505,7 @@ function renderConyugeFamiliaContactoTable(sectionData: Record<string, string>) 
     { label: 'Edad', key: 'conyuge_edad' },
     { label: 'Fecha de nacimiento', key: 'conyuge_fecha_nacimiento' },
     { label: 'Lugar de nacimiento', key: 'conyuge_lugar_nacimiento' },
+    { label: 'CURP', key: 'conyuge_curp' },
     { label: 'Actividad actual', key: 'conyuge_actividad_actual' },
     { label: 'Empresa donde labora', key: 'conyuge_empresa' },
     { label: 'Puesto o actividad', key: 'conyuge_puesto_actividad' },

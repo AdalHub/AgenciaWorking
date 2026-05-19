@@ -12,10 +12,12 @@
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
     "@intercom/messenger-js-sdk": "^0.0.18",
+    "dictionary-es": "^4.0.0",
     "firebase": "^11.9.1",
     "framer-motion": "^12.16.0",
     "jspdf": "^4.2.0",
     "lucide-react": "^0.513.0",
+    "nspell": "^2.1.5",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.57.0",
@@ -23,7 +25,8 @@
     "react-slick": "^0.30.3",
     "slick-carousel": "^1.8.1",
     "styled-components": "^6.1.18",
-    "swiper": "^11.2.8"
+    "swiper": "^11.2.8",
+    "write-good": "^1.0.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Header from '../components/header/header';
 import Footer from '../components/Footer/Footer';
+import { analyzeWritingSuggestions, type WritingSuggestion } from '../lib/writeGoodBrowser';
 
 const NOTICE_VERSION = 'v2025-1';
 const API = '/api';
@@ -59,6 +60,70 @@ type Invitation = {
 };
 
 type FormDataBySection = Record<string, Record<string, string>>;
+type GrammarSuggestionMap = Record<string, WritingSuggestion[]>;
+type LastEditedGrammarField = { section: string; key: string; value: string };
+
+function grammarFieldMapKey(section: string, fieldKey: string): string {
+  return `${section}::${fieldKey}`;
+}
+
+function isGrammarEligibleField(fieldKey: string, inputKind: 'text' | 'textarea' = 'text'): boolean {
+  const normalized = fieldKey.trim().toLowerCase();
+  if (normalized === '') return false;
+  if (/_pdf$/.test(normalized)) return false;
+  if (/(^|_)(curp|rfc|id|identific|numero|telefono|correo|email|codigo|postal|imss|fecha|periodo|hora|pdf|foto|firma|vigencia|ine|pasaporte|cedula|folio|nss)(_|$)/.test(normalized)) {
+    return false;
+  }
+  if (/(^|_)(nombre|nombre_completo)(_|$)/.test(normalized)) {
+    return false;
+  }
+  if (inputKind === 'textarea') return true;
+  return /(lugar|nacionalidad|domicilio|colonia|municipio|estado|pais|ocupacion|profesion|actividad|empresa|institucion|observ|coment|detalle|motivo|otro|senal|sena|referencia|puesto|carrera|gasto|texto|legal|parentesco)/.test(normalized);
+}
+
+function inferGrammarInputKind(fieldKey: string): 'text' | 'textarea' {
+  const normalized = fieldKey.trim().toLowerCase();
+  if (/(observ|coment|detalle|motivo|sena|referencia|texto|descripcion|descrip|domicilio|legal)/.test(normalized)) {
+    return 'textarea';
+  }
+  return 'text';
+}
+
+function applySuggestionReplacement(value: string, suggestion: WritingSuggestion): string {
+  if (typeof suggestion.replacement !== 'string') return value;
+  return `${value.slice(0, suggestion.index)}${suggestion.replacement}${value.slice(suggestion.index + suggestion.offset)}`;
+}
+
+function GrammarSuggestionCallout({
+  suggestions,
+  onAccept,
+  onDismiss,
+}: {
+  suggestions: WritingSuggestion[];
+  onAccept: (suggestion: WritingSuggestion) => void;
+  onDismiss: (suggestionId: string) => void;
+}) {
+  if (!suggestions.length) return null;
+  return (
+    <div style={{ marginTop: 8, display: 'grid', gap: 8 }}>
+      {suggestions.map((suggestion) => (
+        <div key={suggestion.id} style={{ padding: 10, borderRadius: 10, border: '1px solid #bfdbfe', background: '#eff6ff', display: 'grid', gap: 8 }}>
+          <div style={{ fontSize: 13, color: '#1e3a8a', lineHeight: 1.45 }}>{suggestion.reason}</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {typeof suggestion.replacement === 'string' ? (
+              <button type="button" onClick={() => onAccept(suggestion)} style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: '#1d4ed8', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
+                Aceptar
+              </button>
+            ) : null}
+            <button type="button" onClick={() => onDismiss(suggestion.id)} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #93c5fd', background: '#fff', color: '#1d4ed8', fontWeight: 700, cursor: 'pointer' }}>
+              Omitir
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 /** Actualización de estudio socioeconómico (Personal Activo) */
 const SECTIONS = [
@@ -95,6 +160,11 @@ export default function EstudioPage() {
   const [privacyCheck2, setPrivacyCheck2] = useState(false);
   const [privacySubmitting, setPrivacySubmitting] = useState(false);
   const [fotoParticipanteUploading, setFotoParticipanteUploading] = useState(false);
+  const [grammarSuggestions, setGrammarSuggestions] = useState<GrammarSuggestionMap>({});
+  const [activeGrammarField, setActiveGrammarField] = useState<{ section: string; key: string; inputKind: 'text' | 'textarea' } | null>(null);
+  const [grammarDraftField, setGrammarDraftField] = useState<{ section: string; key: string; value: string; inputKind: 'text' | 'textarea' } | null>(null);
+  const dismissedGrammarSuggestionsRef = useRef<Record<string, Set<string>>>({});
+  const lastEditedGrammarFieldRef = useRef<LastEditedGrammarField | null>(null);
 
   const isInvitationCompleted = invitation?.status === 'completed';
   const requiresAddressVerification = invitation?.study?.require_address_verification !== 0 && invitation?.study?.require_address_verification !== false;
@@ -248,11 +318,141 @@ export default function EstudioPage() {
         [key]: value,
       },
     }));
+    lastEditedGrammarFieldRef.current = { section, key, value };
+    const inferredInputKind = inferGrammarInputKind(key);
+    if (isGrammarEligibleField(key, inferredInputKind)) {
+      const suggestionKey = grammarFieldMapKey(section, key);
+      const analyzed = analyzeWritingSuggestions(value);
+      const dismissed = dismissedGrammarSuggestionsRef.current[suggestionKey];
+      const filtered = dismissed ? analyzed.filter((item) => !dismissed.has(item.id)) : analyzed;
+      setGrammarDraftField({ section, key, value, inputKind: inferredInputKind });
+      setActiveGrammarField({ section, key, inputKind: inferredInputKind });
+      setGrammarSuggestions((prev) => {
+        const next = { ...prev };
+        if (filtered.length) next[suggestionKey] = filtered;
+        else delete next[suggestionKey];
+        return next;
+      });
+      return;
+    }
+    setGrammarSuggestions((prev) => {
+      const suggestionKey = grammarFieldMapKey(section, key);
+      if (!prev[suggestionKey]?.length) return prev;
+      const next = { ...prev };
+      delete next[suggestionKey];
+      return next;
+    });
   }, []);
 
   const getField = (section: string, key: string): string => {
     return formData[section]?.[key] ?? '';
   };
+
+  const handleGrammarBlur = useCallback((section: string, key: string, value: string, inputKind: 'text' | 'textarea' = 'text') => {
+    const suggestionKey = grammarFieldMapKey(section, key);
+    if (!isGrammarEligibleField(key, inputKind)) {
+      setGrammarSuggestions((prev) => {
+        if (!prev[suggestionKey]) return prev;
+        const next = { ...prev };
+        delete next[suggestionKey];
+        return next;
+      });
+      return;
+    }
+    const analyzed = analyzeWritingSuggestions(value);
+    const dismissed = dismissedGrammarSuggestionsRef.current[suggestionKey];
+    const filtered = dismissed ? analyzed.filter((item) => !dismissed.has(item.id)) : analyzed;
+    setGrammarSuggestions((prev) => {
+      if (!filtered.length) {
+        if (!prev[suggestionKey]) return prev;
+        const next = { ...prev };
+        delete next[suggestionKey];
+        return next;
+      }
+      return { ...prev, [suggestionKey]: filtered };
+    });
+  }, []);
+
+  const dismissGrammarSuggestion = useCallback((section: string, key: string, suggestionId: string) => {
+    const suggestionKey = grammarFieldMapKey(section, key);
+    if (!dismissedGrammarSuggestionsRef.current[suggestionKey]) {
+      dismissedGrammarSuggestionsRef.current[suggestionKey] = new Set<string>();
+    }
+    dismissedGrammarSuggestionsRef.current[suggestionKey].add(suggestionId);
+    setGrammarSuggestions((prev) => {
+      const current = prev[suggestionKey] ?? [];
+      const nextItems = current.filter((item) => item.id !== suggestionId);
+      if (nextItems.length === current.length) return prev;
+      const next = { ...prev };
+      if (nextItems.length) next[suggestionKey] = nextItems;
+      else delete next[suggestionKey];
+      return next;
+    });
+  }, []);
+
+  const acceptGrammarSuggestion = useCallback((section: string, key: string, suggestion: WritingSuggestion, inputKind: 'text' | 'textarea' = 'text') => {
+    const currentValue = getField(section, key);
+    const nextValue = applySuggestionReplacement(currentValue, suggestion);
+    updateField(section, key, nextValue);
+    const suggestionKey = grammarFieldMapKey(section, key);
+    delete dismissedGrammarSuggestionsRef.current[suggestionKey];
+    const nextSuggestions = analyzeWritingSuggestions(nextValue);
+    setGrammarSuggestions((prev) => {
+      if (!nextSuggestions.length) {
+        if (!prev[suggestionKey]) return prev;
+        const next = { ...prev };
+        delete next[suggestionKey];
+        return next;
+      }
+      return { ...prev, [suggestionKey]: nextSuggestions };
+    });
+    handleGrammarBlur(section, key, nextValue, inputKind);
+  }, [getField, handleGrammarBlur, updateField]);
+
+  const renderGrammarSuggestions = useCallback((section: string, key: string, inputKind: 'text' | 'textarea' = 'text') => {
+    const suggestionKey = grammarFieldMapKey(section, key);
+    const items = grammarSuggestions[suggestionKey] ?? [];
+    if (!items.length) return null;
+    return (
+      <GrammarSuggestionCallout
+        suggestions={items}
+        onAccept={(suggestion) => acceptGrammarSuggestion(section, key, suggestion, inputKind)}
+        onDismiss={(suggestionId) => dismissGrammarSuggestion(section, key, suggestionId)}
+      />
+    );
+  }, [acceptGrammarSuggestion, dismissGrammarSuggestion, grammarSuggestions]);
+
+  const handleGrammarBlurCapture = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
+    const target = e.target;
+    if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) return;
+    const inputKind: 'text' | 'textarea' = target instanceof HTMLTextAreaElement ? 'textarea' : 'text';
+    if (target instanceof HTMLInputElement && !['text', 'search', 'email', 'tel'].includes(target.type)) return;
+    const lastEdited = lastEditedGrammarFieldRef.current;
+    if (!lastEdited) return;
+    if (target.value !== lastEdited.value) return;
+    if (!isGrammarEligibleField(lastEdited.key, inputKind)) return;
+    setActiveGrammarField({ section: lastEdited.section, key: lastEdited.key, inputKind });
+    handleGrammarBlur(lastEdited.section, lastEdited.key, lastEdited.value, inputKind);
+  }, [handleGrammarBlur]);
+
+  useEffect(() => {
+    if (!grammarDraftField) return;
+    if (!isGrammarEligibleField(grammarDraftField.key, grammarDraftField.inputKind)) return;
+    const timer = window.setTimeout(() => {
+      setActiveGrammarField({
+        section: grammarDraftField.section,
+        key: grammarDraftField.key,
+        inputKind: grammarDraftField.inputKind,
+      });
+      handleGrammarBlur(
+        grammarDraftField.section,
+        grammarDraftField.key,
+        grammarDraftField.value,
+        grammarDraftField.inputKind,
+      );
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [grammarDraftField, handleGrammarBlur]);
 
   const countSectionProgress = (sec: string): { filled: number; total: number } => {
     let filled = 0;
@@ -277,9 +477,20 @@ export default function EstudioPage() {
         getField(sec, 'dp_id_cedula_profesional') === '1';
       if (idOk) filled++;
       req('dp_id_numero');
-      req('dp_id_vigencia');
+      total++;
+      {
+        const vigencia = (getField(sec, 'dp_id_vigencia') ?? '').trim();
+        if (vigencia) {
+          const selected = new Date(`${vigencia}T00:00:00`);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          if (!Number.isNaN(selected.getTime()) && selected >= today) filled++;
+        }
+      }
       total++;
       if ((getField(sec, 'dp_identificacion_pdf') ?? '').trim()) filled++;
+      total++;
+      if ((getField(sec, 'dp_constancia_situacion_fiscal_pdf') ?? '').trim()) filled++;
       total++;
       if ((getField(sec, 'foto_participante') ?? '').trim()) filled++;
     } else if (sec === 'Autorización Actualización') {
@@ -328,6 +539,22 @@ export default function EstudioPage() {
         }
       }
     } else if (sec === 'Información del Cónyuge, Familiares y Contacto') {
+      const spouseKeys = [
+        'conyuge_nombre_completo',
+        'conyuge_edad',
+        'conyuge_fecha_nacimiento',
+        'conyuge_lugar_nacimiento',
+        'conyuge_actividad_actual',
+        'conyuge_empresa',
+        'conyuge_puesto_actividad',
+        'conyuge_negocio_propio_actividad',
+        'conyuge_ingreso_mensual_aporta',
+        'conyuge_curp',
+      ];
+      const spouseHasInfo = spouseKeys.some((key) => (getField(sec, key) ?? '').trim() !== '');
+      if (spouseHasInfo) {
+        req('conyuge_curp');
+      }
       req('contacto_telefono_celular');
       req('contacto_correo_personal');
       req('contacto_emergencia_nombre');
@@ -603,6 +830,14 @@ export default function EstudioPage() {
     return uploadFile(file, 'identificacion_oficial');
   };
 
+  const uploadPdfConstanciaSituacionFiscal = (file: File): Promise<string> => {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      return Promise.reject(new Error('Solo se permite archivo PDF.'));
+    }
+    if (file.size > 5 * 1024 * 1024) return Promise.reject(new Error('El PDF no debe superar 5 MB.'));
+    return uploadFile(file, 'constancia_situacion_fiscal_actualizada');
+  };
+
   const uploadPdfEscolaridadDocumentacion = (file: File): Promise<string> => {
     if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
       return Promise.reject(new Error('Solo se permite archivo PDF.'));
@@ -749,7 +984,7 @@ export default function EstudioPage() {
     <>
       <Header />
       <main style={{ minHeight: '65vh', paddingTop: 80, paddingBottom: 120 }}>
-        <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 20px' }}>
+        <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 20px' }} onBlurCapture={handleGrammarBlurCapture}>
           {/* Sticky progress */}
           <div style={{ position: 'sticky', top: 72, zIndex: 10, background: '#fff', padding: '12px 0', borderBottom: '1px solid #e5e7eb', marginBottom: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
@@ -769,9 +1004,12 @@ export default function EstudioPage() {
               getField={getField}
               updateField={updateField}
               uploadPdfIdentificacion={uploadPdfIdentificacionOficial}
+              uploadPdfConstanciaSituacionFiscal={uploadPdfConstanciaSituacionFiscal}
               fotoParticipanteUploading={fotoParticipanteUploading}
               setFotoParticipanteUploading={setFotoParticipanteUploading}
               uploadPhotoParticipante={uploadPhotoParticipante}
+              onGrammarBlur={handleGrammarBlur}
+              renderGrammarSuggestions={renderGrammarSuggestions}
             />
           )}
 
@@ -824,6 +1062,7 @@ export default function EstudioPage() {
               updateField={updateField}
               uploadDomicilioComprobante={uploadDomicilioComprobante}
               requireAddressVerification={requiresAddressVerification}
+              renderGrammarSuggestions={renderGrammarSuggestions}
             />
           )}
 
@@ -874,6 +1113,20 @@ export default function EstudioPage() {
           {sec === 'Referencias Personales' && (
             <SectionReferenciasPersonales sec={sec} getField={getField} updateField={updateField} />
           )}
+
+          {activeGrammarField && grammarSuggestions[grammarFieldMapKey(activeGrammarField.section, activeGrammarField.key)]?.length ? (
+            <div style={{ position: 'fixed', right: 20, bottom: 20, width: 'min(420px, calc(100vw - 32px))', maxHeight: 'min(70vh, 520px)', overflowY: 'auto', padding: 16, borderRadius: 14, border: '1px solid #bfdbfe', background: '#eff6ff', boxShadow: '0 20px 45px rgba(30, 58, 138, 0.22)', zIndex: 1200 }}>
+              <div style={{ marginBottom: 10, fontSize: 14, fontWeight: 700, color: '#1e3a8a' }}>Sugerencias de redacciÃ³n</div>
+              <div style={{ fontSize: 13, color: '#475569', marginBottom: 10, lineHeight: 1.5 }}>
+                Revise estas sugerencias para mejorar la redaccion. Puede aceptarlas u omitirlas sin perder su texto original.
+              </div>
+              <GrammarSuggestionCallout
+                suggestions={grammarSuggestions[grammarFieldMapKey(activeGrammarField.section, activeGrammarField.key)]}
+                onAccept={(suggestion) => acceptGrammarSuggestion(activeGrammarField.section, activeGrammarField.key, suggestion, activeGrammarField.inputKind)}
+                onDismiss={(suggestionId) => dismissGrammarSuggestion(activeGrammarField.section, activeGrammarField.key, suggestionId)}
+              />
+            </div>
+          ) : null}
 
           {/* Bottom nav */}
           <div style={{ position: 'sticky', bottom: 0, background: '#fff', padding: '16px 0', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
@@ -958,12 +1211,14 @@ function SectionDomicilio({
   updateField,
   uploadDomicilioComprobante,
   requireAddressVerification,
+  renderGrammarSuggestions,
 }: {
   sec: string;
   getField: (s: string, k: string) => string;
   updateField: (s: string, k: string, v: string) => void;
   uploadDomicilioComprobante: (f: File) => Promise<string>;
   requireAddressVerification: boolean;
+  renderGrammarSuggestions: (section: string, key: string, inputKind?: 'text' | 'textarea') => React.ReactNode;
 }) {
   const [domComprobanteUploading, setDomComprobanteUploading] = useState(false);
   const inputStyle: React.CSSProperties = { width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' };
@@ -1071,7 +1326,7 @@ function SectionDomicilio({
           <h3 style={{ margin: '0 0 16px', fontSize: 16, color: '#334155' }}>1.4.1 Domicilio Anterior</h3>
           <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>(Aplica cuando el tiempo en el domicilio actual es menor a 2 años)</p>
           <div style={{ display: 'grid', gap: 14 }}>
-            <div><label style={labelStyle}>Domicilio completo anterior: *</label><textarea value={getField(sec, 'dom_anterior_completo')} onChange={(e) => updateField(sec, 'dom_anterior_completo', e.target.value)} rows={2} style={{ ...inputStyle, resize: 'vertical' }} /></div>
+            <div><label style={labelStyle}>Domicilio completo anterior: *</label><textarea value={getField(sec, 'dom_anterior_completo')} onChange={(e) => updateField(sec, 'dom_anterior_completo', e.target.value)} rows={2} style={{ ...inputStyle, resize: 'vertical' }} />{renderGrammarSuggestions(sec, 'dom_anterior_completo', 'textarea')}</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div><label style={labelStyle}>Periodo de residencia (de) *</label><input type="date" value={getField(sec, 'dom_anterior_periodo_de')} onChange={(e) => updateField(sec, 'dom_anterior_periodo_de', e.target.value)} style={inputStyle} /></div>
               <div><label style={labelStyle}>Periodo de residencia (a) *</label><input type="date" value={getField(sec, 'dom_anterior_periodo_a')} onChange={(e) => updateField(sec, 'dom_anterior_periodo_a', e.target.value)} style={inputStyle} /></div>
@@ -1117,6 +1372,7 @@ function SectionDomicilio({
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>Referencias o señas del domicilio (calles, puntos de referencia)</label>
           <textarea value={getField(sec, 'dom_senas_opcional')} onChange={(e) => updateField(sec, 'dom_senas_opcional', e.target.value)} rows={2} placeholder="Calles, puntos de referencia para ubicar el domicilio" style={{ ...inputStyle, marginTop: 4 }} />
+          {renderGrammarSuggestions(sec, 'dom_senas_opcional', 'textarea')}
         </div>
         <p style={{ margin: '0 0 12px', fontWeight: 600, fontSize: 14 }}>Autorización:</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
@@ -1133,19 +1389,26 @@ function SectionDatosPersonalesContacto({
   getField,
   updateField,
   uploadPdfIdentificacion,
+  uploadPdfConstanciaSituacionFiscal,
   fotoParticipanteUploading,
   setFotoParticipanteUploading,
   uploadPhotoParticipante,
+  onGrammarBlur,
+  renderGrammarSuggestions,
 }: {
   sec: string;
   getField: (s: string, k: string) => string;
   updateField: (s: string, k: string, v: string) => void;
   uploadPdfIdentificacion: (f: File) => Promise<string>;
+  uploadPdfConstanciaSituacionFiscal: (f: File) => Promise<string>;
   fotoParticipanteUploading: boolean;
   setFotoParticipanteUploading: (v: boolean) => void;
   uploadPhotoParticipante: (f: File) => Promise<string>;
+  onGrammarBlur: (section: string, key: string, value: string, inputKind?: 'text' | 'textarea') => void;
+  renderGrammarSuggestions: (section: string, key: string, inputKind?: 'text' | 'textarea') => React.ReactNode;
 }) {
   const [pdfUploading, setPdfUploading] = useState(false);
+  const [constanciaUploading, setConstanciaUploading] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
@@ -1153,6 +1416,14 @@ function SectionDatosPersonalesContacto({
   const cameraCaptureInputRef = useRef<HTMLInputElement | null>(null);
   const inputStyle: React.CSSProperties = { width: '100%', padding: 10, boxSizing: 'border-box', borderRadius: 8, border: '1px solid #e2e8f0' };
   const labelStyle = { display: 'block' as const, marginBottom: 4, fontWeight: 600, fontSize: 14 };
+  const vigenciaValue = getField(sec, 'dp_id_vigencia');
+  const vigenciaExpired = (() => {
+    if (!vigenciaValue) return false;
+    const selected = new Date(`${vigenciaValue}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return !Number.isNaN(selected.getTime()) && selected < today;
+  })();
 
   const handlePdf = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -1163,6 +1434,19 @@ function SectionDatosPersonalesContacto({
       .catch((err) => alert(err?.message || 'Error al subir el PDF.'))
       .finally(() => {
         setPdfUploading(false);
+        e.target.value = '';
+      });
+  };
+
+  const handleConstanciaFiscal = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setConstanciaUploading(true);
+    uploadPdfConstanciaSituacionFiscal(f)
+      .then((url) => updateField(sec, 'dp_constancia_situacion_fiscal_pdf', url))
+      .catch((err) => alert(err?.message || 'Error al subir el PDF.'))
+      .finally(() => {
+        setConstanciaUploading(false);
         e.target.value = '';
       });
   };
@@ -1267,11 +1551,13 @@ function SectionDatosPersonalesContacto({
           </div>
           <div>
             <label style={labelStyle}>Lugar de nacimiento (Estado / País) *</label>
-            <input type="text" value={getField(sec, 'dp_lugar_nacimiento')} onChange={(e) => updateField(sec, 'dp_lugar_nacimiento', e.target.value)} placeholder="Ej. Ciudad de México, México" style={inputStyle} />
+            <input type="text" value={getField(sec, 'dp_lugar_nacimiento')} onChange={(e) => updateField(sec, 'dp_lugar_nacimiento', e.target.value)} onBlur={(e) => onGrammarBlur(sec, 'dp_lugar_nacimiento', e.target.value)} placeholder="Ej. Ciudad de México, México" style={inputStyle} />
+            {renderGrammarSuggestions(sec, 'dp_lugar_nacimiento')}
           </div>
           <div>
             <label style={labelStyle}>Nacionalidad *</label>
-            <input type="text" value={getField(sec, 'dp_nacionalidad')} onChange={(e) => updateField(sec, 'dp_nacionalidad', e.target.value)} placeholder="Ej. Mexicana" style={inputStyle} />
+            <input type="text" value={getField(sec, 'dp_nacionalidad')} onChange={(e) => updateField(sec, 'dp_nacionalidad', e.target.value)} onBlur={(e) => onGrammarBlur(sec, 'dp_nacionalidad', e.target.value)} placeholder="Ej. Mexicana" style={inputStyle} />
+            {renderGrammarSuggestions(sec, 'dp_nacionalidad')}
           </div>
           <div>
             <label style={labelStyle}>Sexo *</label>
@@ -1331,6 +1617,11 @@ function SectionDatosPersonalesContacto({
           <div>
             <label style={labelStyle}>Vigencia del documento *</label>
             <input type="date" value={getField(sec, 'dp_id_vigencia')} onChange={(e) => updateField(sec, 'dp_id_vigencia', e.target.value)} style={inputStyle} />
+            {vigenciaExpired ? (
+              <p style={{ margin: '8px 0 0', fontSize: 13, color: '#b91c1c', fontWeight: 700 }}>
+                El documento ingresado se encuentra vencido. Debe proporcionar un documento vigente para continuar.
+              </p>
+            ) : null}
           </div>
           <div style={{ padding: 16, background: '#eff6ff', borderRadius: 10, border: '1px solid #93c5fd' }}>
             <p style={{ margin: '0 0 10px', fontWeight: 700, color: '#1e3a5f' }}>Subir archivo de identificación en PDF *</p>
@@ -1347,6 +1638,22 @@ function SectionDatosPersonalesContacto({
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      <div style={{ padding: 16, background: '#eff6ff', borderRadius: 10, border: '1px solid #93c5fd' }}>
+        <p style={{ margin: '0 0 10px', fontWeight: 700, color: '#1e3a5f' }}>Constancia de Situacion Fiscal Actualizada *</p>
+        <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>Formato permitido: PDF unicamente. Peso maximo: 5 MB.</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <label style={{ cursor: constanciaUploading ? 'wait' : 'pointer' }}>
+            <input type="file" accept=".pdf,application/pdf" style={{ display: 'none' }} disabled={constanciaUploading} onChange={handleConstanciaFiscal} />
+            <span style={{ display: 'inline-block', padding: '10px 18px', background: constanciaUploading ? '#64748b' : '#1e40af', color: '#fff', borderRadius: 8, fontWeight: 700 }}>{constanciaUploading ? 'Subiendo...' : 'Subir PDF'}</span>
+          </label>
+          {getField(sec, 'dp_constancia_situacion_fiscal_pdf') ? (
+            <span style={{ padding: '6px 12px', background: '#d1fae5', borderRadius: 8, fontSize: 14, fontWeight: 600 }}>Archivo recibido</span>
+          ) : (
+            <span style={{ color: '#b45309', fontSize: 14, fontWeight: 600 }}>Archivo requerido</span>
+          )}
         </div>
       </div>
 
@@ -1649,6 +1956,7 @@ function SectionInformacionConyugeFamiliaresContacto({
           <div><label style={labelStyle}>Fecha de nacimiento</label><input type="date" value={getField(sec, 'conyuge_fecha_nacimiento')} onChange={(e) => updateField(sec, 'conyuge_fecha_nacimiento', e.target.value)} style={inputStyle} /></div>
         </div>
         <div><label style={labelStyle}>Lugar de nacimiento</label><input type="text" value={getField(sec, 'conyuge_lugar_nacimiento')} onChange={(e) => updateField(sec, 'conyuge_lugar_nacimiento', e.target.value)} placeholder="Ciudad y estado" style={inputStyle} /></div>
+        <div><label style={labelStyle}>CURP *</label><input type="text" value={getField(sec, 'conyuge_curp')} onChange={(e) => updateField(sec, 'conyuge_curp', e.target.value)} placeholder="CURP" style={inputStyle} /></div>
       </div>
 
       <h3 style={{ margin: '8px 0 0', fontSize: 16, color: '#334155' }}>ACTIVIDAD ACTUAL</h3>
@@ -3115,3 +3423,4 @@ function SectionReferenciasPersonales({
     </div>
   );
 }
+
