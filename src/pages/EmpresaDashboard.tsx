@@ -107,7 +107,6 @@ export default function EmpresaDashboard() {
         window.setTimeout(() => {
           const a = document.createElement('a');
           a.href = `/api/studies.php?action=download_pdf&invitation_id=${inv.id}&_ts=${Date.now()}-${index}`;
-          a.download = `estudio-${inv.id}-final-${Date.now()}-${index}.pdf`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);

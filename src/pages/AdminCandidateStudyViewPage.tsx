@@ -836,6 +836,14 @@ function renderEconomicSituationSection(sectionData: Record<string, string>) {
           <div><strong>Número de dependientes:</strong> {normalize(sectionData.ie_num_dependientes) || '—'}</div>
           <div><strong>Tipo de dependientes:</strong> {tipoDependientes || '—'}</div>
         </div>
+        {(() => {
+          const configuredCount = Math.max(0, Math.min(25, parseInt(normalize(sectionData.ie_num_dependientes) || '0', 10) || 0));
+          const detectedIndexes = Array.from({ length: 25 }, (_, idx) => idx).filter((idx) =>
+            ['nombre_completo', 'parentesco', 'edad', 'estado_civil', 'ocupacion_grado', 'institucion', 'empresa_actividad']
+              .some((field) => normalize(sectionData[`ie_dep_${idx}_${field}`]) !== '')
+          );
+          const totalRows = configuredCount > 0 ? configuredCount : (detectedIndexes.length > 0 ? Math.max(...detectedIndexes) + 1 : 0);
+          return (
         <table style={{ width: '100%', minWidth: 900, borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -850,7 +858,7 @@ function renderEconomicSituationSection(sectionData: Record<string, string>) {
             </tr>
           </thead>
           <tbody>
-            {[0, 1, 2, 3].map((idx) => (
+            {Array.from({ length: totalRows }, (_, idx) => (
               <tr key={idx}>
                 <td style={tdStyle}>{idx + 1}</td>
                 <td style={tdStyle}>{normalize(sectionData[`ie_dep_${idx}_nombre_completo`]) || '—'}</td>
@@ -864,6 +872,8 @@ function renderEconomicSituationSection(sectionData: Record<string, string>) {
             ))}
           </tbody>
         </table>
+          );
+        })()}
         {normalize(sectionData.ie_dep_mas_texto) !== '' && (
           <div style={{ marginTop: 10 }}><strong>Información adicional de dependientes:</strong> {normalize(sectionData.ie_dep_mas_texto)}</div>
         )}

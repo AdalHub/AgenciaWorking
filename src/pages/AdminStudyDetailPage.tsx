@@ -72,6 +72,16 @@ function formatDate(d: string | null | undefined): string {
   }
 }
 
+function downloadFilenameFromResponse(response: Response, fallback: string): string {
+  const disposition = response.headers.get('content-disposition') || '';
+  const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1]);
+  }
+  const basicMatch = disposition.match(/filename="?([^"]+)"?/i);
+  return basicMatch?.[1] || fallback;
+}
+
 function completionPct(formData: FormDataBySection): number {
   let total = 0;
   let filled = 0;
@@ -643,7 +653,6 @@ export default function AdminStudyDetailPage() {
       window.setTimeout(() => {
         const a = document.createElement('a');
         a.href = `/api/studies.php?action=download_pdf&invitation_id=${inv.id}&_ts=${Date.now()}-${idx}`;
-        a.download = `estudio-${inv.id}-final-${Date.now()}-${idx}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -851,10 +860,11 @@ export default function AdminStudyDetailPage() {
         return;
       }
       const rendererVersion = res.headers.get('X-AW-PDF-Renderer');
+      const filename = downloadFilenameFromResponse(res, `estudio-${inv.id}.pdf`);
       const blob = await res.blob();
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `estudio-${inv.id}-final-${Date.now()}.pdf`;
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(a.href);
       if (rendererVersion) {

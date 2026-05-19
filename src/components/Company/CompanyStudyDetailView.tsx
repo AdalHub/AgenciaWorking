@@ -66,6 +66,16 @@ function formatDate(value: string | null | undefined): string {
   }
 }
 
+function downloadFilenameFromResponse(response: Response, fallback: string): string {
+  const disposition = response.headers.get('content-disposition') || '';
+  const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1]);
+  }
+  const basicMatch = disposition.match(/filename="?([^"]+)"?/i);
+  return basicMatch?.[1] || fallback;
+}
+
 function getGeneralClientStatus(study: Study, invitations: Invitation[]) {
   if (study.status === 'concluido') {
     return { label: 'Informe disponible', bg: '#dcfce7', text: '#166534' };
@@ -317,11 +327,12 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
           return;
         }
 
+        const filename = downloadFilenameFromResponse(response, `estudio-${selectedInvId}.pdf`);
         const blob = await response.blob();
         const href = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = href;
-        link.download = `estudio-${selectedInvId}-final-${Date.now()}.pdf`;
+        link.download = filename;
         link.click();
         URL.revokeObjectURL(href);
       })
@@ -340,7 +351,6 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
       window.setTimeout(() => {
         const link = document.createElement('a');
         link.href = `${API}/studies.php?action=download_pdf&invitation_id=${inv.id}&_ts=${Date.now()}-${index}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
-        link.download = `estudio-${inv.id}-final-${Date.now()}-${index}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

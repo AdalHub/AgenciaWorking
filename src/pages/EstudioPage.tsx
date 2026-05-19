@@ -2562,6 +2562,7 @@ function SectionIngresosEconomicos({
     return Number.isFinite(n) ? n : 0;
   };
   const totalGastos = GASTOS.reduce((sum, [key]) => sum + parseMonto(getField(sec, key)), 0);
+  const requestedDependents = Math.max(0, Math.min(25, parseInt(getField(sec, 'ie_num_dependientes') || '0', 10) || 0));
 
   return (
     <div style={{ display: 'grid', gap: 24 }}>
@@ -2648,7 +2649,7 @@ function SectionIngresosEconomicos({
         <h3 style={{ margin: '0 0 16px', fontSize: 16, color: '#334155' }}>4.4 PERSONAS QUE DEPENDEN ECONÓMICAMENTE DEL EVALUADO</h3>
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>Número de dependientes económicos</label>
-          <input type="number" min={0} value={getField(sec, 'ie_num_dependientes')} onChange={(e) => updateField(sec, 'ie_num_dependientes', e.target.value)} style={{ ...inputStyle, width: 100 }} />
+          <input type="number" min={0} max={25} value={getField(sec, 'ie_num_dependientes')} onChange={(e) => updateField(sec, 'ie_num_dependientes', e.target.value)} style={{ ...inputStyle, width: 100 }} />
         </div>
         <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 14 }}>Tipo de dependientes:</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 16 }}>
@@ -2675,7 +2676,7 @@ function SectionIngresosEconomicos({
               </tr>
             </thead>
             <tbody>
-              {[0, 1, 2, 3].map((idx) => (
+              {Array.from({ length: requestedDependents }, (_, idx) => (
                 <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0', verticalAlign: 'top' }}>
                   <td style={{ padding: '6px', fontWeight: 600, color: '#475569' }}>{idx + 1}</td>
                   {['nombre_completo', 'parentesco', 'edad', 'estado_civil', 'ocupacion_grado', 'institucion', 'empresa_actividad'].map((col) => (
