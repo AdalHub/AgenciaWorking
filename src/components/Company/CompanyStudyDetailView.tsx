@@ -4,8 +4,10 @@ import { useNavigate } from 'react-router-dom';
 const API = '/api';
 const FETCH_OPTIONS = { credentials: 'include' as RequestCredentials };
 const CLIENT_PROGRESS_TEXT = 'Proceso de verificacion en curso';
+const CLIENT_PENDING_INFO_TEXT =
+  'Detalle del estudio: Todos los candidatos han sido invitados a completar su estudio socioeconomico. Actualmente, nos encontramos en espera de que inicien o concluyan su captura.';
 const CLIENT_INFO_TEXT =
-  'Detalle del estudio: El candidato ha completado la informacion requerida. Actualmente, el estudio se encuentra en proceso de revision y validacion por parte de nuestro equipo.';
+  'Detalle del estudio: Uno o mas candidatos han completado la informacion requerida. Actualmente, el estudio se encuentra en proceso de revision y validacion por parte de nuestro equipo.';
 const CLIENT_FINAL_INFO_TEXT =
   'Detalle del estudio: Este estudio ya cuenta con informes finales disponibles para consulta y descarga en el portal. Puede revisar el detalle de cada candidato y descargar su informe correspondiente.';
 
@@ -310,7 +312,11 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
   const generalStatus = study ? getGeneralClientStatus(study, invitations) : { label: 'Registro del candidato', bg: '#e5e7eb', text: '#475569' };
   const selectedProgressSteps = selectedInv ? getProgressSteps(study?.status ?? '', selectedInv.status) : [];
   const selectedCandidatePills = selectedInv ? getCandidateStatusPills(study?.status ?? '', selectedInv) : [];
-  const topInfoText = study?.status === 'concluido' && reportAvailableCount > 0 ? CLIENT_FINAL_INFO_TEXT : CLIENT_INFO_TEXT;
+  const topInfoText = study?.status === 'concluido'
+    ? CLIENT_FINAL_INFO_TEXT
+    : completedCount > 0
+      ? CLIENT_INFO_TEXT
+      : CLIENT_PENDING_INFO_TEXT;
 
   const documentDownloadApiUrl = (filePath: string) =>
     `${API}/studies.php?action=download_document&file_path=${encodeURIComponent(filePath)}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
