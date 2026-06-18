@@ -47,6 +47,15 @@ function isValidEmail(s: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 }
 
+function parseCompanyEmails(text: string): string[] {
+  return Array.from(new Set(
+    text
+      .split(/[\r\n,;]+/)
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean),
+  ));
+}
+
 type Props = {
   onClose: () => void;
   onSuccess: () => void;
@@ -74,7 +83,9 @@ export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
   const [publicEmails, setPublicEmails] = useState('');
   const [copied, setCopied] = useState(false);
 
-  const inviteFilled = invitedCompanyEmail.trim() !== '';
+  const companyInviteEmails = parseCompanyEmails(invitedCompanyEmail);
+  const invalidCompanyEmails = companyInviteEmails.filter((email) => !isValidEmail(email));
+  const inviteFilled = companyInviteEmails.length > 0;
   const showVerdictVisible = inviteFilled || inviteSectionOpen;
 
   const handlePreviewCSV = () => {
@@ -104,6 +115,10 @@ export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
       return;
     }
     setError(null);
+    if (invalidCompanyEmails.length > 0) {
+      setError(`Corrige los correos de empresa invÃ¡lidos: ${invalidCompanyEmails.join(', ')}`);
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch('/api/studies.php?action=create_study', {
@@ -116,7 +131,8 @@ export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
           format_version: formatVersion,
           require_address_verification: requireAddressVerification,
           require_criminal_record_letter: requireCriminalRecordLetter,
-          invited_company_email: invitedCompanyEmail.trim() || null,
+          invited_company_email: companyInviteEmails[0] || null,
+          company_recipient_emails: companyInviteEmails,
           show_verdict_to_company: showVerdictToCompany,
         }),
       });
@@ -171,6 +187,10 @@ export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
 
   const handleCreatePublic = async () => {
     setError(null);
+    if (invalidCompanyEmails.length > 0) {
+      setError(`Corrige los correos de empresa invÃ¡lidos: ${invalidCompanyEmails.join(', ')}`);
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch('/api/studies.php?action=create_study', {
@@ -183,7 +203,8 @@ export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
           format_version: formatVersion,
           require_address_verification: requireAddressVerification,
           require_criminal_record_letter: requireCriminalRecordLetter,
-          invited_company_email: invitedCompanyEmail.trim() || null,
+          invited_company_email: companyInviteEmails[0] || null,
+          company_recipient_emails: companyInviteEmails,
           show_verdict_to_company: showVerdictToCompany,
         }),
       });
@@ -342,15 +363,20 @@ export default function AdminNewStudyModal({ onClose, onSuccess }: Props) {
               <button type="button" onClick={() => setInviteSectionOpen(true)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline', marginBottom: 16 }}>+ Invitar empresa</button>
             ) : (
               <div style={{ marginBottom: 16, padding: 12, border: '1px solid #e5e7eb', borderRadius: 8 }}>
-                <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Correo de la empresa (opcional)</label>
+                <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Correos de la empresa (opcional)</label>
                 <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>La empresa recibirá un enlace para ver los resultados. No necesita tener cuenta.</p>
-                <input
-                  type="email"
+                <textarea
                   value={invitedCompanyEmail}
                   onChange={(e) => setInvitedCompanyEmail(e.target.value)}
-                  placeholder="correo@empresa.com"
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: 8, boxSizing: 'border-box' }}
+                  placeholder={'correo1@empresa.com\ncorreo2@empresa.com'}
+                  rows={3}
+                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: 8, boxSizing: 'border-box', resize: 'vertical' }}
                 />
+                {invalidCompanyEmails.length > 0 && (
+                  <p style={{ margin: '8px 0 0', fontSize: 12, color: '#dc2626' }}>
+                    Corrige estos correos antes de continuar: {invalidCompanyEmails.join(', ')}
+                  </p>
+                )}
                 {showVerdictVisible && (
                   <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <input type="checkbox" id="showVerdict" checked={showVerdictToCompany} onChange={(e) => setShowVerdictToCompany(e.target.checked)} />

@@ -932,6 +932,11 @@ export default function AdminStudyDetailPage() {
                 <span style={{ padding: '4px 8px', borderRadius: 6, background: statusStyle.bg, color: statusStyle.text, fontSize: 12 }}>{STATUS_LABELS[study.status]}</span>
               </div>
               <p style={{ margin: '0 0 12px', fontSize: 13, color: '#6b7280' }}>{completedCount} de {totalCount} candidatos completados</p>
+              {Array.isArray((study as any).company_recipient_emails) && (study as any).company_recipient_emails.length > 0 && (
+                <div style={{ margin: '0 0 12px', fontSize: 12, color: '#475569' }}>
+                  <strong>Correos de empresa:</strong> {(study as any).company_recipient_emails.join(', ')}
+                </div>
+              )}
               {study.study_type === 'public' && (
                 <div style={{ padding: 10, background: '#fef3c7', borderRadius: 8, marginBottom: 12, fontSize: 13 }}>Estudio público — los candidatos acceden con el enlace compartido, no con códigos individuales.</div>
               )}
