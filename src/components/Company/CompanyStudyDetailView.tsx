@@ -345,23 +345,52 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
       .catch(() => setToast('No disponible'));
   };
 
-  const handleDownloadInformeEstudio = () => {
+  const handleDownloadInformeEstudio = async () => {
     const completedInvitations = invitations.filter((inv) => inv.status === 'completed' && !isInvitationCancelledForCompany(studyStatus, inv));
     if (completedInvitations.length === 0) {
       setToast('No hay colaboradores completados para descargar.');
       return;
     }
 
-    setToast(`Descargando ${completedInvitations.length} PDF${completedInvitations.length === 1 ? '' : 's'} por colaborador.`);
-    completedInvitations.forEach((inv, index) => {
-      window.setTimeout(() => {
+    setToast(`Preparando ${completedInvitations.length} informe${completedInvitations.length === 1 ? '' : 's'} final${completedInvitations.length === 1 ? '' : 'es'} para descarga.`);
+    let successCount = 0;
+
+    for (const [index, inv] of completedInvitations.entries()) {
+      try {
+        const url = `${API}/studies.php?action=download_pdf&invitation_id=${inv.id}&_ts=${Date.now()}-${index}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
+        const response = await fetch(url, { ...FETCH_OPTIONS, cache: 'no-store' });
+        if (!response.ok) {
+          continue;
+        }
+
+        const filename = downloadFilenameFromResponse(response, `estudio-${inv.id}.pdf`);
+        const blob = await response.blob();
+        const href = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = `${API}/studies.php?action=download_pdf&invitation_id=${inv.id}&_ts=${Date.now()}-${index}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
+        link.href = href;
+        link.download = filename;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-      }, index * 250);
-    });
+        window.setTimeout(() => URL.revokeObjectURL(href), 1500);
+        successCount += 1;
+        await new Promise((resolve) => window.setTimeout(resolve, 250));
+      } catch {
+        // Continue downloading the remaining reports even if one fails.
+      }
+    }
+
+    if (successCount === 0) {
+      setToast('No fue posible descargar los informes finales disponibles.');
+      return;
+    }
+
+    if (successCount < completedInvitations.length) {
+      setToast(`Se descargaron ${successCount} de ${completedInvitations.length} informes finales disponibles.`);
+      return;
+    }
+
+    setToast(`Descargando ${successCount} informe${successCount === 1 ? '' : 's'} final${successCount === 1 ? '' : 'es'}.`);
   };
 
   if (loading || !study) {
@@ -400,7 +429,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
                   fontWeight: 700,
                 }}
               >
-                Descargar informe final
+                Descargar todos los informes finales
               </button>
             ) : (
               <span style={{ padding: '8px 12px', background: '#fef3c7', color: '#92400e', borderRadius: 8, fontSize: 13 }}>
