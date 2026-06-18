@@ -141,6 +141,33 @@ const SECTIONS = [
 ] as const;
 const SECTION_COUNT = SECTIONS.length;
 
+const GASTOS_MENSUALES = [
+  ['gasto_renta', 'Renta'],
+  ['gasto_hipoteca', 'Hipoteca'],
+  ['gasto_alimentos', 'Alimentos / despensa'],
+  ['gasto_agua', 'Agua'],
+  ['gasto_luz', 'Luz'],
+  ['gasto_gas', 'Gas'],
+  ['gasto_tel_casa', 'Teléfono de casa / Internet'],
+  ['gasto_tel_celular', 'Teléfono celular'],
+  ['gasto_internet_tv', 'Suscripciones de streaming'],
+  ['gasto_mantenimiento', 'Mantenimiento del hogar'],
+  ['gasto_cuotas_condominio', 'Cuotas o mantenimiento (condominio)'],
+  ['gasto_limpieza', 'Limpieza / artículos del hogar'],
+  ['gasto_gasolina', 'Gasolina'],
+  ['gasto_transporte', 'Transporte público'],
+  ['gasto_esparcimiento', 'Esparcimiento / entretenimiento'],
+  ['gasto_ropa', 'Ropa y calzado'],
+  ['gasto_escolares', 'Gastos escolares'],
+  ['gasto_medicos', 'Gastos médicos'],
+  ['gasto_seguro_vida', 'Seguro de vida'],
+  ['gasto_seguro_medico', 'Seguro médico'],
+  ['gasto_aplicaciones', 'Aplicaciones / plataformas digitales (Netflix, Prime, etc.)'],
+  ['gasto_apoyo_pension', 'Apoyo o pensión familiar'],
+  ['gasto_guarderia', 'Guardería / cuidado infantil'],
+  ['gasto_otros', 'Otros gastos'],
+] as const;
+
 export default function EstudioPage() {
   const [searchParams] = useSearchParams();
   const codigo = searchParams.get('codigo') ?? '';
@@ -299,11 +326,18 @@ export default function EstudioPage() {
       if (!c2.auth_nombre_firma?.trim() && invitation.candidate_name) c2.auth_nombre_firma = invitation.candidate_name;
       if (!c2.auth_empresa_solicitante?.trim() && invitation.study?.company_name) c2.auth_empresa_solicitante = invitation.study.company_name;
       const s3 = 'Información del Cónyuge, Familiares y Contacto';
+      const s4 = 'Ingresos y Situación Económica';
       if (!next[s3]) next[s3] = {};
+      if (!next[s4]) next[s4] = {};
       const c3 = { ...next[s3] };
+      const c4 = { ...next[s4] };
       if (!c3.contacto_telefono_celular?.trim() && invitation.candidate_phone) c3.contacto_telefono_celular = invitation.candidate_phone;
       if (!c3.contacto_correo_personal?.trim() && invitation.candidate_email) c3.contacto_correo_personal = invitation.candidate_email;
+      GASTOS_MENSUALES.forEach(([key]) => {
+        if ((c4[key] ?? '').trim() === '') c4[key] = '0';
+      });
       next[s3] = c3;
+      next[s4] = c4;
       next[s1] = c1;
       next[s2] = c2;
       return next;
@@ -597,6 +631,7 @@ export default function EstudioPage() {
     } else if (sec === 'Ingresos y Situación Económica') {
       total++;
       if (['menos10k', '10_15', '15_20', '20_30', '30_40', '40_50', 'mas50'].includes(getField(sec, 'ie_rango'))) filled++;
+      GASTOS_MENSUALES.forEach(([key]) => req(key));
       reqYn('ie_ingresos_adicionales');
       reqYn('ie_buro_problema');
       if (getField(sec, 'ie_buro_otro') === '1') req('ie_buro_otro_texto');
@@ -2597,12 +2632,15 @@ function SectionIngresosEconomicos({
       {/* 4.2 GASTOS MENSUALES GENERALES */}
       <div style={{ padding: 20, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
         <h3 style={{ margin: '0 0 8px', fontSize: 16, color: '#334155' }}>4.2. GASTOS MENSUALES GENERALES</h3>
+        <p style={{ margin: '0 0 16px', fontSize: 13, color: '#991b1b', fontWeight: 600 }}>
+          Todos los montos son obligatorios. Si un concepto no aplica, registre <strong>0</strong>. Favor de capturar esta información de manera honesta.
+        </p>
         <p style={{ margin: '0 0 16px', fontSize: 13, color: '#64748b' }}>(Realizados por el participante y las personas que dependen económicamente de él)</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
           {GASTOS.map(([key, label]) => (
             <div key={key}>
-              <label style={labelStyle}>{label}</label>
-              <input type="text" inputMode="decimal" value={getField(sec, key)} onChange={(e) => updateField(sec, key, e.target.value)} placeholder="$" style={inputStyle} />
+              <label style={labelStyle}>{label} *</label>
+              <input type="text" inputMode="decimal" value={getField(sec, key)} onChange={(e) => updateField(sec, key, e.target.value)} placeholder="0" style={inputStyle} />
             </div>
           ))}
         </div>
