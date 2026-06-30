@@ -3071,7 +3071,7 @@ function SectionBienestarAntecedentes({
 }) {
   return (
     <div style={{ display: 'grid', gap: 22 }}>
-      <h2 style={{ margin: 0, fontSize: 18, color: '#111' }}>HÁBITOS GENERALES</h2>
+      <h2 style={{ margin: 0, fontSize: 18, color: '#111' }}>6. HÁBITOS GENERALES</h2>
       <ChoiceRow
         label="¿Consume alcohol? *"
         value={getField(sec, 'bw_alcohol')}
