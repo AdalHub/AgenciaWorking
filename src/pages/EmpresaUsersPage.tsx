@@ -38,10 +38,15 @@ type Member = {
   invite: InviteSummary;
 };
 
-type ContractedService = {
-  catalog_id: number;
+type PermissionNodeRow = {
+  node_id: number;
+  parent_node_id: number | null;
   name: string;
-  slug: string;
+  description: string | null;
+  status: 'pendiente' | 'en_proceso' | 'disponible' | 'completado';
+  sort_order: number;
+  can_view: boolean;
+  can_download: boolean;
 };
 
 type PermissionRow = {
@@ -50,6 +55,8 @@ type PermissionRow = {
   slug: string;
   name: string;
   can_view: boolean;
+  can_download: boolean;
+  nodes: PermissionNodeRow[];
 };
 
 type MemberForm = {
@@ -98,21 +105,21 @@ export default function EmpresaUsersPage() {
   const [loading, setLoading] = useState(true);
   const [context, setContext] = useState<PortalContext | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
-  const [contractedServices, setContractedServices] = useState<ContractedService[]>([]);
+  const [permissionTemplate, setPermissionTemplate] = useState<PermissionRow[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [form, setForm] = useState<MemberForm>(emptyMemberForm);
-  const [permittedCatalogIds, setPermittedCatalogIds] = useState<number[]>([]);
+  const [permissionRows, setPermissionRows] = useState<PermissionRow[]>([]);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [contextRes, membersRes, servicesRes] = await Promise.all([
+      const [contextRes, membersRes, permissionsRes] = await Promise.all([
         fetch('/api/company_portal.php?action=portal_context', { credentials: 'include' }),
         fetch('/api/company_portal.php?action=list_company_members', { credentials: 'include' }),
-        fetch('/api/company_portal.php?action=list_company_services', { credentials: 'include' }),
+        fetch('/api/company_portal.php?action=get_company_member_permissions&member_user_id=0', { credentials: 'include' }),
       ]);
 
       if (!contextRes.ok) {
@@ -124,24 +131,16 @@ export default function EmpresaUsersPage() {
       if (!contextData?.membership?.can_manage_company) {
         setContext(contextData);
         setMembers([]);
-        setContractedServices([]);
+        setPermissionTemplate([]);
         return;
       }
 
       const membersData = await membersRes.json();
-      const servicesData = await servicesRes.json();
+      const permissionsData = await permissionsRes.json();
 
       setContext(contextData);
       setMembers(Array.isArray(membersData?.members) ? membersData.members : []);
-      setContractedServices(
-        Array.isArray(servicesData?.contracted_services)
-          ? servicesData.contracted_services.map((service: any) => ({
-              catalog_id: Number(service.catalog_id),
-              name: String(service.name || ''),
-              slug: String(service.slug || ''),
-            }))
-          : []
-      );
+      setPermissionTemplate(Array.isArray(permissionsData?.permissions) ? permissionsData.permissions : []);
     } catch {
       setToast('No fue posible cargar los usuarios autorizados.');
     } finally {
@@ -172,10 +171,41 @@ export default function EmpresaUsersPage() {
     }
   };
 
+  const clonePermissionRows = (rows: PermissionRow[]) =>
+    rows.map((service) => ({
+      ...service,
+      nodes: Array.isArray(service.nodes) ? service.nodes.map((node) => ({ ...node })) : [],
+    }));
+
+  const buildPermissionNodeRows = (nodes: PermissionNodeRow[]) => {
+    const children = new Map<number | null, PermissionNodeRow[]>();
+    nodes.forEach((node) => {
+      const key = node.parent_node_id ?? null;
+      const group = children.get(key) || [];
+      group.push(node);
+      children.set(key, group);
+    });
+    children.forEach((group) => {
+      group.sort((a, b) => {
+        if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+        return a.node_id - b.node_id;
+      });
+    });
+    const ordered: Array<PermissionNodeRow & { depth: number }> = [];
+    const walk = (parentId: number | null, depth: number) => {
+      (children.get(parentId) || []).forEach((node) => {
+        ordered.push({ ...node, depth });
+        walk(node.node_id, depth + 1);
+      });
+    };
+    walk(null, 0);
+    return ordered;
+  };
+
   const openCreateModal = () => {
     setEditingMember(null);
     setForm(emptyMemberForm);
-    setPermittedCatalogIds([]);
+    setPermissionRows(clonePermissionRows(permissionTemplate));
     setShowModal(true);
   };
 
@@ -191,7 +221,7 @@ export default function EmpresaUsersPage() {
       position_title: member.position_title || '',
       is_active: member.is_active && member.user_is_active,
     });
-    setPermittedCatalogIds([]);
+    setPermissionRows(clonePermissionRows(permissionTemplate));
     setShowModal(true);
 
     try {
@@ -200,12 +230,10 @@ export default function EmpresaUsersPage() {
       });
       const data = await res.json();
       if (res.ok && Array.isArray(data?.permissions)) {
-        setPermittedCatalogIds(
-          data.permissions.filter((item: PermissionRow) => item.can_view).map((item: PermissionRow) => Number(item.catalog_id))
-        );
+        setPermissionRows(clonePermissionRows(data.permissions));
       }
     } catch {
-      // keep modal open with empty permissions if this request fails
+      setPermissionRows(clonePermissionRows(permissionTemplate));
     }
   };
 
@@ -213,16 +241,45 @@ export default function EmpresaUsersPage() {
     setShowModal(false);
     setEditingMember(null);
     setForm(emptyMemberForm);
-    setPermittedCatalogIds([]);
+    setPermissionRows([]);
   };
 
-  const togglePermission = (catalogId: number, checked: boolean) => {
-    setPermittedCatalogIds((prev) => {
-      if (checked) {
-        return Array.from(new Set([...prev, catalogId]));
-      }
-      return prev.filter((value) => value !== catalogId);
-    });
+  const toggleServicePermission = (companyServiceId: number, checked: boolean) => {
+    setPermissionRows((prev) =>
+      prev.map((service) =>
+        service.company_service_id !== companyServiceId
+          ? service
+          : {
+              ...service,
+              can_view: checked,
+              can_download: checked,
+              nodes: checked ? service.nodes : service.nodes.map((node) => ({ ...node, can_view: false, can_download: false })),
+            }
+      )
+    );
+  };
+
+  const toggleNodePermission = (companyServiceId: number, nodeId: number, checked: boolean) => {
+    setPermissionRows((prev) =>
+      prev.map((service) =>
+        service.company_service_id !== companyServiceId
+          ? service
+          : {
+              ...service,
+              can_view: checked ? true : service.can_view,
+              can_download: checked ? true : service.can_download,
+              nodes: service.nodes.map((node) =>
+                node.node_id !== nodeId
+                  ? node
+                  : {
+                      ...node,
+                      can_view: checked,
+                      can_download: checked,
+                    }
+              ),
+            }
+      )
+    );
   };
 
   const saveMember = async () => {
@@ -247,7 +304,8 @@ export default function EmpresaUsersPage() {
           area: form.area,
           position_title: form.position_title,
           is_active: form.is_active,
-          permitted_catalog_ids: permittedCatalogIds,
+          permitted_catalog_ids: permissionRows.filter((service) => service.can_view).map((service) => service.catalog_id),
+          service_permissions: permissionRows,
         }),
       });
       const data = await res.json();
@@ -371,12 +429,12 @@ export default function EmpresaUsersPage() {
                 </div>
                 <div style={{ padding: 16, borderRadius: 14, background: '#f8fafc', border: '1px solid #e5e7eb' }}>
                   <div style={{ fontSize: 13, color: '#64748b', marginBottom: 8 }}>Servicios asignables</div>
-                  <div style={{ fontSize: 28, fontWeight: 800, color: '#0f172a' }}>{contractedServices.length}</div>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: '#0f172a' }}>{permissionTemplate.length}</div>
                 </div>
               </div>
 
               <div style={{ padding: 16, borderRadius: 14, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e3a8a', marginBottom: 20, lineHeight: 1.7 }}>
-                Cada usuario autorizado puede ver solamente los servicios que le asignes. Si un usuario no tiene servicios asignados, su portal permanecera sin accesos visibles hasta que lo configures.
+                Cada usuario autorizado puede ver solamente los servicios que le asignes. Si ademas marcas carpetas especificas dentro de un servicio, el acceso de ese usuario quedara limitado a esas carpetas y a sus subcarpetas.
               </div>
 
               <div style={{ overflowX: 'auto', border: '1px solid #e5e7eb', borderRadius: 14, background: '#fff' }}>
@@ -501,27 +559,59 @@ export default function EmpresaUsersPage() {
             </label>
 
             <div style={{ marginBottom: 20 }}>
-              <h3 style={{ margin: '0 0 10px', fontSize: 18 }}>Servicios visibles para este usuario</h3>
-              {contractedServices.length === 0 ? (
+              <h3 style={{ margin: '0 0 10px', fontSize: 18 }}>Servicios y carpetas visibles para este usuario</h3>
+              <p style={{ margin: '0 0 12px', color: '#64748b', lineHeight: 1.7 }}>
+                Si activas un servicio y no seleccionas carpetas internas, el usuario podra ver todo ese servicio. Si seleccionas carpetas, su acceso quedara limitado a esas carpetas y sus subcarpetas.
+              </p>
+              {permissionRows.length === 0 ? (
                 <div style={{ padding: 14, borderRadius: 12, background: '#f8fafc', border: '1px solid #e5e7eb', color: '#64748b' }}>
                   Aun no hay servicios contratados activos para asignar.
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 10 }}>
-                  {contractedServices.map((service) => (
-                    <label key={service.catalog_id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: 12, borderRadius: 12, border: '1px solid #e5e7eb', background: '#f8fafc' }}>
-                      <input
-                        type="checkbox"
-                        checked={permittedCatalogIds.includes(service.catalog_id)}
-                        onChange={(event) => togglePermission(service.catalog_id, event.target.checked)}
-                        style={{ marginTop: 4 }}
-                      />
-                      <span>
-                        <strong style={{ display: 'block', marginBottom: 4 }}>{service.name}</strong>
-                        <span style={{ fontSize: 12, color: '#64748b' }}>{service.slug}</span>
-                      </span>
-                    </label>
-                  ))}
+                <div style={{ display: 'grid', gap: 12 }}>
+                  {permissionRows.map((service) => {
+                    const nodeRows = buildPermissionNodeRows(service.nodes);
+                    return (
+                      <div key={service.catalog_id} style={{ padding: 14, borderRadius: 14, border: '1px solid #e5e7eb', background: '#f8fafc' }}>
+                        <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                          <input
+                            type="checkbox"
+                            checked={service.can_view}
+                            onChange={(event) => toggleServicePermission(service.company_service_id, event.target.checked)}
+                            style={{ marginTop: 4 }}
+                          />
+                          <span>
+                            <strong style={{ display: 'block', marginBottom: 4 }}>{service.name}</strong>
+                            <span style={{ fontSize: 12, color: '#64748b' }}>{service.slug}</span>
+                          </span>
+                        </label>
+
+                        {service.can_view && nodeRows.length > 0 ? (
+                          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #e5e7eb', display: 'grid', gap: 8 }}>
+                            <div style={{ fontSize: 12, color: '#64748b' }}>
+                              Carpetas especificas opcionales para limitar el acceso dentro de este servicio.
+                            </div>
+                            {nodeRows.map((node) => (
+                              <label key={node.node_id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginLeft: node.depth * 18 }}>
+                                <input
+                                  type="checkbox"
+                                  checked={node.can_view}
+                                  onChange={(event) => toggleNodePermission(service.company_service_id, node.node_id, event.target.checked)}
+                                  style={{ marginTop: 4 }}
+                                />
+                                <span>
+                                  <strong style={{ display: 'block', marginBottom: 2 }}>{node.name}</strong>
+                                  <span style={{ fontSize: 12, color: '#64748b' }}>
+                                    {node.description || 'Carpeta disponible dentro del servicio'}
+                                  </span>
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

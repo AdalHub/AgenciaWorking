@@ -664,12 +664,12 @@ Nota:
 | PC-006 | Crear admin de clientes para alta manual de empresas. | In progress | Endpoints backend y pantallas admin creadas; falta validacion runtime PHP en entorno con `php.exe`. |
 | PC-007 | Permitir activar servicios por cliente desde admin. | In progress | Guardado de servicios y editor admin implementados; falta validacion runtime PHP en entorno con `php.exe`. |
 | PC-008 | Agregar usuarios autorizados por empresa. | In progress | Endpoints backend, pagina `/empresa/users`, invitacion por correo y gestion basica de miembros implementados; falta validacion runtime PHP. |
-| PC-009 | Agregar permisos por servicio y carpeta. | In progress | Permisos a nivel servicio y filtro de visibilidad implementados en codigo; permisos por carpeta/subcarpeta siguen pendientes hasta construir nodos documentales. |
+| PC-009 | Agregar permisos por servicio y carpeta. | In progress | Permisos por servicio y carpeta ya integrados en codigo; falta validacion runtime PHP end-to-end. |
 | PC-010 | Crear workspaces documentales por servicio. | In progress | CRUD base de carpetas/subcarpetas y vistas frontend ya integradas; falta validacion runtime PHP y permisos granulares por carpeta. |
 | PC-011 | Crear carga y descarga de documentos. | In progress | Subida, listado, descarga y archivado implementados en codigo; falta validacion runtime PHP y refinamientos de permisos granulares. |
 | PC-012 | Crear formulario de solicitud de cotizacion. | In progress | Flujo empresa + guardado + correo interno ya implementados; falta validacion runtime PHP end-to-end y pulido funcional. |
 | PC-013 | Crear inbox admin para solicitudes. | In progress | Ruta y vista admin ya implementadas con detalle, estatus y notas; falta validacion runtime PHP end-to-end. |
-| PC-014 | Agregar estructura sugerida REPSE / BPO. | Planned | Como plantilla editable. |
+| PC-014 | Agregar estructura sugerida REPSE / BPO. | In progress | Plantilla base editable ya sembrada en codigo; falta validacion runtime PHP end-to-end. |
 
 ## 15. Proxima implementacion recomendada
 
@@ -795,3 +795,47 @@ Eso desbloquea todo lo demas sin tocar el modulo de estudios.
 - `vite build` paso correctamente y `dist` fue regenerado el `2026-07-09`.
 - La validacion runtime de `api/company_portal.php` sigue pendiente en un entorno con `php.exe`, porque esta maquina no lo tiene disponible en PATH.
 - La validacion end-to-end del envio real por SMTP y del guardado runtime de adjuntos del inbox tambien sigue pendiente por la misma limitacion local.
+
+## 23. Progreso verificado en la iteracion 2026-07-09
+
+- Se agrego una plantilla base REPSE / BPO en `api/company_portal.php` para el servicio:
+  - `specialized-services-repse-bpo`
+- La plantilla se siembra de forma automatica al activar el servicio desde admin y no duplica carpetas existentes.
+- La misma plantilla tambien se autocorrige al abrir un workspace REPSE / BPO ya existente, para cubrir clientes activados antes de este cambio.
+- Las carpetas base sembradas actualmente son:
+  - `Cumplimiento REPSE`
+  - `Documentacion REPSE para clientes`
+  - `Contratos`
+  - `Evidencia documental mensual`
+  - `Documentos solicitados para auditoria del cliente`
+- Se agrego una nota visible en `src/components/Company/ServiceWorkspacePanel.tsx` para indicar que el servicio usa una estructura base editable.
+- La edicion manual por Working sigue aprovechando el mismo workspace documental ya existente, sin crear otro flujo paralelo.
+
+## 24. Verificacion actualizada en 2026-07-09
+
+- `tsc -b` paso correctamente despues de integrar la plantilla base REPSE / BPO.
+- `vite build` paso correctamente y `dist` fue regenerado el `2026-07-09`.
+- La validacion runtime de `api/company_portal.php` para el sembrado automatico de carpetas REPSE sigue pendiente en un entorno con `php.exe`, porque esta maquina no lo tiene disponible en PATH.
+
+## 25. Progreso verificado en la iteracion 2026-07-09
+
+- Se extendio `api/company_portal.php` para que los permisos de usuarios autorizados ya no sean solo por servicio, sino tambien por carpeta:
+  - `portal_member_permissions_payload`
+  - `portal_member_permission_nodes_payload`
+  - `portal_save_member_permissions`
+  - `portal_member_node_access`
+- El endpoint `get_company_member_permissions` ahora tambien puede entregar una plantilla vacia para nuevos usuarios y devuelve servicios con sus carpetas activas.
+- Los endpoints del workspace ahora filtran contenido segun permisos granulares:
+  - `list_service_nodes`
+  - `list_service_documents`
+  - `download_service_document`
+- Se actualizo `src/pages/EmpresaUsersPage.tsx` para que el administrador cliente pueda:
+  - asignar servicios visibles
+  - limitar el acceso a carpetas especificas dentro de cada servicio
+  - mantener acceso total al servicio cuando no se marcan carpetas internas
+
+## 26. Verificacion actualizada en 2026-07-09
+
+- `tsc -b` paso correctamente despues de integrar permisos por carpeta en el portal.
+- `vite build` paso correctamente y `dist` fue regenerado el `2026-07-09`.
+- La validacion runtime de `api/company_portal.php` para el guardado y filtrado efectivo de permisos por carpeta sigue pendiente en un entorno con `php.exe`, porque esta maquina no lo tiene disponible en PATH.

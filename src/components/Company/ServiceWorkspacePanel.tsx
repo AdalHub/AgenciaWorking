@@ -398,6 +398,15 @@ export default function ServiceWorkspacePanel({ mode, slug, companyUserId, backL
           </div>
         ) : null}
 
+        {service.slug === 'specialized-services-repse-bpo' ? (
+          <div style={{ marginTop: 16, padding: 14, borderRadius: 12, background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}>
+            <strong style={{ display: 'block', marginBottom: 4, color: '#78350f' }}>Plantilla base REPSE / BPO</strong>
+            {canManage
+              ? 'Este servicio carga automaticamente una estructura inicial editable con carpetas sugeridas para cumplimiento, contratos, evidencia mensual y auditorias del cliente.'
+              : 'Este servicio incluye una estructura base REPSE / BPO con carpetas sugeridas para consulta documental.'}
+          </div>
+        ) : null}
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 18 }}>
           <div style={{ padding: 14, borderRadius: 12, background: '#f8fafc', border: '1px solid #e5e7eb' }}>
             <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>Carpetas activas</div>
