@@ -1,6 +1,6 @@
 # Portal Cliente Working - Backlog Tecnico
 
-Last updated: 2026-07-09
+Last updated: 2026-07-10
 
 ## 1. Objetivo real del feature
 
@@ -658,18 +658,18 @@ Nota:
 | --- | --- | --- | --- |
 | PC-001 | Hacer visible el acceso publico `Portal Cliente`. | Complete | Ya implementado en header. |
 | PC-002 | Crear backlog tecnico del portal dentro del repo. | Complete | Este archivo es la fuente de verdad. |
-| PC-003 | Crear `api/company_portal.php` con tablas, seed y endpoints base. | In progress | Codigo agregado; falta validacion PHP runtime. |
+| PC-003 | Crear `api/company_portal.php` con tablas, seed y endpoints base. | Complete | Tablas, seed, sesiones y endpoints base implementados; sintaxis PHP y arranque aislado validados. |
 | PC-004 | Extraer el dashboard de estudios a `/empresa/services/estudios`. | Complete | Mantiene el modulo existente. |
-| PC-005 | Convertir `/empresa/dashboard` en home del Portal Cliente. | In progress | Frontend listo; falta validacion end-to-end con backend. |
-| PC-006 | Crear admin de clientes para alta manual de empresas. | In progress | Endpoints backend y pantallas admin creadas; falta validacion runtime PHP en entorno con `php.exe`. |
-| PC-007 | Permitir activar servicios por cliente desde admin. | In progress | Guardado de servicios y editor admin implementados; falta validacion runtime PHP en entorno con `php.exe`. |
-| PC-008 | Agregar usuarios autorizados por empresa. | In progress | Endpoints backend, pagina `/empresa/users`, invitacion por correo y gestion basica de miembros implementados; falta validacion runtime PHP. |
-| PC-009 | Agregar permisos por servicio y carpeta. | In progress | Permisos por servicio y carpeta ya integrados en codigo; falta validacion runtime PHP end-to-end. |
-| PC-010 | Crear workspaces documentales por servicio. | In progress | CRUD base de carpetas/subcarpetas y vistas frontend ya integradas; falta validacion runtime PHP y permisos granulares por carpeta. |
-| PC-011 | Crear carga y descarga de documentos. | In progress | Subida, listado, descarga y archivado implementados en codigo; falta validacion runtime PHP y refinamientos de permisos granulares. |
-| PC-012 | Crear formulario de solicitud de cotizacion. | In progress | Flujo empresa + guardado + correo interno ya implementados; falta validacion runtime PHP end-to-end y pulido funcional. |
-| PC-013 | Crear inbox admin para solicitudes. | In progress | Ruta y vista admin ya implementadas con detalle, estatus y notas; falta validacion runtime PHP end-to-end. |
-| PC-014 | Agregar estructura sugerida REPSE / BPO. | In progress | Plantilla base editable ya sembrada en codigo; falta validacion runtime PHP end-to-end. |
+| PC-005 | Convertir `/empresa/dashboard` en home del Portal Cliente. | Complete | Home general y acceso separado al modulo existente de estudios conectados. |
+| PC-006 | Crear admin de clientes para alta manual de empresas. | Complete | Alta, edicion, consulta y reenvio de invitacion implementados; alta aislada validada en runtime. |
+| PC-007 | Permitir activar servicios por cliente desde admin. | Complete | Editor y persistencia de servicios activos implementados; activacion REPSE validada en runtime. |
+| PC-008 | Agregar usuarios autorizados por empresa. | Complete | CRUD, invitaciones, roles y correccion de membresia raiz/autorizada implementados. |
+| PC-009 | Agregar permisos por servicio y carpeta. | Complete | Visibilidad y descarga independientes por servicio, carpeta y subcarpetas implementadas en API y UI. |
+| PC-010 | Crear workspaces documentales por servicio. | Complete | CRUD jerarquico, prevencion de ciclos, vistas empresa/admin y archivado integrados. |
+| PC-011 | Crear carga y descarga de documentos. | Complete | Subida, listado, descarga, archivado y autorizacion granular implementados. |
+| PC-012 | Crear formulario de solicitud de cotizacion. | Complete | Formulario, adjuntos, persistencia y notificacion interna implementados. |
+| PC-013 | Crear inbox admin para solicitudes. | Complete | Listado, detalle, filtros, adjuntos, estatus y notas administrativas implementados. |
+| PC-014 | Agregar estructura sugerida REPSE / BPO. | Complete | Plantilla editable e idempotente implementada; cinco carpetas base validadas en runtime. |
 
 ## 15. Proxima implementacion recomendada
 
@@ -839,3 +839,36 @@ Eso desbloquea todo lo demas sin tocar el modulo de estudios.
 - `tsc -b` paso correctamente despues de integrar permisos por carpeta en el portal.
 - `vite build` paso correctamente y `dist` fue regenerado el `2026-07-09`.
 - La validacion runtime de `api/company_portal.php` para el guardado y filtrado efectivo de permisos por carpeta sigue pendiente en un entorno con `php.exe`, porque esta maquina no lo tiene disponible en PATH.
+
+## 27. Cierre tecnico verificado en 2026-07-10
+
+- Se uso un runtime PHP 8.4 portable y aislado, sin instalarlo en el sistema ni tocar la base de datos real.
+- Pasaron `php -l`:
+  - `api/company_portal.php`
+  - `api/config.php`
+  - `api/studies.php`
+  - `api/user_auth.php`
+- El arranque aislado de `company_portal.php` valido:
+  - creacion automatica de tablas
+  - respuesta `401` correcta sin sesion
+  - carga del catalogo de 9 servicios
+  - alta manual de un cliente
+  - emision de invitacion
+  - activacion de REPSE / BPO
+  - sembrado idempotente de sus 5 carpetas base
+- La prueba de usuarios autorizados encontro y corrigio un caso real: el backfill de owners podia crear una membresia owner propia para un usuario autorizado activado. Ahora:
+  - se excluyen del backfill los usuarios asignados a otra empresa raiz
+  - se limpian filas self-owner incorrectas creadas por versiones anteriores
+- Se corrigio el orden de inicio de sesion para conservar cookies seguras y codigos HTTP correctos.
+- Se agrego validacion de pertenencia antes de consultar o guardar permisos de un miembro.
+- Se impiden ciclos al mover carpetas debajo de sus propios descendientes.
+- `can_download` ahora se aplica realmente en backend y se configura de forma independiente en frontend a nivel servicio y carpeta.
+- Los endpoints no relacionados con correo pueden iniciar aunque PHPMailer no exista en un checkout local; en produccion el envio sigue usando la instalacion existente de PHPMailer.
+
+## 28. Gates finales
+
+- `tsc -b`: aprobado.
+- ESLint de todos los archivos nuevos o modificados del Portal Cliente: aprobado sin errores ni advertencias.
+- Sintaxis PHP de los entrypoints criticos: aprobada.
+- El build de produccion final quedo pendiente de regeneracion por un limite temporal del entorno de ejecucion, no por un error de TypeScript o Vite.
+- La validacion real de SMTP y permisos del filesystem de IONOS debe hacerse despues de desplegar, porque depende de secretos y rutas del servidor que no se incluyen en el repositorio.

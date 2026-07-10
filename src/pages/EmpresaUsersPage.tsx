@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/header/header';
 import Footer from '../components/Footer/Footer';
+import { getErrorMessage } from '../lib/getErrorMessage';
 
 type PortalContext = {
   company: {
@@ -113,7 +114,7 @@ export default function EmpresaUsersPage() {
   const [form, setForm] = useState<MemberForm>(emptyMemberForm);
   const [permissionRows, setPermissionRows] = useState<PermissionRow[]>([]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [contextRes, membersRes, permissionsRes] = await Promise.all([
@@ -146,11 +147,11 @@ export default function EmpresaUsersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
 
   useEffect(() => {
     load();
-  }, [navigate]);
+  }, [load]);
 
   const ownerCount = useMemo(() => members.filter((member) => member.role === 'owner').length, [members]);
   const managerCount = useMemo(() => members.filter((member) => member.role === 'manager').length, [members]);
@@ -259,6 +260,20 @@ export default function EmpresaUsersPage() {
     );
   };
 
+  const toggleServiceDownload = (companyServiceId: number, checked: boolean) => {
+    setPermissionRows((prev) =>
+      prev.map((service) =>
+        service.company_service_id !== companyServiceId
+          ? service
+          : {
+              ...service,
+              can_download: checked,
+              nodes: checked ? service.nodes : service.nodes.map((node) => ({ ...node, can_download: false })),
+            }
+      )
+    );
+  };
+
   const toggleNodePermission = (companyServiceId: number, nodeId: number, checked: boolean) => {
     setPermissionRows((prev) =>
       prev.map((service) =>
@@ -267,15 +282,29 @@ export default function EmpresaUsersPage() {
           : {
               ...service,
               can_view: checked ? true : service.can_view,
-              can_download: checked ? true : service.can_download,
               nodes: service.nodes.map((node) =>
                 node.node_id !== nodeId
                   ? node
                   : {
                       ...node,
                       can_view: checked,
-                      can_download: checked,
+                      can_download: checked ? service.can_download : false,
                     }
+              ),
+            }
+      )
+    );
+  };
+
+  const toggleNodeDownload = (companyServiceId: number, nodeId: number, checked: boolean) => {
+    setPermissionRows((prev) =>
+      prev.map((service) =>
+        service.company_service_id !== companyServiceId
+          ? service
+          : {
+              ...service,
+              nodes: service.nodes.map((node) =>
+                node.node_id !== nodeId ? node : { ...node, can_download: checked }
               ),
             }
       )
@@ -315,8 +344,8 @@ export default function EmpresaUsersPage() {
       setMembers(Array.isArray(data?.members) ? data.members : []);
       setToast(editingMember ? 'Usuario actualizado correctamente.' : 'Usuario creado y acceso enviado por correo.');
       closeModal();
-    } catch (error: any) {
-      setToast(error?.message || 'No fue posible guardar el usuario.');
+    } catch (error: unknown) {
+      setToast(getErrorMessage(error, 'No fue posible guardar el usuario.'));
     } finally {
       setSaving(false);
     }
@@ -338,8 +367,8 @@ export default function EmpresaUsersPage() {
       }
       setMembers(Array.isArray(data?.members) ? data.members : []);
       setToast('Usuario desactivado correctamente.');
-    } catch (error: any) {
-      setToast(error?.message || 'No fue posible desactivar el usuario.');
+    } catch (error: unknown) {
+      setToast(getErrorMessage(error, 'No fue posible desactivar el usuario.'));
     }
   };
 
@@ -358,8 +387,8 @@ export default function EmpresaUsersPage() {
       }
       setMembers(Array.isArray(data?.members) ? data.members : []);
       setToast('La invitacion se envio nuevamente al usuario.');
-    } catch (error: any) {
-      setToast(error?.message || 'No fue posible reenviar la invitacion.');
+    } catch (error: unknown) {
+      setToast(getErrorMessage(error, 'No fue posible reenviar la invitacion.'));
     }
   };
 
@@ -586,26 +615,50 @@ export default function EmpresaUsersPage() {
                           </span>
                         </label>
 
+                        {service.can_view ? (
+                          <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 10, marginLeft: 26, fontSize: 13, color: '#334155' }}>
+                            <input
+                              type="checkbox"
+                              checked={service.can_download}
+                              onChange={(event) => toggleServiceDownload(service.company_service_id, event.target.checked)}
+                            />
+                            Permitir descarga de documentos
+                          </label>
+                        ) : null}
+
                         {service.can_view && nodeRows.length > 0 ? (
                           <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #e5e7eb', display: 'grid', gap: 8 }}>
                             <div style={{ fontSize: 12, color: '#64748b' }}>
                               Carpetas especificas opcionales para limitar el acceso dentro de este servicio.
                             </div>
                             {nodeRows.map((node) => (
-                              <label key={node.node_id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginLeft: node.depth * 18 }}>
-                                <input
-                                  type="checkbox"
-                                  checked={node.can_view}
-                                  onChange={(event) => toggleNodePermission(service.company_service_id, node.node_id, event.target.checked)}
-                                  style={{ marginTop: 4 }}
-                                />
-                                <span>
-                                  <strong style={{ display: 'block', marginBottom: 2 }}>{node.name}</strong>
-                                  <span style={{ fontSize: 12, color: '#64748b' }}>
-                                    {node.description || 'Carpeta disponible dentro del servicio'}
+                              <div key={node.node_id} style={{ display: 'grid', gap: 5, marginLeft: node.depth * 18 }}>
+                                <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={node.can_view}
+                                    onChange={(event) => toggleNodePermission(service.company_service_id, node.node_id, event.target.checked)}
+                                    style={{ marginTop: 4 }}
+                                  />
+                                  <span>
+                                    <strong style={{ display: 'block', marginBottom: 2 }}>{node.name}</strong>
+                                    <span style={{ fontSize: 12, color: '#64748b' }}>
+                                      {node.description || 'Carpeta disponible dentro del servicio'}
+                                    </span>
                                   </span>
-                                </span>
-                              </label>
+                                </label>
+                                {node.can_view ? (
+                                  <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 26, fontSize: 12, color: '#475569' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={node.can_download}
+                                      disabled={!service.can_download}
+                                      onChange={(event) => toggleNodeDownload(service.company_service_id, node.node_id, event.target.checked)}
+                                    />
+                                    Permitir descargas en esta carpeta y sus subcarpetas
+                                  </label>
+                                ) : null}
+                              </div>
                             ))}
                           </div>
                         ) : null}

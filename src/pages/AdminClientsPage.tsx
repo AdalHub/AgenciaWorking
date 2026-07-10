@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getErrorMessage } from '../lib/getErrorMessage';
 
 type InviteSummary = {
   status: 'pending' | 'used' | 'expired' | 'revoked' | null;
@@ -170,8 +171,8 @@ export default function AdminClientsPage() {
       if (data?.company_user_id) {
         navigate(`/admin/clients/${data.company_user_id}`);
       }
-    } catch (error: any) {
-      setToast(error?.message || 'No fue posible crear el cliente.');
+    } catch (error: unknown) {
+      setToast(getErrorMessage(error, 'No fue posible crear el cliente.'));
     } finally {
       setSaving(false);
     }

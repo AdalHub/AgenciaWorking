@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import CompanyProfileForm from '../components/Company/CompanyProfileForm';
 import type { CompanyProfileData } from '../components/Company/CompanyProfileForm';
+import { getErrorMessage } from '../lib/getErrorMessage';
 
 type ClientInvite = {
   status: 'pending' | 'used' | 'expired' | 'revoked' | null;
@@ -101,7 +102,7 @@ export default function AdminClientDetailPage() {
   const [isActive, setIsActive] = useState(true);
   const [serviceDrafts, setServiceDrafts] = useState<Record<number, ServiceDraft>>({});
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!companyUserId) return;
     setLoading(true);
     try {
@@ -127,16 +128,16 @@ export default function AdminClientDetailPage() {
         };
       });
       setServiceDrafts(nextDrafts);
-    } catch (error: any) {
-      setToast(error?.message || 'No fue posible cargar el cliente.');
+    } catch (error: unknown) {
+      setToast(getErrorMessage(error, 'No fue posible cargar el cliente.'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [companyUserId]);
 
   useEffect(() => {
     load();
-  }, [companyUserId]);
+  }, [load]);
 
   const serviceRows = useMemo(() => client?.services.all || [], [client]);
 
@@ -178,8 +179,8 @@ export default function AdminClientDetailPage() {
       }
       setClient(data.client);
       setToast('Datos del cliente actualizados.');
-    } catch (error: any) {
-      setToast(error?.message || 'No fue posible guardar el cliente.');
+    } catch (error: unknown) {
+      setToast(getErrorMessage(error, 'No fue posible guardar el cliente.'));
     } finally {
       setSavingProfile(false);
     }
@@ -221,8 +222,8 @@ export default function AdminClientDetailPage() {
       });
       setServiceDrafts(nextDrafts);
       setToast('Servicios del cliente actualizados.');
-    } catch (error: any) {
-      setToast(error?.message || 'No fue posible guardar los servicios.');
+    } catch (error: unknown) {
+      setToast(getErrorMessage(error, 'No fue posible guardar los servicios.'));
     } finally {
       setSavingServices(false);
     }
@@ -247,8 +248,8 @@ export default function AdminClientDetailPage() {
       }
       setClient(data.client);
       setToast('La invitacion fue reenviada al correo principal de acceso.');
-    } catch (error: any) {
-      setToast(error?.message || 'No fue posible reenviar la invitacion.');
+    } catch (error: unknown) {
+      setToast(getErrorMessage(error, 'No fue posible reenviar la invitacion.'));
     } finally {
       setResendingInvite(false);
     }

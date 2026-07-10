@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/header/header';
 import Footer from '../components/Footer/Footer';
+import { getErrorMessage } from '../lib/getErrorMessage';
 
 const API = '/api';
 
@@ -193,8 +194,8 @@ export default function EmpresaDashboard() {
       }
       closeInquiryModal();
       setToast('Solicitud enviada correctamente. Nuestro equipo dara seguimiento a la brevedad.');
-    } catch (submitError: any) {
-      setToast(submitError?.message || 'No fue posible enviar la solicitud.');
+    } catch (submitError: unknown) {
+      setToast(getErrorMessage(submitError, 'No fue posible enviar la solicitud.'));
     } finally {
       setInquirySubmitting(false);
     }

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getErrorMessage } from '../lib/getErrorMessage';
 
 type InquiryStatus = 'pendiente' | 'en_proceso' | 'disponible' | 'completado';
 
@@ -83,7 +84,7 @@ export default function AdminServiceInquiriesPage() {
   const [detailStatus, setDetailStatus] = useState<InquiryStatus>('pendiente');
   const [detailNotes, setDetailNotes] = useState('');
 
-  const load = async (selectedId?: number | null) => {
+  const load = useCallback(async (selectedId?: number | null) => {
     setLoading(true);
     try {
       const url = new URL('/api/company_portal.php', window.location.origin);
@@ -98,7 +99,7 @@ export default function AdminServiceInquiriesPage() {
       }
       const nextRows = Array.isArray(data?.inquiries) ? data.inquiries : [];
       setInquiries(nextRows);
-      const nextSelectedId = selectedId ?? selectedInquiryId;
+      const nextSelectedId = selectedId ?? null;
       if (nextSelectedId) {
         const exists = nextRows.some((row: InquiryRow) => row.inquiry_id === nextSelectedId);
         if (!exists) {
@@ -106,16 +107,16 @@ export default function AdminServiceInquiriesPage() {
           setDetail(null);
         }
       }
-    } catch (error: any) {
-      setToast(error?.message || 'No fue posible cargar las solicitudes del portal.');
+    } catch (error: unknown) {
+      setToast(getErrorMessage(error, 'No fue posible cargar las solicitudes del portal.'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter]);
 
   useEffect(() => {
     load();
-  }, [statusFilter]);
+  }, [load]);
 
   const filteredRows = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -146,8 +147,8 @@ export default function AdminServiceInquiriesPage() {
       setDetail(data.inquiry);
       setDetailStatus(data.inquiry.status || 'pendiente');
       setDetailNotes(data.inquiry.admin_notes || '');
-    } catch (error: any) {
-      setToast(error?.message || 'No fue posible cargar el detalle.');
+    } catch (error: unknown) {
+      setToast(getErrorMessage(error, 'No fue posible cargar el detalle.'));
     } finally {
       setDetailLoading(false);
     }
@@ -175,8 +176,8 @@ export default function AdminServiceInquiriesPage() {
       setDetail(data.inquiry);
       await load(detail.inquiry_id);
       setToast('Solicitud actualizada.');
-    } catch (error: any) {
-      setToast(error?.message || 'No fue posible actualizar la solicitud.');
+    } catch (error: unknown) {
+      setToast(getErrorMessage(error, 'No fue posible actualizar la solicitud.'));
     } finally {
       setSaving(false);
     }

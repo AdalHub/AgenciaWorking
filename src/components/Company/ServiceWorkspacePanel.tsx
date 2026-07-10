@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getErrorMessage } from '../../lib/getErrorMessage';
 
 type WorkspaceMode = 'company' | 'admin';
 
@@ -139,7 +140,7 @@ export default function ServiceWorkspacePanel({ mode, slug, companyUserId, backL
     return params.toString();
   }, [mode, slug, companyUserId]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -162,16 +163,16 @@ export default function ServiceWorkspacePanel({ mode, slug, companyUserId, backL
       setCanManage(!!serviceData?.membership?.can_manage || !!nodesData?.can_manage || !!docsData?.can_manage);
       setNodes(Array.isArray(nodesData?.nodes) ? nodesData.nodes : []);
       setDocuments(Array.isArray(docsData?.documents) ? docsData.documents : []);
-    } catch (err: any) {
-      setError(err?.message || 'No fue posible cargar el workspace del servicio.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'No fue posible cargar el workspace del servicio.'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [query]);
 
   useEffect(() => {
     load();
-  }, [query]);
+  }, [load]);
 
   const treeRows = useMemo(() => buildTreeRows(nodes), [nodes]);
   const selectedNode = useMemo(() => nodes.find((node) => node.id === selectedNodeId) || null, [nodes, selectedNodeId]);
@@ -222,8 +223,8 @@ export default function ServiceWorkspacePanel({ mode, slug, companyUserId, backL
       setFolderDescription('');
       setFolderStatus('pendiente');
       setToast('Carpeta guardada correctamente.');
-    } catch (err: any) {
-      setToast(err?.message || 'No fue posible crear la carpeta.');
+    } catch (err: unknown) {
+      setToast(getErrorMessage(err, 'No fue posible crear la carpeta.'));
     } finally {
       setSubmittingFolder(false);
     }
@@ -257,8 +258,8 @@ export default function ServiceWorkspacePanel({ mode, slug, companyUserId, backL
       }
       setNodes(Array.isArray(data?.nodes) ? data.nodes : []);
       setToast('Carpeta actualizada.');
-    } catch (err: any) {
-      setToast(err?.message || 'No fue posible actualizar la carpeta.');
+    } catch (err: unknown) {
+      setToast(getErrorMessage(err, 'No fue posible actualizar la carpeta.'));
     }
   };
 
@@ -284,8 +285,8 @@ export default function ServiceWorkspacePanel({ mode, slug, companyUserId, backL
       setDocuments(Array.isArray(data?.documents) ? data.documents : []);
       if (selectedNodeId === node.id) setSelectedNodeId(null);
       setToast('Carpeta archivada.');
-    } catch (err: any) {
-      setToast(err?.message || 'No fue posible archivar la carpeta.');
+    } catch (err: unknown) {
+      setToast(getErrorMessage(err, 'No fue posible archivar la carpeta.'));
     }
   };
 
@@ -322,8 +323,8 @@ export default function ServiceWorkspacePanel({ mode, slug, companyUserId, backL
       const input = document.getElementById('service-workspace-file') as HTMLInputElement | null;
       if (input) input.value = '';
       setToast('Archivo cargado correctamente.');
-    } catch (err: any) {
-      setToast(err?.message || 'No fue posible subir el archivo.');
+    } catch (err: unknown) {
+      setToast(getErrorMessage(err, 'No fue posible subir el archivo.'));
     } finally {
       setUploading(false);
     }
@@ -349,8 +350,8 @@ export default function ServiceWorkspacePanel({ mode, slug, companyUserId, backL
       }
       setDocuments(Array.isArray(data?.documents) ? data.documents : []);
       setToast('Archivo archivado.');
-    } catch (err: any) {
-      setToast(err?.message || 'No fue posible archivar el archivo.');
+    } catch (err: unknown) {
+      setToast(getErrorMessage(err, 'No fue posible archivar el archivo.'));
     }
   };
 
