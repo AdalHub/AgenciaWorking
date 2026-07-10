@@ -26,6 +26,7 @@ const navItems: { to: string; label: string }[] = [
   { to: '/admin/blogs', label: 'Post Blog' },
   { to: '/admin/studies', label: 'Estudios' },
   { to: '/admin/clients', label: 'Clientes portal' },
+  { to: '/admin/service-inquiries', label: 'Solicitudes portal' },
   { to: '/admin/email-queue', label: 'Cola de correo' },
 ];
 

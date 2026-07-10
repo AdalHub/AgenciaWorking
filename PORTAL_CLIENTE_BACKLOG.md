@@ -1,6 +1,6 @@
 # Portal Cliente Working - Backlog Tecnico
 
-Last updated: 2026-07-01
+Last updated: 2026-07-09
 
 ## 1. Objetivo real del feature
 
@@ -667,8 +667,8 @@ Nota:
 | PC-009 | Agregar permisos por servicio y carpeta. | In progress | Permisos a nivel servicio y filtro de visibilidad implementados en codigo; permisos por carpeta/subcarpeta siguen pendientes hasta construir nodos documentales. |
 | PC-010 | Crear workspaces documentales por servicio. | In progress | CRUD base de carpetas/subcarpetas y vistas frontend ya integradas; falta validacion runtime PHP y permisos granulares por carpeta. |
 | PC-011 | Crear carga y descarga de documentos. | In progress | Subida, listado, descarga y archivado implementados en codigo; falta validacion runtime PHP y refinamientos de permisos granulares. |
-| PC-012 | Crear formulario de solicitud de cotizacion. | Planned | Debe guardar y enviar correo. |
-| PC-013 | Crear inbox admin para solicitudes. | Planned | Vista interna para Working. |
+| PC-012 | Crear formulario de solicitud de cotizacion. | In progress | Flujo empresa + guardado + correo interno ya implementados; falta validacion runtime PHP end-to-end y pulido funcional. |
+| PC-013 | Crear inbox admin para solicitudes. | In progress | Ruta y vista admin ya implementadas con detalle, estatus y notas; falta validacion runtime PHP end-to-end. |
 | PC-014 | Agregar estructura sugerida REPSE / BPO. | Planned | Como plantilla editable. |
 
 ## 15. Proxima implementacion recomendada
@@ -680,8 +680,9 @@ La siguiente entrega mas segura es:
 3. avanzar `PC-009`
 4. consolidar `PC-010`
 5. consolidar `PC-011`
-6. construir `PC-012`
-7. construir `PC-013`
+6. consolidar `PC-012`
+7. consolidar `PC-013`
+8. construir `PC-014`
 
 Es decir:
 
@@ -689,7 +690,8 @@ Es decir:
 - terminar la gestion de usuarios autorizados con pruebas funcionales
 - extender permisos desde nivel servicio hacia carpetas/subcarpetas
 - validar runtime del workspace documental ya integrado
-- crear el flujo de solicitud de cotizacion y su inbox admin
+- validar runtime del flujo de solicitud de cotizacion e inbox admin
+- agregar la plantilla sugerida REPSE / BPO sobre el workspace documental
 
 Eso desbloquea todo lo demas sin tocar el modulo de estudios.
 
@@ -766,3 +768,30 @@ Eso desbloquea todo lo demas sin tocar el modulo de estudios.
 - `vite build` paso correctamente y `dist` fue regenerado el `2026-07-01`.
 - La validacion runtime de `api/company_portal.php` sigue pendiente en un entorno con `php.exe`, porque esta maquina no lo tiene disponible en PATH.
 - La validacion runtime de los endpoints documentales nuevos tambien sigue pendiente por la misma razon.
+
+## 21. Progreso verificado en la iteracion 2026-07-09
+
+- Se agregaron endpoints nuevos en `api/company_portal.php` para el flujo comercial del portal:
+  - `create_service_inquiry`
+  - `list_service_inquiries`
+  - `get_service_inquiry`
+  - `update_service_inquiry`
+  - `download_service_inquiry_attachment`
+- El endpoint de empresa ya guarda la solicitud en `service_inquiries`, conserva adjuntos opcionales en `service_inquiry_attachments` y dispara correo interno a Working.
+- Se conecto el formulario de solicitud desde `src/pages/EmpresaDashboard.tsx` sobre la seccion de servicios disponibles para contratar.
+- Se cambio el boton deshabilitado de servicios disponibles por una accion real de `Solicitar informacion`.
+- Se agrego la nueva vista admin `src/pages/AdminServiceInquiriesPage.tsx`.
+- Se conecto la nueva ruta admin:
+  - `/admin/service-inquiries`
+- Se agrego el acceso `Solicitudes portal` al menu admin para revisar:
+  - detalle de la solicitud
+  - adjuntos
+  - estatus
+  - notas internas
+
+## 22. Verificacion actualizada en 2026-07-09
+
+- `tsc -b` paso correctamente despues de integrar el flujo de solicitudes e inbox admin.
+- `vite build` paso correctamente y `dist` fue regenerado el `2026-07-09`.
+- La validacion runtime de `api/company_portal.php` sigue pendiente en un entorno con `php.exe`, porque esta maquina no lo tiene disponible en PATH.
+- La validacion end-to-end del envio real por SMTP y del guardado runtime de adjuntos del inbox tambien sigue pendiente por la misma limitacion local.

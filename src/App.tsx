@@ -36,6 +36,7 @@ import AdminEmailQueuePage from './pages/AdminEmailQueuePage';
 import AdminClientsPage from './pages/AdminClientsPage';
 import AdminClientDetailPage from './pages/AdminClientDetailPage';
 import AdminClientServiceWorkspacePage from './pages/AdminClientServiceWorkspacePage';
+import AdminServiceInquiriesPage from './pages/AdminServiceInquiriesPage';
 
 export default function App() {
   return (
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="clients" element={<AdminClientsPage />} />
           <Route path="clients/:companyUserId" element={<AdminClientDetailPage />} />
           <Route path="clients/:companyUserId/services/:slug" element={<AdminClientServiceWorkspacePage />} />
+          <Route path="service-inquiries" element={<AdminServiceInquiriesPage />} />
           <Route path="email-queue" element={<AdminEmailQueuePage />} />
         </Route>
         <Route path="/schedule" element={<ScheduleList />} />

@@ -59,6 +59,14 @@ type CompanyService = {
   study_metrics?: StudyMetrics;
 };
 
+type InquiryFormState = {
+  requester_name: string;
+  requester_title: string;
+  requester_email: string;
+  requester_phone: string;
+  request_message: string;
+};
+
 const PORTAL_STATUS_LABELS: Record<CompanyService['status'], string> = {
   pendiente: 'Pendiente',
   en_proceso: 'En proceso',
@@ -83,9 +91,21 @@ export default function EmpresaDashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [context, setContext] = useState<PortalContext | null>(null);
   const [contractedServices, setContractedServices] = useState<CompanyService[]>([]);
   const [availableServices, setAvailableServices] = useState<CompanyService[]>([]);
+  const [inquiryOpen, setInquiryOpen] = useState(false);
+  const [inquiryService, setInquiryService] = useState<CompanyService | null>(null);
+  const [inquirySubmitting, setInquirySubmitting] = useState(false);
+  const [inquiryFiles, setInquiryFiles] = useState<File[]>([]);
+  const [inquiryForm, setInquiryForm] = useState<InquiryFormState>({
+    requester_name: '',
+    requester_title: '',
+    requester_email: '',
+    requester_phone: '',
+    request_message: '',
+  });
 
   useEffect(() => {
     const load = async () => {
@@ -120,6 +140,65 @@ export default function EmpresaDashboard() {
     if (!context) return 'Pendiente';
     return context.company.profile_complete ? 'Completo' : 'Incompleto';
   }, [context]);
+
+  const openInquiryModal = (service: CompanyService) => {
+    setInquiryService(service);
+    setInquiryForm({
+      requester_name: context?.current_user?.name || '',
+      requester_title: context?.membership?.position_title || '',
+      requester_email: context?.current_user?.email || '',
+      requester_phone: '',
+      request_message: '',
+    });
+    setInquiryFiles([]);
+    setInquiryOpen(true);
+    setToast(null);
+  };
+
+  const closeInquiryModal = () => {
+    setInquiryOpen(false);
+    setInquiryService(null);
+    setInquiryFiles([]);
+    setInquirySubmitting(false);
+  };
+
+  const submitInquiry = async () => {
+    if (!inquiryService) return;
+    if (!inquiryForm.requester_name.trim() || !inquiryForm.requester_title.trim() || !inquiryForm.requester_email.trim() || !inquiryForm.request_message.trim()) {
+      setToast('Completa nombre, puesto, correo y el detalle de la necesidad antes de enviar la solicitud.');
+      return;
+    }
+
+    setInquirySubmitting(true);
+    setToast(null);
+    try {
+      const formData = new FormData();
+      formData.append('service_catalog_id', String(inquiryService.catalog_id));
+      formData.append('service_slug', inquiryService.slug);
+      formData.append('requester_name', inquiryForm.requester_name.trim());
+      formData.append('requester_title', inquiryForm.requester_title.trim());
+      formData.append('requester_email', inquiryForm.requester_email.trim());
+      formData.append('requester_phone', inquiryForm.requester_phone.trim());
+      formData.append('request_message', inquiryForm.request_message.trim());
+      inquiryFiles.forEach((file) => formData.append('attachments[]', file));
+
+      const res = await fetch('/api/company_portal.php?action=create_service_inquiry', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || 'No fue posible enviar la solicitud.');
+      }
+      closeInquiryModal();
+      setToast('Solicitud enviada correctamente. Nuestro equipo dara seguimiento a la brevedad.');
+    } catch (submitError: any) {
+      setToast(submitError?.message || 'No fue posible enviar la solicitud.');
+    } finally {
+      setInquirySubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -253,6 +332,12 @@ export default function EmpresaDashboard() {
           {error ? (
             <div style={{ marginBottom: 20, padding: 16, borderRadius: 14, background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b' }}>
               {error}
+            </div>
+          ) : null}
+
+          {toast ? (
+            <div style={{ marginBottom: 20, padding: 16, borderRadius: 14, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8' }}>
+              {toast}
             </div>
           ) : null}
 
@@ -391,18 +476,18 @@ export default function EmpresaDashboard() {
                       </span>
                       <button
                         type="button"
-                        disabled
+                        onClick={() => openInquiryModal(service)}
                         style={{
-                          background: '#e5e7eb',
-                          color: '#6b7280',
+                          background: '#1d4ed8',
+                          color: '#fff',
                           border: 'none',
                           borderRadius: 10,
                           padding: '10px 14px',
-                          cursor: 'not-allowed',
+                          cursor: 'pointer',
                           fontWeight: 700,
                         }}
                       >
-                        Solicitud proxima etapa
+                        Solicitar informacion
                       </button>
                     </div>
                   </article>
@@ -412,6 +497,121 @@ export default function EmpresaDashboard() {
           </section>
         </div>
       </main>
+      {inquiryOpen && inquiryService ? (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 60 }}>
+          <div style={{ width: 'min(760px, 100%)', maxHeight: '90vh', overflowY: 'auto', background: '#fff', borderRadius: 18, padding: 24, boxShadow: '0 24px 60px rgba(15,23,42,0.28)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 18 }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 24, color: '#0f172a' }}>Solicitud de informacion / cotizacion</h2>
+                <p style={{ margin: '6px 0 0', color: '#64748b' }}>
+                  Servicio seleccionado: <strong>{inquiryService.name}</strong>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeInquiryModal}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 24, color: '#64748b' }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gap: 14 }}>
+              <div style={{ padding: 14, borderRadius: 12, background: '#f8fafc', border: '1px solid #e5e7eb', color: '#475569', lineHeight: 1.7 }}>
+                <div><strong>Empresa:</strong> {context?.company.display_name || 'Empresa'}</div>
+                <div><strong>Servicio:</strong> {inquiryService.name}</div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span style={{ fontWeight: 700, color: '#0f172a' }}>Nombre de quien solicita *</span>
+                  <input
+                    value={inquiryForm.requester_name}
+                    onChange={(event) => setInquiryForm((prev) => ({ ...prev, requester_name: event.target.value }))}
+                    style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }}
+                  />
+                </label>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span style={{ fontWeight: 700, color: '#0f172a' }}>Puesto *</span>
+                  <input
+                    value={inquiryForm.requester_title}
+                    onChange={(event) => setInquiryForm((prev) => ({ ...prev, requester_title: event.target.value }))}
+                    style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }}
+                  />
+                </label>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span style={{ fontWeight: 700, color: '#0f172a' }}>Correo para respuesta *</span>
+                  <input
+                    type="email"
+                    value={inquiryForm.requester_email}
+                    onChange={(event) => setInquiryForm((prev) => ({ ...prev, requester_email: event.target.value }))}
+                    style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }}
+                  />
+                </label>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span style={{ fontWeight: 700, color: '#0f172a' }}>Telefono (opcional)</span>
+                  <input
+                    value={inquiryForm.requester_phone}
+                    onChange={(event) => setInquiryForm((prev) => ({ ...prev, requester_phone: event.target.value }))}
+                    style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }}
+                  />
+                </label>
+              </div>
+
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>Describe tu necesidad *</span>
+                <textarea
+                  value={inquiryForm.request_message}
+                  onChange={(event) => setInquiryForm((prev) => ({ ...prev, request_message: event.target.value }))}
+                  rows={7}
+                  placeholder="Indica el contexto, alcance, fechas estimadas y cualquier detalle que ayude a preparar la propuesta."
+                  style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', resize: 'vertical' }}
+                />
+              </label>
+
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>Adjuntos opcionales</span>
+                <input
+                  type="file"
+                  multiple
+                  onChange={(event) => setInquiryFiles(Array.from(event.target.files || []))}
+                  style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff' }}
+                />
+                <span style={{ color: '#64748b', fontSize: 12 }}>
+                  Puedes adjuntar hasta 3 archivos. Limite por archivo: 10 MB.
+                </span>
+                {inquiryFiles.length > 0 ? (
+                  <div style={{ display: 'grid', gap: 6 }}>
+                    {inquiryFiles.map((file) => (
+                      <div key={`${file.name}-${file.size}`} style={{ fontSize: 13, color: '#475569' }}>
+                        {file.name}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </label>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={closeInquiryModal}
+                  style={{ padding: '10px 16px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={submitInquiry}
+                  disabled={inquirySubmitting}
+                  style={{ padding: '10px 16px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 8, cursor: inquirySubmitting ? 'not-allowed' : 'pointer', fontWeight: 700 }}
+                >
+                  {inquirySubmitting ? 'Enviando...' : 'Enviar solicitud'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <Footer />
     </>
   );
