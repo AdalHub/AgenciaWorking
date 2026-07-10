@@ -3,140 +3,158 @@ import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/header/header';
 import Footer from '../components/Footer/Footer';
 
-type User = { id: number; email: string; account_type?: string; is_profile_complete?: boolean } | null;
-type Study = {
-  id: number;
-  company_name: string;
-  status: string;
-  concluded_at?: string | null;
-  total_invitations?: number;
-  completed_count?: number;
+const API = '/api';
+
+type PortalContext = {
+  current_user: {
+    id: number;
+    email: string;
+    name: string;
+    account_type: string;
+    is_profile_complete: boolean;
+    is_active: boolean;
+  };
+  company: {
+    company_user_id: number;
+    display_name: string;
+    has_profile: boolean;
+    profile_complete: boolean;
+  };
+  membership: {
+    member_user_id: number;
+    role: 'owner' | 'manager' | 'authorized';
+    can_manage_company: boolean;
+    area: string | null;
+    position_title: string | null;
+  };
+  counts: {
+    contracted_services: number;
+    available_services: number;
+  };
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  pendiente_captura: 'Pendiente de captura',
+type StudyMetrics = {
+  total_studies: number;
+  open_studies: number;
+  concluded_studies: number;
+  cancelled_studies: number;
+  service_status: 'pendiente' | 'en_proceso' | 'disponible' | 'completado';
+};
+
+type CompanyService = {
+  catalog_id: number;
+  company_service_id: number | null;
+  slug: string;
+  name: string;
+  short_description: string;
+  service_type: 'workspace' | 'module_link';
+  module_route: string | null;
+  public_service_slug: string | null;
+  sort_order: number;
+  status: 'pendiente' | 'en_proceso' | 'disponible' | 'completado';
+  enabled_at: string | null;
+  completed_at: string | null;
+  notes: string | null;
+  is_contracted: boolean;
+  study_metrics?: StudyMetrics;
+};
+
+const PORTAL_STATUS_LABELS: Record<CompanyService['status'], string> = {
+  pendiente: 'Pendiente',
   en_proceso: 'En proceso',
-  en_validacion: 'En validacion',
-  concluido: 'Concluido',
-  cancelado: 'Cancelado',
+  disponible: 'Disponible',
+  completado: 'Completado',
 };
 
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  pendiente_captura: { bg: '#f3f4f6', text: '#374151' },
+const PORTAL_STATUS_COLORS: Record<CompanyService['status'], { bg: string; text: string }> = {
+  pendiente: { bg: '#f3f4f6', text: '#374151' },
   en_proceso: { bg: '#dbeafe', text: '#1d4ed8' },
-  en_validacion: { bg: '#fef3c7', text: '#b45309' },
-  concluido: { bg: '#d1fae5', text: '#065f46' },
-  cancelado: { bg: '#fee2e2', text: '#991b1b' },
+  disponible: { bg: '#fef3c7', text: '#b45309' },
+  completado: { bg: '#dcfce7', text: '#166534' },
 };
 
-function formatDate(d?: string | null): string {
-  if (!d) return '-';
-  try {
-    return new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  } catch {
-    return String(d);
-  }
+function roleLabel(role: PortalContext['membership']['role']): string {
+  if (role === 'owner') return 'Administrador cliente';
+  if (role === 'manager') return 'Gerente';
+  return 'Usuario autorizado';
 }
 
 export default function EmpresaDashboard() {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User>(null);
   const [loading, setLoading] = useState(true);
-  const [studies, setStudies] = useState<Study[]>([]);
-  const [downloadLoadingId, setDownloadLoadingId] = useState<number | null>(null);
-  const [tab, setTab] = useState<'ongoing' | 'previous'>('ongoing');
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [context, setContext] = useState<PortalContext | null>(null);
+  const [contractedServices, setContractedServices] = useState<CompanyService[]>([]);
+  const [availableServices, setAvailableServices] = useState<CompanyService[]>([]);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch('/api/user_auth.php?action=me', { credentials: 'include' });
-        const data = await res.json();
-        if (!data.user) {
+        const [contextRes, servicesRes] = await Promise.all([
+          fetch(`${API}/company_portal.php?action=portal_context`, { credentials: 'include' }),
+          fetch(`${API}/company_portal.php?action=list_company_services`, { credentials: 'include' }),
+        ]);
+
+        if (!contextRes.ok || !servicesRes.ok) {
           navigate('/');
           return;
         }
-        if (data.user.account_type !== 'company') {
-          navigate('/');
-          return;
-        }
-        setUser(data.user);
-        const studiesRes = await fetch('/api/studies.php?action=list_studies', { credentials: 'include' });
-        const studiesData = await studiesRes.json();
-        setStudies(Array.isArray(studiesData.studies) ? studiesData.studies : []);
+
+        const contextData = await contextRes.json();
+        const serviceData = await servicesRes.json();
+
+        setContext(contextData);
+        setContractedServices(Array.isArray(serviceData?.contracted_services) ? serviceData.contracted_services : []);
+        setAvailableServices(Array.isArray(serviceData?.available_services) ? serviceData.available_services : []);
       } catch {
-        setError('No fue posible cargar tus estudios.');
-        navigate('/');
+        setError('No fue posible cargar el Portal Cliente en este momento.');
       } finally {
         setLoading(false);
       }
     };
+
     load();
   }, [navigate]);
 
-  const ongoingStudies = useMemo(() => studies.filter((s) => s.status !== 'concluido'), [studies]);
-  const previousStudies = useMemo(() => studies.filter((s) => s.status === 'concluido'), [studies]);
-  const visibleStudies = tab === 'ongoing' ? ongoingStudies : previousStudies;
-  const profileStatusLabel = user?.is_profile_complete ? 'Completo' : 'Incompleto';
-
-  const handleDownloadFinalPdf = async (studyId: number) => {
-    setDownloadLoadingId(studyId);
-    setToast(null);
-    try {
-      const statusRes = await fetch(`/api/studies.php?action=pdf_status_study&study_id=${studyId}`, { credentials: 'include' });
-      const statusData = await statusRes.json().catch(() => ({}));
-      if (!statusData?.available) {
-        setToast('El informe final aun no esta disponible para este estudio.');
-        return;
-      }
-
-      const invRes = await fetch(`/api/studies.php?action=list_invitations&study_id=${studyId}`, { credentials: 'include', cache: 'no-store' });
-      const invData = await invRes.json().catch(() => ({}));
-      const completedInvitations = Array.isArray(invData?.invitations)
-        ? invData.invitations.filter((inv: { id: number; status: string }) => inv.status === 'completed')
-        : [];
-
-      if (completedInvitations.length === 0) {
-        setToast('No hay colaboradores completados para descargar.');
-        return;
-      }
-
-      setToast(`Descargando ${completedInvitations.length} PDF${completedInvitations.length === 1 ? '' : 's'} por colaborador.`);
-      completedInvitations.forEach((inv: { id: number }, index: number) => {
-        window.setTimeout(() => {
-          const a = document.createElement('a');
-          a.href = `/api/studies.php?action=download_pdf&invitation_id=${inv.id}&_ts=${Date.now()}-${index}`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        }, index * 250);
-      });
-    } catch {
-      setToast('Error de red al descargar el informe.');
-    } finally {
-      setDownloadLoadingId(null);
-    }
-  };
+  const profileLabel = useMemo(() => {
+    if (!context) return 'Pendiente';
+    return context.company.profile_complete ? 'Completo' : 'Incompleto';
+  }, [context]);
 
   if (loading) {
     return (
       <>
         <Header />
-        <main style={{ minHeight: '65vh', paddingTop: 80, textAlign: 'center' }}><p>Cargando...</p></main>
+        <main style={{ minHeight: '65vh', paddingTop: 80, textAlign: 'center' }}>
+          <p>Cargando...</p>
+        </main>
         <Footer />
       </>
     );
   }
 
-  if (!user) return null;
+  if (!context) {
+    return (
+      <>
+        <Header />
+        <main style={{ minHeight: '65vh', paddingTop: 80, paddingBottom: 48 }}>
+          <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 20px' }}>
+            <div style={{ padding: 20, borderRadius: 16, border: '1px solid #fecaca', background: '#fef2f2', color: '#991b1b' }}>
+              {error || 'No fue posible cargar el Portal Cliente.'}
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
       <Header />
       <main style={{ minHeight: '65vh', paddingTop: 80, paddingBottom: 48 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
-          {user.is_profile_complete === false && (
+          {!context.company.profile_complete && (
             <div
               style={{
                 marginBottom: 24,
@@ -172,145 +190,227 @@ export default function EmpresaDashboard() {
             </div>
           )}
 
-          <h1 style={{ marginBottom: 20, fontSize: '1.75rem' }}>Panel de empresa</h1>
-          <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-            <aside style={{ width: 260, flexShrink: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 12 }}>
-              <button
-                type="button"
-                onClick={() => setTab('ongoing')}
-                style={{
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '10px 12px',
-                  border: 'none',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  background: tab === 'ongoing' ? '#111827' : '#fff',
-                  color: tab === 'ongoing' ? '#fff' : '#111827',
-                  marginBottom: 6,
-                }}
-              >
-                Estudios en proceso
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab('previous')}
-                style={{
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '10px 12px',
-                  border: 'none',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  background: tab === 'previous' ? '#111827' : '#fff',
-                  color: tab === 'previous' ? '#fff' : '#111827',
-                }}
-              >
-                Estudios concluidos
-              </button>
-            </aside>
-
-            <section style={{ flex: 1, minWidth: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
-              <h2 style={{ margin: '0 0 12px', fontSize: 18 }}>
-                {tab === 'ongoing' ? 'Estudios en proceso' : 'Estudios concluidos'}
-              </h2>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 18 }}>
-                <div style={{ padding: 14, borderRadius: 12, background: '#f8fafc', border: '1px solid #e5e7eb' }}>
-                  <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>Estudios en proceso</div>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>{ongoingStudies.length}</div>
-                </div>
-                <div style={{ padding: 14, borderRadius: 12, background: '#f8fafc', border: '1px solid #e5e7eb' }}>
-                  <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>Estudios concluidos</div>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a' }}>{previousStudies.length}</div>
-                </div>
-                <div style={{ padding: 14, borderRadius: 12, background: '#f8fafc', border: '1px solid #e5e7eb' }}>
-                  <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>Perfil de empresa</div>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: user.is_profile_complete ? '#166534' : '#b45309' }}>{profileStatusLabel}</div>
-                </div>
-              </div>
-
-              {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-              {visibleStudies.length === 0 ? (
-                <p style={{ color: '#6b7280', margin: 0 }}>
-                  {tab === 'ongoing' ? 'No tienes estudios en proceso.' : 'No tienes estudios concluidos.'}
-                </p>
-              ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                        <th style={{ textAlign: 'left', padding: 10, fontSize: 13, color: '#4b5563' }}>Folio</th>
-                        <th style={{ textAlign: 'left', padding: 10, fontSize: 13, color: '#4b5563' }}>Progreso</th>
-                        <th style={{ textAlign: 'left', padding: 10, fontSize: 13, color: '#4b5563' }}>Estatus</th>
-                        <th style={{ textAlign: 'left', padding: 10, fontSize: 13, color: '#4b5563' }}>Fecha de conclusion</th>
-                        <th style={{ textAlign: 'left', padding: 10, fontSize: 13, color: '#4b5563' }}>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleStudies.map((study) => {
-                        const statusStyle = STATUS_COLORS[study.status] || { bg: '#f3f4f6', text: '#374151' };
-                        const total = Number(study.total_invitations || 0);
-                        const completed = Number(study.completed_count || 0);
-                        return (
-                          <tr key={study.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: 10 }}>
-                              <div style={{ fontWeight: 600 }}>{study.company_name || `Folio #${study.id}`}</div>
-                              <div style={{ fontSize: 12, color: '#6b7280' }}>ID interno: {study.id}</div>
-                            </td>
-                            <td style={{ padding: 10 }}>{completed} / {total}</td>
-                            <td style={{ padding: 10 }}>
-                              <span style={{ padding: '4px 8px', borderRadius: 999, background: statusStyle.bg, color: statusStyle.text, fontSize: 12 }}>
-                                {STATUS_LABELS[study.status] || study.status}
-                              </span>
-                            </td>
-                            <td style={{ padding: 10 }}>{formatDate(study.concluded_at)}</td>
-                            <td style={{ padding: 10 }}>
-                              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                <button
-                                  type="button"
-                                  onClick={() => navigate(`/empresa/studies/${study.id}`)}
-                                  style={{
-                                    background: '#111827',
-                                    color: '#fff',
-                                    border: 'none',
-                                    borderRadius: 6,
-                                    padding: '8px 12px',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  Ver detalle
-                                </button>
-                                {study.status === 'concluido' ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDownloadFinalPdf(study.id)}
-                                    disabled={downloadLoadingId === study.id}
-                                    style={{
-                                      background: '#1d4ed8',
-                                      color: '#fff',
-                                      border: 'none',
-                                      borderRadius: 6,
-                                      padding: '8px 12px',
-                                      cursor: downloadLoadingId === study.id ? 'not-allowed' : 'pointer',
-                                    }}
-                                  >
-                                    {downloadLoadingId === study.id ? 'Descargando...' : 'Descargar informes'}
-                                  </button>
-                                ) : null}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
+          <div style={{ marginBottom: 22 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
+              <h1 style={{ margin: 0, fontSize: '2rem', color: '#0f172a' }}>Portal Cliente</h1>
+              <span style={{ padding: '6px 12px', borderRadius: 999, background: '#e0f2fe', color: '#0f766e', fontSize: 13, fontWeight: 700 }}>
+                {roleLabel(context.membership.role)}
+              </span>
+            </div>
+            <h2 style={{ margin: '0 0 10px', fontSize: '1.15rem', color: '#1e293b' }}>{context.company.display_name}</h2>
+            <p style={{ margin: 0, color: '#64748b', lineHeight: 1.7 }}>
+              Desde aqui podras revisar los servicios contratados de tu empresa y visualizar los servicios disponibles para futuras solicitudes.
+            </p>
           </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12, marginBottom: 28 }}>
+            <div style={{ padding: 16, borderRadius: 14, background: '#f8fafc', border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: 13, color: '#64748b', marginBottom: 8 }}>Servicios contratados</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: '#0f172a' }}>{context.counts.contracted_services}</div>
+            </div>
+            <div style={{ padding: 16, borderRadius: 14, background: '#f8fafc', border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: 13, color: '#64748b', marginBottom: 8 }}>Servicios disponibles</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: '#0f172a' }}>{context.counts.available_services}</div>
+            </div>
+            <div style={{ padding: 16, borderRadius: 14, background: '#f8fafc', border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: 13, color: '#64748b', marginBottom: 8 }}>Perfil de empresa</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: context.company.profile_complete ? '#166534' : '#b45309' }}>{profileLabel}</div>
+            </div>
+            <div style={{ padding: 16, borderRadius: 14, background: '#f8fafc', border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: 13, color: '#64748b', marginBottom: 8 }}>Tipo de acceso</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a' }}>{roleLabel(context.membership.role)}</div>
+            </div>
+          </div>
+
+          {context.membership.can_manage_company ? (
+            <section style={{ marginBottom: 28 }}>
+              <div style={{ padding: 18, borderRadius: 18, border: '1px solid #e5e7eb', background: '#fff', display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div>
+                  <h3 style={{ margin: '0 0 8px', fontSize: 20, color: '#0f172a' }}>Usuarios autorizados</h3>
+                  <p style={{ margin: 0, color: '#64748b', lineHeight: 1.6 }}>
+                    Crea accesos para tu equipo y define que servicios puede consultar cada persona dentro del portal.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/empresa/users')}
+                  style={{
+                    background: '#111827',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 10,
+                    padding: '10px 14px',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                  }}
+                >
+                  Administrar usuarios
+                </button>
+              </div>
+            </section>
+          ) : null}
+
+          {error ? (
+            <div style={{ marginBottom: 20, padding: 16, borderRadius: 14, background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b' }}>
+              {error}
+            </div>
+          ) : null}
+
+          <section style={{ marginBottom: 28 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 22, color: '#0f172a' }}>Servicios contratados</h3>
+                <p style={{ margin: '6px 0 0', color: '#64748b' }}>
+                  Servicios habilitados actualmente para tu empresa.
+                </p>
+              </div>
+            </div>
+
+            {contractedServices.length === 0 ? (
+              <div style={{ padding: 18, borderRadius: 16, border: '1px solid #e5e7eb', background: '#fff', color: '#64748b' }}>
+                Aun no hay servicios activos para esta cuenta.
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+                {contractedServices.map((service) => {
+                  const statusStyle = PORTAL_STATUS_COLORS[service.status] || PORTAL_STATUS_COLORS.pendiente;
+                  const isStudies = service.slug === 'estudios-socioeconomicos';
+                  return (
+                    <article key={service.slug} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 18, padding: 18, display: 'grid', gap: 14 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+                        <div>
+                          <h4 style={{ margin: '0 0 8px', fontSize: 18, color: '#0f172a' }}>{service.name}</h4>
+                          <p style={{ margin: 0, color: '#64748b', lineHeight: 1.6 }}>{service.short_description}</p>
+                        </div>
+                        <span style={{ padding: '6px 10px', borderRadius: 999, background: statusStyle.bg, color: statusStyle.text, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                          {PORTAL_STATUS_LABELS[service.status] || service.status}
+                        </span>
+                      </div>
+
+                      {isStudies && service.study_metrics ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+                          <div style={{ padding: 12, borderRadius: 12, background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                            <div style={{ fontSize: 12, color: '#1d4ed8', marginBottom: 6 }}>Estudios activos</div>
+                            <div style={{ fontSize: 22, fontWeight: 800, color: '#0f172a' }}>{service.study_metrics.open_studies}</div>
+                          </div>
+                          <div style={{ padding: 12, borderRadius: 12, background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                            <div style={{ fontSize: 12, color: '#166534', marginBottom: 6 }}>Concluidos</div>
+                            <div style={{ fontSize: 22, fontWeight: 800, color: '#0f172a' }}>{service.study_metrics.concluded_studies}</div>
+                          </div>
+                          <div style={{ padding: 12, borderRadius: 12, background: '#fff7ed', border: '1px solid #fed7aa' }}>
+                            <div style={{ fontSize: 12, color: '#c2410c', marginBottom: 6 }}>Cancelados</div>
+                            <div style={{ fontSize: 22, fontWeight: 800, color: '#0f172a' }}>{service.study_metrics.cancelled_studies}</div>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        {service.service_type === 'module_link' && service.module_route ? (
+                          <button
+                            type="button"
+                            onClick={() => navigate(service.module_route || '/empresa/services/estudios')}
+                            style={{
+                              background: '#111827',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 10,
+                              padding: '10px 14px',
+                              cursor: 'pointer',
+                              fontWeight: 700,
+                            }}
+                          >
+                            Ingresar al sistema
+                          </button>
+                        ) : service.service_type === 'workspace' ? (
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/empresa/services/${service.slug}`)}
+                            style={{
+                              background: '#111827',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 10,
+                              padding: '10px 14px',
+                              cursor: 'pointer',
+                              fontWeight: 700,
+                            }}
+                          >
+                            Abrir espacio documental
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled
+                            style={{
+                              background: '#e5e7eb',
+                              color: '#6b7280',
+                              border: 'none',
+                              borderRadius: 10,
+                              padding: '10px 14px',
+                              cursor: 'not-allowed',
+                              fontWeight: 700,
+                            }}
+                          >
+                            Espacio en preparacion
+                          </button>
+                        )}
+                        {service.notes ? (
+                          <span style={{ alignSelf: 'center', fontSize: 13, color: '#64748b' }}>{service.notes}</span>
+                        ) : null}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <section>
+            <div style={{ marginBottom: 14 }}>
+              <h3 style={{ margin: 0, fontSize: 22, color: '#0f172a' }}>Servicios disponibles para contratar</h3>
+              <p style={{ margin: '6px 0 0', color: '#64748b' }}>
+                Estos servicios aun no estan activos para tu empresa y podran conectarse al futuro flujo de solicitud comercial del portal.
+              </p>
+            </div>
+
+            {availableServices.length === 0 ? (
+              <div style={{ padding: 18, borderRadius: 16, border: '1px solid #e5e7eb', background: '#fff', color: '#64748b' }}>
+                No hay servicios adicionales visibles en este momento.
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+                {availableServices.map((service) => (
+                  <article key={service.slug} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 18, padding: 18, display: 'grid', gap: 14 }}>
+                    <div>
+                      <h4 style={{ margin: '0 0 8px', fontSize: 18, color: '#0f172a' }}>{service.name}</h4>
+                      <p style={{ margin: 0, color: '#64748b', lineHeight: 1.6 }}>{service.short_description}</p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                      <span style={{ padding: '6px 10px', borderRadius: 999, background: '#eff6ff', color: '#1d4ed8', fontSize: 12, fontWeight: 700 }}>
+                        Disponible
+                      </span>
+                      <button
+                        type="button"
+                        disabled
+                        style={{
+                          background: '#e5e7eb',
+                          color: '#6b7280',
+                          border: 'none',
+                          borderRadius: 10,
+                          padding: '10px 14px',
+                          cursor: 'not-allowed',
+                          fontWeight: 700,
+                        }}
+                      >
+                        Solicitud proxima etapa
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
-        {toast && <div style={{ position: 'fixed', bottom: 24, right: 24, padding: 12, background: '#111', color: '#fff', borderRadius: 8 }}>{toast}</div>}
       </main>
       <Footer />
     </>

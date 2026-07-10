@@ -20,9 +20,12 @@ import BlogListPage from './pages/BlogList';
 import BlogDetailPage from './pages/BlogDetail';
 import EmpresaOnboarding from './pages/EmpresaOnboarding';
 import EmpresaDashboard from './pages/EmpresaDashboard';
+import EmpresaServiceWorkspacePage from './pages/EmpresaServiceWorkspacePage';
+import EmpresaStudiesDashboard from './pages/EmpresaStudiesDashboard';
 import EmpresaStudyDetailPage from './pages/EmpresaStudyDetailPage.tsx';
 import EmpresaSetupPage from './pages/EmpresaSetupPage.tsx';
 import EmpresaResetPasswordPage from './pages/EmpresaResetPasswordPage.tsx';
+import EmpresaUsersPage from './pages/EmpresaUsersPage';
 import EstudioPage from './pages/EstudioPage';
 import EstudioPublicoPage from './pages/EstudioPublicoPage';
 import EstudiosViewPage from './pages/EstudiosViewPage';
@@ -30,6 +33,9 @@ import AdminStudiesPage from './pages/AdminStudiesPage';
 import AdminStudyDetailPage from './pages/AdminStudyDetailPage';
 import AdminCandidateStudyViewPage from './pages/AdminCandidateStudyViewPage';
 import AdminEmailQueuePage from './pages/AdminEmailQueuePage';
+import AdminClientsPage from './pages/AdminClientsPage';
+import AdminClientDetailPage from './pages/AdminClientDetailPage';
+import AdminClientServiceWorkspacePage from './pages/AdminClientServiceWorkspacePage';
 
 export default function App() {
   return (
@@ -51,6 +57,9 @@ export default function App() {
           <Route path="studies" element={<AdminStudiesPage />} />
           <Route path="studies/:id" element={<AdminStudyDetailPage />} />
           <Route path="studies/:id/candidates/:invitationId/view" element={<AdminCandidateStudyViewPage />} />
+          <Route path="clients" element={<AdminClientsPage />} />
+          <Route path="clients/:companyUserId" element={<AdminClientDetailPage />} />
+          <Route path="clients/:companyUserId/services/:slug" element={<AdminClientServiceWorkspacePage />} />
           <Route path="email-queue" element={<AdminEmailQueuePage />} />
         </Route>
         <Route path="/schedule" element={<ScheduleList />} />
@@ -65,6 +74,9 @@ export default function App() {
         <Route path="/blog/:id" element={<BlogDetailPage />} />
         <Route path="/empresa/onboarding" element={<EmpresaOnboarding />} />
         <Route path="/empresa/dashboard" element={<EmpresaDashboard />} />
+        <Route path="/empresa/services/estudios" element={<EmpresaStudiesDashboard />} />
+        <Route path="/empresa/services/:slug" element={<EmpresaServiceWorkspacePage />} />
+        <Route path="/empresa/users" element={<EmpresaUsersPage />} />
         <Route path="/empresa/studies/:id" element={<EmpresaStudyDetailPage />} />
         <Route path="/empresa/setup" element={<EmpresaSetupPage />} />
         <Route path="/empresa/reset-password" element={<EmpresaResetPasswordPage />} />

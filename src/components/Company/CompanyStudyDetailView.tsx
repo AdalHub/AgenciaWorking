@@ -247,7 +247,7 @@ export default function CompanyStudyDetailView({ studyId, token, backLink }: Pro
     ])
       .then(([studyRes, invRes]) => {
         if (studyRes?.error) {
-          if (!token) navigate('/empresa/dashboard');
+          if (!token) navigate('/empresa/services/estudios');
           return;
         }
 

@@ -22,7 +22,7 @@ export default function EmpresaStudyDetailPage() {
         backLink={
           <button
             type="button"
-            onClick={() => navigate('/empresa/dashboard')}
+            onClick={() => navigate('/empresa/services/estudios')}
             style={{
               background: 'transparent',
               border: '1px solid #e5e7eb',
@@ -32,7 +32,7 @@ export default function EmpresaStudyDetailPage() {
               fontWeight: 600,
             }}
           >
-            ← Back to dashboard
+            Volver a estudios
           </button>
         }
       />
@@ -40,4 +40,3 @@ export default function EmpresaStudyDetailPage() {
     </>
   );
 }
-

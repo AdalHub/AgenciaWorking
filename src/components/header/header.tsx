@@ -238,8 +238,8 @@ export default function Header() {
               <button
                 onClick={() => navigate('/empresa/dashboard')}
                 style={{
-                  background: location.pathname.startsWith('/empresa/dashboard') ? '#1d4ed8' : '#eff6ff',
-                  color: location.pathname.startsWith('/empresa/dashboard') ? '#fff' : '#1d4ed8',
+                  background: location.pathname.startsWith('/empresa/') ? '#1d4ed8' : '#eff6ff',
+                  color: location.pathname.startsWith('/empresa/') ? '#fff' : '#1d4ed8',
                   border: 'none',
                   borderRadius: 6,
                   padding: '6px 12px',
@@ -363,6 +363,34 @@ export default function Header() {
                 >
                   {isCompanyUser ? 'Perfil de empresa' : 'My Schedule'}
                 </button>
+                {isCompanyUser && (
+                  <button
+                    onClick={() => {
+                      navigate('/empresa/users');
+                      setShowUserMenu(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      color: '#111827',
+                      borderTop: '1px solid #e5e7eb',
+                      transition: 'background 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#f9fafb';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'none';
+                    }}
+                  >
+                    Usuarios autorizados
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     handleLogout();
@@ -409,7 +437,7 @@ export default function Header() {
               flexShrink: 0,
             }}
           >
-            Login / Signup
+            Portal Cliente
           </button>
         )}
           </DesktopOnly>
@@ -509,6 +537,12 @@ export default function Header() {
                 >
                   Perfil de empresa
                 </MobileLink>
+                <MobileLink
+                  to="/empresa/users"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Usuarios autorizados
+                </MobileLink>
               </>
             )}
 
@@ -550,7 +584,7 @@ export default function Header() {
                 }}
                 style={{ marginTop: '1rem' }}
               >
-                Login / Signup
+                Portal Cliente
               </button>
             )}
           </Panel>

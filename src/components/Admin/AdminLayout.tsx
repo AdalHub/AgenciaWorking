@@ -25,6 +25,7 @@ const navItems: { to: string; label: string }[] = [
   { to: '/admin/calendar', label: 'Calendar' },
   { to: '/admin/blogs', label: 'Post Blog' },
   { to: '/admin/studies', label: 'Estudios' },
+  { to: '/admin/clients', label: 'Clientes portal' },
   { to: '/admin/email-queue', label: 'Cola de correo' },
 ];
 
@@ -192,7 +193,7 @@ export default function AdminLayout() {
         <NavLink
           key={to}
           to={to}
-          end={to !== '/admin/studies'}
+          end={to !== '/admin/studies' && to !== '/admin/clients'}
           style={({ isActive }) => linkStyle(isActive)}
           onClick={closeMenu}
         >
