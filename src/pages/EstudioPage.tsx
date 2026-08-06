@@ -62,6 +62,8 @@ type Invitation = {
 type FormDataBySection = Record<string, Record<string, string>>;
 type GrammarSuggestionMap = Record<string, WritingSuggestion[]>;
 type LastEditedGrammarField = { section: string; key: string; value: string };
+type ValidationIssue = { key: string; label: string };
+type SectionProgress = { filled: number; total: number; missing: ValidationIssue[] };
 
 function grammarFieldMapKey(section: string, fieldKey: string): string {
   return `${section}::${fieldKey}`;
@@ -168,6 +170,127 @@ const GASTOS_MENSUALES = [
   ['gasto_otros', 'Otros gastos'],
 ] as const;
 
+const REQUIRED_FIELD_LABELS: Record<string, string> = {
+  dp_nombre_completo: 'Nombre completo',
+  dp_fecha_nacimiento: 'Fecha de nacimiento',
+  dp_lugar_nacimiento: 'Lugar de nacimiento',
+  dp_nacionalidad: 'Nacionalidad',
+  dp_sexo: 'Sexo',
+  dp_estado_civil: 'Estado civil',
+  dp_curp: 'CURP',
+  dp_rfc: 'RFC',
+  dp_id_tipo: 'Número de identificación oficial presentada',
+  dp_id_numero: 'Número de identificación (IMSS)',
+  dp_id_vigencia: 'Vigencia del documento (debe estar vigente)',
+  dp_identificacion_pdf: 'Identificación oficial en PDF',
+  dp_constancia_situacion_fiscal_pdf: 'Constancia de Situación Fiscal actualizada',
+  foto_participante: 'Fotografía del empleado',
+  auth_nombre_declaracion: 'Nombre completo en la declaración de autorización',
+  auth_empresa_solicitante: 'Empresa solicitante del estudio',
+  auth_nombre_firma: 'Nombre completo del evaluado',
+  auth_firma: 'Firma del evaluado',
+  auth_fecha: 'Fecha de autorización',
+  dom_calle_numero: 'Calle y número',
+  dom_colonia: 'Colonia',
+  dom_codigo_postal: 'Código Postal',
+  dom_municipio_ciudad: 'Municipio o ciudad',
+  dom_estado: 'Estado',
+  dom_pais: 'País',
+  dom_tipo_vivienda: 'Tipo de vivienda',
+  dom_tipo_vivienda_otro: 'Otro tipo de vivienda',
+  dom_tiempo_residencia: 'Tiempo de residencia en el domicilio actual',
+  dom_comprobante_domicilio_fecha: 'Fecha del comprobante de domicilio (máximo 3 meses)',
+  dom_comprobante_domicilio_pdf: 'Comprobante de domicilio',
+  dom_anterior_completo: 'Domicilio anterior completo',
+  dom_anterior_periodo_de: 'Inicio del periodo en el domicilio anterior',
+  dom_anterior_periodo_a: 'Fin del periodo en el domicilio anterior',
+  dom_anterior_motivo: 'Motivo del cambio de domicilio',
+  dom_anterior_motivo_otro: 'Otro motivo del cambio de domicilio',
+  dom_visita: 'Autorización para verificación domiciliaria',
+  dom_visita_op1_fecha: 'Opción 1: fecha para la visita',
+  dom_visita_op1_hora: 'Opción 1: horario para la visita',
+  dom_visita_op2_fecha: 'Opción 2: fecha para la visita',
+  dom_visita_op2_hora: 'Opción 2: horario para la visita',
+  conyuge_curp: 'CURP del cónyuge o pareja',
+  contacto_telefono_celular: 'Teléfono celular',
+  contacto_correo_personal: 'Correo electrónico personal',
+  contacto_emergencia_nombre: 'Nombre del contacto de emergencia',
+  contacto_emergencia_parentesco: 'Parentesco del contacto de emergencia',
+  contacto_emergencia_telefono: 'Teléfono del contacto de emergencia',
+  hl_periodos_sin_empleo_motivo: 'Motivo del periodo sin empleo',
+  hl_periodos_sin_empleo_otro: 'Otro motivo del periodo sin empleo',
+  hl_constancia_imss_pdf: 'Constancia de semanas cotizadas del IMSS',
+  ie_rango: 'Rango de ingreso mensual',
+  ie_ingresos_adicionales: '¿Cuenta con ingresos adicionales?',
+  ie_buro_problema: 'Situación crediticia declarativa',
+  ie_buro_otro_texto: 'Otro detalle del historial crediticio',
+  esc_nivel: 'Último nivel de estudios',
+  esc_estatus: 'Estatus de escolaridad',
+  esc_documentacion: 'Documentación escolar',
+  esc_estudiando_que: 'Estudios actuales',
+  esc_estudiando_institucion: 'Institución de estudios actuales',
+  bw_alcohol: '¿Consume alcohol?',
+  bw_tabaco: '¿Fuma?',
+  bw_sustancia_prohibida: '¿Consume alguna sustancia prohibida?',
+  al_legal: 'Antecedentes legales declarativos',
+  cap_tramite: 'Autorización para trámite de Carta de No Antecedentes Penales',
+  cap_doc_acta: 'Acta de nacimiento',
+  cap_doc_ine: 'Credencial para votar (INE)',
+  cap_doc_foto: 'Fotografía reciente con fondo blanco',
+  vivi_zona: 'Zona de la vivienda',
+  vivi_zona_otro: 'Otra zona de vivienda',
+  vivi_tipo: 'Tipo de vivienda',
+  vivi_colonia_tipo: 'Colonia o tipo de fraccionamiento',
+  vivi_colonia_otro: 'Otro tipo de colonia o fraccionamiento',
+  vivi_actividad_vecinal: 'Actividad vecinal predominante',
+  vivi_actividad_vecinal_otro: 'Otra actividad vecinal predominante',
+  transporte_medio: 'Medio principal de transporte',
+  transporte_tiempo: 'Tiempo aproximado de traslado',
+};
+
+GASTOS_MENSUALES.forEach(([key, label]) => {
+  REQUIRED_FIELD_LABELS[key] = `Gasto mensual: ${label}`;
+});
+
+function requiredFieldLabel(key: string): string {
+  if (REQUIRED_FIELD_LABELS[key]) return REQUIRED_FIELD_LABELS[key];
+
+  const jobMatch = key.match(/^hl_ant_(\d+)_(.+)$/);
+  if (jobMatch) {
+    const jobNumber = Number(jobMatch[1]) + 1;
+    const jobLabels: Record<string, string> = {
+      empresa: 'Empresa',
+      puesto: 'Puesto',
+      area: 'Área',
+      periodo_de: 'Inicio del periodo laborado',
+      periodo_a: 'Fin del periodo laborado',
+      motivo_termino: 'Motivo de terminación',
+      imss_registro: 'Registro ante el IMSS',
+      ref_nombre: 'Nombre de la referencia laboral',
+      ref_puesto: 'Puesto de la referencia laboral',
+      ref_telefono: 'Teléfono de la referencia laboral',
+    };
+    return `Empleo ${jobNumber}: ${jobLabels[jobMatch[2]] || jobMatch[2].replace(/_/g, ' ')}`;
+  }
+
+  const referenceMatch = key.match(/^(\d+)_ref_(.+)$/);
+  if (referenceMatch) {
+    const referenceNumber = Number(referenceMatch[1]) + 1;
+    const referenceLabels: Record<string, string> = {
+      nombre_completo: 'Nombre completo',
+      parentesco: 'Parentesco',
+      telefono: 'Teléfono',
+      vive_con_evaluado: '¿Vive con el evaluado?',
+    };
+    return `Referencia personal ${referenceNumber}: ${referenceLabels[referenceMatch[2]] || referenceMatch[2].replace(/_/g, ' ')}`;
+  }
+
+  return key
+    .replace(/^[a-z]+_/, '')
+    .replace(/_/g, ' ')
+    .replace(/^./, (letter: string) => letter.toUpperCase());
+}
+
 export default function EstudioPage() {
   const [searchParams] = useSearchParams();
   const codigo = searchParams.get('codigo') ?? '';
@@ -192,6 +315,8 @@ export default function EstudioPage() {
   const [grammarDraftField, setGrammarDraftField] = useState<{ section: string; key: string; value: string; inputKind: 'text' | 'textarea' } | null>(null);
   const dismissedGrammarSuggestionsRef = useRef<Record<string, Set<string>>>({});
   const lastEditedGrammarFieldRef = useRef<LastEditedGrammarField | null>(null);
+  const sectionContentRef = useRef<HTMLDivElement | null>(null);
+  const [validationAttemptSection, setValidationAttemptSection] = useState<string | null>(null);
 
   const isInvitationCompleted = invitation?.status === 'completed';
   const requiresAddressVerification = invitation?.study?.require_address_verification !== 0 && invitation?.study?.require_address_verification !== false;
@@ -199,6 +324,7 @@ export default function EstudioPage() {
 
   // When moving between pages, always start at top
   useEffect(() => {
+    setValidationAttemptSection(null);
     if (!privacyAccepted) return;
     if (completed || isInvitationCompleted) return;
     window.scrollTo(0, 0);
@@ -488,17 +614,25 @@ export default function EstudioPage() {
     return () => window.clearTimeout(timer);
   }, [grammarDraftField, handleGrammarBlur]);
 
-  const countSectionProgress = (sec: string): { filled: number; total: number } => {
+  const countSectionProgress = (sec: string): SectionProgress => {
     let filled = 0;
     let total = 0;
+    const missing: ValidationIssue[] = [];
+    const addMissing = (key: string) => {
+      if (!missing.some((issue) => issue.key === key)) {
+        missing.push({ key, label: requiredFieldLabel(key) });
+      }
+    };
     const req = (k: string) => {
       total++;
       if ((getField(sec, k) ?? '').trim()) filled++;
+      else addMissing(k);
     };
     const reqYn = (k: string) => {
       total++;
       const v = getField(sec, k);
       if (v === 'si' || v === 'no') filled++;
+      else addMissing(k);
     };
     if (sec === 'Datos Personales y de Contacto') {
       ['dp_nombre_completo', 'dp_fecha_nacimiento', 'dp_lugar_nacimiento', 'dp_nacionalidad', 'dp_sexo', 'dp_estado_civil'].forEach(req);
@@ -510,48 +644,62 @@ export default function EstudioPage() {
         getField(sec, 'dp_id_pasaporte') === '1' ||
         getField(sec, 'dp_id_cedula_profesional') === '1';
       if (idOk) filled++;
+      else addMissing('dp_id_tipo');
       req('dp_id_numero');
       total++;
       {
+        let vigenciaOk = false;
         const vigencia = (getField(sec, 'dp_id_vigencia') ?? '').trim();
         if (vigencia) {
           const selected = new Date(`${vigencia}T00:00:00`);
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          if (!Number.isNaN(selected.getTime()) && selected >= today) filled++;
+          vigenciaOk = !Number.isNaN(selected.getTime()) && selected >= today;
         }
+        if (vigenciaOk) filled++;
+        else addMissing('dp_id_vigencia');
       }
       total++;
       if ((getField(sec, 'dp_identificacion_pdf') ?? '').trim()) filled++;
+      else addMissing('dp_identificacion_pdf');
       total++;
       if ((getField(sec, 'dp_constancia_situacion_fiscal_pdf') ?? '').trim()) filled++;
+      else addMissing('dp_constancia_situacion_fiscal_pdf');
       total++;
       if ((getField(sec, 'foto_participante') ?? '').trim()) filled++;
+      else addMissing('foto_participante');
     } else if (sec === 'Autorización Actualización') {
       ['auth_nombre_declaracion', 'auth_empresa_solicitante', 'auth_nombre_firma', 'auth_fecha'].forEach(req);
       total++;
       if ((getField(sec, 'auth_firma_texto') ?? '').trim() || (getField(sec, 'auth_firma_imagen') ?? '').trim()) filled++;
+      else addMissing('auth_firma');
     } else if (sec === 'Domicilio') {
       ['dom_calle_numero', 'dom_colonia', 'dom_codigo_postal', 'dom_municipio_ciudad', 'dom_estado', 'dom_pais'].forEach(req);
       total++;
       const tipoOk = ['propia', 'rentada', 'familiar', 'prestada', 'otro'].includes(getField(sec, 'dom_tipo_vivienda'));
       if (tipoOk) filled++;
+      else addMissing('dom_tipo_vivienda');
       if (getField(sec, 'dom_tipo_vivienda') === 'otro') req('dom_tipo_vivienda_otro');
       total++;
       if (['menos6', '6m_1a', '1a_2a', 'mas1a'].includes(getField(sec, 'dom_tiempo_residencia'))) filled++;
+      else addMissing('dom_tiempo_residencia');
       total++;
       {
+        let comprobanteFechaOk = false;
         const fechaComprobante = (getField(sec, 'dom_comprobante_domicilio_fecha') ?? '').trim();
         if (fechaComprobante) {
           const selected = new Date(`${fechaComprobante}T00:00:00`);
           const cutoff = new Date();
           cutoff.setHours(0, 0, 0, 0);
           cutoff.setMonth(cutoff.getMonth() - 3);
-          if (!Number.isNaN(selected.getTime()) && selected >= cutoff) filled++;
+          comprobanteFechaOk = !Number.isNaN(selected.getTime()) && selected >= cutoff;
         }
+        if (comprobanteFechaOk) filled++;
+        else addMissing('dom_comprobante_domicilio_fecha');
       }
       total++;
       if ((getField(sec, 'dom_comprobante_domicilio_pdf') ?? '').trim()) filled++;
+      else addMissing('dom_comprobante_domicilio_pdf');
       const tiempoMenor2 = ['menos6', '6m_1a'].includes(getField(sec, 'dom_tiempo_residencia'));
       if (tiempoMenor2) {
         req('dom_anterior_completo');
@@ -560,11 +708,13 @@ export default function EstudioPage() {
         total++;
         const motivoOk = ['cambio_laboral', 'cambio_familiar', 'renta_compra', 'otro'].includes(getField(sec, 'dom_anterior_motivo'));
         if (motivoOk) filled++;
+        else addMissing('dom_anterior_motivo');
         if (getField(sec, 'dom_anterior_motivo') === 'otro') req('dom_anterior_motivo_otro');
       }
       if (requiresAddressVerification) {
         total++;
         if (getField(sec, 'dom_visita') === 'autorizo' || getField(sec, 'dom_visita') === 'no_autorizo') filled++;
+        else addMissing('dom_visita');
         if (getField(sec, 'dom_visita') === 'autorizo') {
           req('dom_visita_op1_fecha');
           req('dom_visita_op1_hora');
@@ -601,6 +751,7 @@ export default function EstudioPage() {
       if (getField(sec, 'hl_periodos_sin_empleo') === 'si') {
         total++;
         if (['busqueda', 'estudios', 'familiar', 'salud', 'otro'].includes(getField(sec, 'hl_periodos_sin_empleo_motivo'))) filled++;
+        else addMissing('hl_periodos_sin_empleo_motivo');
         if (getField(sec, 'hl_periodos_sin_empleo_motivo') === 'otro') req('hl_periodos_sin_empleo_otro');
       }
       for (let i = 0; i < antCount; i++) {
@@ -618,6 +769,7 @@ export default function EstudioPage() {
         total++;
         const imssValue = getField(sec, `hl_ant_${i}_imss_registro`);
         if (imssValue === 'si' || imssValue === 'no') filled++;
+        else addMissing(`hl_ant_${i}_imss_registro`);
 
         // Reference fields are required only for previous employments.
         if (!isActual) {
@@ -628,9 +780,11 @@ export default function EstudioPage() {
       }
       total++;
       if ((getField(sec, 'hl_constancia_imss_pdf') ?? '').trim()) filled++;
+      else addMissing('hl_constancia_imss_pdf');
     } else if (sec === 'Ingresos y Situación Económica') {
       total++;
       if (['menos10k', '10_15', '15_20', '20_30', '30_40', '40_50', 'mas50'].includes(getField(sec, 'ie_rango'))) filled++;
+      else addMissing('ie_rango');
       GASTOS_MENSUALES.forEach(([key]) => req(key));
       reqYn('ie_ingresos_adicionales');
       reqYn('ie_buro_problema');
@@ -638,10 +792,13 @@ export default function EstudioPage() {
     } else if (sec === 'Escolaridad y Capacitación') {
       total++;
       if (['primaria', 'secundaria', 'bachillerato', 'carrera_tecnica', 'licenciatura'].includes(getField(sec, 'esc_nivel'))) filled++;
+      else addMissing('esc_nivel');
       total++;
       if (['concluido', 'trunco', 'en_curso'].includes(getField(sec, 'esc_estatus'))) filled++;
+      else addMissing('esc_estatus');
       total++;
       if (['si', 'no', 'tramite'].includes(getField(sec, 'esc_documentacion'))) filled++;
+      else addMissing('esc_documentacion');
       if (getField(sec, 'esc_estudiando_actual') === 'si') {
         req('esc_estudiando_que');
         req('esc_estudiando_institucion');
@@ -649,8 +806,10 @@ export default function EstudioPage() {
     } else if (sec === 'Bienestar y Antecedentes Legales') {
       total++;
       if (['no', 'ocasional', 'frecuente'].includes(getField(sec, 'bw_alcohol'))) filled++;
+      else addMissing('bw_alcohol');
       total++;
       if (['no', 'si'].includes(getField(sec, 'bw_tabaco'))) filled++;
+      else addMissing('bw_tabaco');
       reqYn('bw_sustancia_prohibida');
     } else if (sec === 'Información Legal y Trámite de Carta de No Antecedentes Penales') {
       reqYn('al_legal');
@@ -658,6 +817,7 @@ export default function EstudioPage() {
       if (requiresCriminalRecordLetter) {
         total++;
         if (getField(sec, 'cap_tramite') === 'autorizo' || getField(sec, 'cap_tramite') === 'no_autorizo') filled++;
+        else addMissing('cap_tramite');
         if (getField(sec, 'cap_tramite') === 'autorizo') {
           req('cap_doc_acta');
           req('cap_doc_ine');
@@ -667,19 +827,25 @@ export default function EstudioPage() {
     } else if (sec === 'Entorno Social y Condiciones de Vivienda') {
       total++;
       if (['residencial', 'popular', 'campestre', 'industrial', 'turistica', 'otro'].includes(getField(sec, 'vivi_zona'))) filled++;
+      else addMissing('vivi_zona');
       if (getField(sec, 'vivi_zona') === 'otro') req('vivi_zona_otro');
       total++;
       if (['casa', 'departamento', 'condominio', 'unidad'].includes(getField(sec, 'vivi_tipo'))) filled++;
+      else addMissing('vivi_tipo');
       total++;
       if (['privado', 'abierto', 'seguridad', 'otro'].includes(getField(sec, 'vivi_colonia_tipo'))) filled++;
+      else addMissing('vivi_colonia_tipo');
       if (getField(sec, 'vivi_colonia_tipo') === 'otro') req('vivi_colonia_otro');
       total++;
       if (['industrial', 'comercial', 'ejidal', 'otro'].includes(getField(sec, 'vivi_actividad_vecinal'))) filled++;
+      else addMissing('vivi_actividad_vecinal');
       if (getField(sec, 'vivi_actividad_vecinal') === 'otro') req('vivi_actividad_vecinal_otro');
       total++;
       if (['publico', 'propio', 'empresa', 'pie', 'otro'].includes(getField(sec, 'transporte_medio'))) filled++;
+      else addMissing('transporte_medio');
       total++;
       if (['menos30', '30_60', 'mas60'].includes(getField(sec, 'transporte_tiempo'))) filled++;
+      else addMissing('transporte_tiempo');
     } else if (sec === 'Referencias Personales') {
       // Require 2 references: each must have nombre_completo, parentesco, telefono, vive_con_evaluado (si/no)
       for (const idx of [0, 1]) {
@@ -688,17 +854,37 @@ export default function EstudioPage() {
         req(`${idx}_ref_telefono`);
         total++;
         if (getField(sec, `${idx}_ref_vive_con_evaluado`) === 'si' || getField(sec, `${idx}_ref_vive_con_evaluado`) === 'no') filled++;
+        else addMissing(`${idx}_ref_vive_con_evaluado`);
       }
     }
-    return { filled, total };
+    return { filled, total, missing };
   };
 
-  const getRequiredCount = (): { filled: number; total: number } =>
-    countSectionProgress(SECTIONS[sectionIndex]);
+  const showCurrentSectionValidation = () => {
+    const currentSection = SECTIONS[sectionIndex];
+    const validation = countSectionProgress(currentSection);
+    if (validation.missing.length === 0) return true;
 
-  const currentSectionRequiredFilled = (): boolean => {
-    const { filled, total } = getRequiredCount();
-    return total === 0 || filled === total;
+    setValidationAttemptSection(currentSection);
+    setShowFinalConfirm(false);
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    });
+    return false;
+  };
+
+  const handleNextSection = () => {
+    if (!showCurrentSectionValidation()) return;
+    setValidationAttemptSection(null);
+    setSectionIndex((index) => Math.min(SECTIONS.length - 1, index + 1));
+  };
+
+  const handleOpenFinalConfirm = () => {
+    if (!showCurrentSectionValidation()) return;
+    setValidationAttemptSection(null);
+    setShowFinalConfirm(true);
   };
 
   const progressPct = (): number => {
@@ -711,6 +897,51 @@ export default function EstudioPage() {
     });
     return total === 0 ? 0 : Math.round((filled / total) * 100);
   };
+
+  useEffect(() => {
+    const root = sectionContentRef.current;
+    if (!root) return;
+
+    root.querySelectorAll('.study-validation-missing-control, .study-validation-missing-label').forEach((element) => {
+      element.classList.remove('study-validation-missing-control', 'study-validation-missing-label');
+    });
+    if (validationAttemptSection !== SECTIONS[sectionIndex]) return;
+
+    const controls = root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+      'input:not([type="hidden"]):not([type="file"]), textarea, select',
+    );
+    controls.forEach((control) => {
+      if (control.disabled) return;
+      if (control instanceof HTMLInputElement && ['radio', 'checkbox'].includes(control.type)) return;
+      if (control.value.trim() !== '') return;
+
+      const parent = control.parentElement;
+      const directLabel = parent?.querySelector(':scope > label');
+      const wrappedLabel = control.closest('label');
+      const previousLabel = control.previousElementSibling?.tagName === 'LABEL' ? control.previousElementSibling : null;
+      const label = directLabel || wrappedLabel || previousLabel;
+      if (!label?.textContent?.includes('*')) return;
+
+      control.classList.add('study-validation-missing-control');
+      label.classList.add('study-validation-missing-label');
+    });
+
+    const radioGroups = new Map<string, HTMLInputElement[]>();
+    root.querySelectorAll<HTMLInputElement>('input[type="radio"]').forEach((radio) => {
+      if (!radio.name || radio.disabled) return;
+      const group = radioGroups.get(radio.name) || [];
+      group.push(radio);
+      radioGroups.set(radio.name, group);
+    });
+    radioGroups.forEach((radios) => {
+      if (radios.some((radio) => radio.checked)) return;
+      const container = radios[0]?.parentElement?.parentElement;
+      const question = container?.previousElementSibling;
+      if (!question?.textContent?.includes('*')) return;
+      container?.classList.add('study-validation-missing-control');
+      question.classList.add('study-validation-missing-label');
+    });
+  }, [formData, sectionIndex, validationAttemptSection]);
 
   const buildBatchFields = (): { section: string; field_key: string; field_value: string }[] => {
     const out: { section: string; field_key: string; field_value: string }[] = [];
@@ -1012,13 +1243,23 @@ export default function EstudioPage() {
   }
 
   const sec = SECTIONS[sectionIndex];
-  getRequiredCount(); // used by currentSectionRequiredFilled()
   const pct = progressPct();
+  const validationIssues = validationAttemptSection === sec ? countSectionProgress(sec).missing : [];
 
   return (
     <>
       <Header />
       <main style={{ minHeight: '65vh', paddingTop: 80, paddingBottom: 120 }}>
+        <style>{`
+          .study-validation-missing-control {
+            border-color: #dc2626 !important;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.14) !important;
+            border-radius: 8px;
+          }
+          .study-validation-missing-label {
+            color: #b91c1c !important;
+          }
+        `}</style>
         <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 20px' }} onBlurCapture={handleGrammarBlurCapture}>
           {/* Sticky progress */}
           <div style={{ position: 'sticky', top: 72, zIndex: 10, background: '#fff', padding: '12px 0', borderBottom: '1px solid #e5e7eb', marginBottom: 24 }}>
@@ -1032,7 +1273,22 @@ export default function EstudioPage() {
             <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>{pct}% completado (campos requeridos)</p>
           </div>
 
+          {validationIssues.length > 0 ? (
+            <div role="alert" aria-live="assertive" style={{ marginBottom: 24, padding: 18, border: '2px solid #dc2626', borderRadius: 12, background: '#fef2f2', color: '#7f1d1d', boxShadow: '0 10px 24px rgba(127, 29, 29, 0.08)' }}>
+              <h2 style={{ margin: '0 0 8px', fontSize: 18, color: '#b91c1c' }}>Falta completar esta sección</h2>
+              <p style={{ margin: '0 0 14px', lineHeight: 1.55 }}>Responde las siguientes preguntas obligatorias antes de continuar:</p>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {validationIssues.map((issue) => (
+                  <div key={issue.key} style={{ padding: '9px 11px', border: '1px solid #fca5a5', borderRadius: 8, background: '#fff', color: '#b91c1c', fontWeight: 700, fontSize: 14 }}>
+                    {issue.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           {/* Section content */}
+          <div ref={sectionContentRef}>
           {sec === 'Datos Personales y de Contacto' && (
             <SectionDatosPersonalesContacto
               sec={sec}
@@ -1148,6 +1404,7 @@ export default function EstudioPage() {
           {sec === 'Referencias Personales' && (
             <SectionReferenciasPersonales sec={sec} getField={getField} updateField={updateField} />
           )}
+          </div>
 
           {activeGrammarField && grammarSuggestions[grammarFieldMapKey(activeGrammarField.section, activeGrammarField.key)]?.length ? (
             <div style={{ position: 'fixed', right: 20, bottom: 20, width: 'min(420px, calc(100vw - 32px))', maxHeight: 'min(70vh, 520px)', overflowY: 'auto', padding: 16, borderRadius: 14, border: '1px solid #bfdbfe', background: '#eff6ff', boxShadow: '0 20px 45px rgba(30, 58, 138, 0.22)', zIndex: 1200 }}>
@@ -1171,9 +1428,9 @@ export default function EstudioPage() {
             <button type="button" onClick={handleSaveDraft} disabled={saving} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', textDecoration: 'underline' }}>{savedFeedback ? 'Guardado ✓' : 'Guardar y continuar después'}</button>
             <div>
               {sectionIndex < SECTIONS.length - 1 ? (
-                <button type="button" onClick={() => setSectionIndex((i) => i + 1)} disabled={!currentSectionRequiredFilled()} style={{ padding: '8px 16px', background: currentSectionRequiredFilled() ? '#1d4ed8' : '#9ca3af', color: '#fff', border: 'none', borderRadius: 6, cursor: currentSectionRequiredFilled() ? 'pointer' : 'not-allowed' }}>Siguiente →</button>
+                <button type="button" onClick={handleNextSection} style={{ padding: '8px 16px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 700 }}>Siguiente →</button>
               ) : (
-                <button type="button" onClick={() => setShowFinalConfirm(true)} disabled={!currentSectionRequiredFilled()} style={{ padding: '8px 16px', background: currentSectionRequiredFilled() ? '#16a34a' : '#9ca3af', color: '#fff', border: 'none', borderRadius: 6, cursor: currentSectionRequiredFilled() ? 'pointer' : 'not-allowed' }}>Finalizar y enviar</button>
+                <button type="button" onClick={handleOpenFinalConfirm} style={{ padding: '8px 16px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 700 }}>Finalizar y enviar</button>
               )}
             </div>
           </div>
