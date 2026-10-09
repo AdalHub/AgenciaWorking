@@ -1,8 +1,7 @@
 // src/components/Admin/AdminPanel.tsx
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { CSSProperties } from 'react'; // <- type-only import fixes the error
 
-import Login from './Login';
 import JobForm from './JobForm';
 import JobList from './JobList';
 
@@ -16,7 +15,6 @@ const container: CSSProperties = {
 const headerRow: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'space-between',
   gap: '1rem',
   marginBottom: '1rem',
 };
@@ -39,28 +37,12 @@ const toolbar: CSSProperties = {
 };
 
 export default function AdminPanel() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [formVisible, setFormVisible] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/auth.php?action=me')
-      .then(r => r.json())
-      .then(d => setIsLoggedIn(!!d.user))
-      .catch(() => setIsLoggedIn(false));
-  }, []);
-
-  const logout = async () => {
-    await fetch('/api/auth.php?action=logout', { method: 'POST' });
-    setIsLoggedIn(false);
-  };
-
-  if (!isLoggedIn) return <Login onLogin={() => setIsLoggedIn(true)} />;
 
   return (
     <main style={container}>
       <div style={headerRow}>
         <h2 style={titleStyle}>Admin Panel</h2>
-        <button onClick={logout}>Logout</button>
       </div>
 
       <section style={card}>

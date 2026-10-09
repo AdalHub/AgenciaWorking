@@ -54,6 +54,7 @@ export default function AdminLayout() {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const isMobile = useIsMobile();
   const location = useLocation();
 
@@ -75,9 +76,23 @@ export default function AdminLayout() {
 
   const closeMenu = () => setMenuOpen(false);
 
-  // UX: when navigating into the study detail / candidate view,
-  // we hide the global admin navigation and rely on in-page "Volver" buttons.
-  const hideGlobalAdminNav = /^\/admin\/studies\/\d+(?:\/candidates\/\d+\/view)?$/.test(location.pathname);
+  const logout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      const res = await fetch('/api/auth.php?action=logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Logout failed');
+      closeMenu();
+      setAdminUser(null);
+    } catch {
+      alert('No fue posible cerrar la sesión. Inténtalo nuevamente.');
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   if (checking) {
     return (
@@ -216,6 +231,26 @@ export default function AdminLayout() {
           {label}
         </NavLink>
       ))}
+      <button
+        type="button"
+        onClick={logout}
+        disabled={loggingOut}
+        style={{
+          width: '100%',
+          marginTop: 18,
+          padding: '10px 14px',
+          border: '1px solid #dc2626',
+          borderRadius: 8,
+          color: '#b91c1c',
+          background: '#fff',
+          fontWeight: 600,
+          textAlign: 'left',
+          cursor: loggingOut ? 'wait' : 'pointer',
+          opacity: loggingOut ? 0.65 : 1,
+        }}
+      >
+        {loggingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}
+      </button>
     </nav>
   );
 
@@ -242,8 +277,8 @@ export default function AdminLayout() {
             boxSizing: 'border-box',
           }}
         >
-          {/* Desktop sidebar (hidden for study detail / candidate view) */}
-          {!isMobile && !hideGlobalAdminNav && (
+          {/* Desktop sidebar */}
+          {!isMobile && (
             <aside
               style={{
                 width: SIDEBAR_WIDTH,
@@ -263,7 +298,7 @@ export default function AdminLayout() {
           )}
 
           {/* Mobile: hamburger + overlay */}
-          {isMobile && !hideGlobalAdminNav && (
+          {isMobile && (
             <>
               <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
                 <button
