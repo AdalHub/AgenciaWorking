@@ -365,6 +365,7 @@ export default function AdminStudyDetailPage() {
   const [resendingCompanyInvite, setResendingCompanyInvite] = useState(false);
   const [sendingCompanyReset, setSendingCompanyReset] = useState(false);
   const [downloadFinalPdfLoading, setDownloadFinalPdfLoading] = useState(false);
+  const [requirementSaving, setRequirementSaving] = useState<'address' | 'criminal' | null>(null);
 
   useEffect(() => {
     fetch('/api/auth.php?action=me', { credentials: 'include' })
@@ -697,6 +698,33 @@ export default function AdminStudyDetailPage() {
       });
   };
 
+  const handleRequirementToggle = async (
+    field: 'require_address_verification' | 'require_criminal_record_letter',
+    checked: boolean,
+  ) => {
+    if (!study || requirementSaving) return;
+    const savingKey = field === 'require_address_verification' ? 'address' : 'criminal';
+    setRequirementSaving(savingKey);
+    try {
+      const response = await fetch('/api/studies.php?action=update_study', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id: studyId, [field]: checked }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.id) {
+        throw new Error(data.error || 'No se pudo actualizar la configuración del estudio.');
+      }
+      setStudy((current) => (current ? { ...current, [field]: checked ? 1 : 0 } : null));
+      setToast('Configuración del estudio actualizada.');
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'No se pudo actualizar la configuración del estudio.');
+    } finally {
+      setRequirementSaving(null);
+    }
+  };
+
   const handleSaveDomiciliary = () => {
     if (!selectedInvId) return;
     setSavingDom(true);
@@ -998,6 +1026,43 @@ export default function AdminStudyDetailPage() {
                   >
                     Extender retención
                   </button>
+                </div>
+
+                <div style={{ marginBottom: 14, padding: 12, background: '#fff', border: '1px solid #dbe4f0', borderRadius: 10 }}>
+                  <div style={{ marginBottom: 8 }}>
+                    <strong style={{ display: 'block', color: '#0f172a', fontSize: 14 }}>Configuración del estudio</strong>
+                    <span style={{ color: '#64748b', fontSize: 12 }}>
+                      Los cambios se aplican al mismo enlace. Los candidatos pendientes verán la configuración actualizada al volver a ingresar; si ya concluyeron, complete la información desde la revisión administrativa.
+                    </span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10 }}>
+                    <label style={{ display: 'flex', gap: 9, alignItems: 'flex-start', padding: 10, border: '1px solid #e2e8f0', borderRadius: 8, cursor: requirementSaving ? 'wait' : 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={Number(study.require_address_verification ?? 1) === 1}
+                        disabled={requirementSaving !== null}
+                        onChange={(event) => handleRequirementToggle('require_address_verification', event.target.checked)}
+                        style={{ marginTop: 2 }}
+                      />
+                      <span>
+                        <strong style={{ display: 'block', fontSize: 13, color: '#111827' }}>Requerir verificación domiciliaria</strong>
+                        <span style={{ display: 'block', marginTop: 2, fontSize: 11, color: '#64748b' }}>Incluye la autorización y la programación de la visita domiciliaria.</span>
+                      </span>
+                    </label>
+                    <label style={{ display: 'flex', gap: 9, alignItems: 'flex-start', padding: 10, border: '1px solid #e2e8f0', borderRadius: 8, cursor: requirementSaving ? 'wait' : 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={Number(study.require_criminal_record_letter ?? 1) === 1}
+                        disabled={requirementSaving !== null}
+                        onChange={(event) => handleRequirementToggle('require_criminal_record_letter', event.target.checked)}
+                        style={{ marginTop: 2 }}
+                      />
+                      <span>
+                        <strong style={{ display: 'block', fontSize: 13, color: '#111827' }}>Requerir trámite de carta de no antecedentes penales</strong>
+                        <span style={{ display: 'block', marginTop: 2, fontSize: 11, color: '#64748b' }}>Incluye la autorización y los documentos necesarios para realizar el trámite.</span>
+                      </span>
+                    </label>
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>

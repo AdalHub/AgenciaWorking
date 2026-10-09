@@ -300,6 +300,8 @@ export default function EstudioPage() {
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [privacyAccepted, setPrivacyAccepted] = useState<boolean | null>(null);
   const [formData, setFormData] = useState<FormDataBySection>({});
+  const [formDataLoaded, setFormDataLoaded] = useState(false);
+  const [formDefaultsReady, setFormDefaultsReady] = useState(false);
   const [sectionIndex, setSectionIndex] = useState(0);
   const [saving, setSaving] = useState(false);
   const [savedFeedback, setSavedFeedback] = useState(false);
@@ -316,6 +318,7 @@ export default function EstudioPage() {
   const dismissedGrammarSuggestionsRef = useRef<Record<string, Set<string>>>({});
   const lastEditedGrammarFieldRef = useRef<LastEditedGrammarField | null>(null);
   const sectionContentRef = useRef<HTMLDivElement | null>(null);
+  const hasSelectedResumeSectionRef = useRef(false);
   const [validationAttemptSection, setValidationAttemptSection] = useState<string | null>(null);
 
   const isInvitationCompleted = invitation?.status === 'completed';
@@ -350,6 +353,10 @@ export default function EstudioPage() {
 
   // Load invitation by code
   useEffect(() => {
+    setFormDataLoaded(false);
+    setFormDefaultsReady(false);
+    hasSelectedResumeSectionRef.current = false;
+    setSectionIndex(0);
     if (!codigo.trim()) {
       setLoading(false);
       setErrorState('invalid');
@@ -358,7 +365,7 @@ export default function EstudioPage() {
     let cancelled = false;
     setLoading(true);
     setErrorState(null);
-    fetch(`${API}/studies.php?action=get_invitation_by_code&code=${encodeURIComponent(codigo)}`)
+    fetch(`${API}/studies.php?action=get_invitation_by_code&code=${encodeURIComponent(codigo)}`, { cache: 'no-store' })
       .then((r) => {
         if (r.status === 404) {
           setErrorState('invalid');
@@ -400,20 +407,7 @@ export default function EstudioPage() {
           return;
         }
         setPrivacyAccepted(payload.data.accepted);
-        if (payload.data.accepted) {
-          return fetch(`${API}/studies.php?action=get_form_data&invitation_id=${payload.invId}&code=${encodeURIComponent(codigo)}`);
-        }
-        setLoading(false);
-      })
-      .then((r) => {
-        if (cancelled) return;
-        if (r && r.ok) return r.json();
-        setLoading(false);
-      })
-      .then((data?: FormDataBySection) => {
-        if (cancelled) return;
-        if (data && typeof data === 'object') setFormData(data);
-        setLoading(false);
+        if (!payload.data.accepted) setLoading(false);
       })
       .catch(() => {
         if (!cancelled) {
@@ -427,16 +421,23 @@ export default function EstudioPage() {
   // When privacy accepted, load form data (invitation already set)
   useEffect(() => {
     if (!privacyAccepted || !invitation || invitation.status === 'completed') return;
-    fetch(`${API}/studies.php?action=get_form_data&invitation_id=${invitation.id}&code=${encodeURIComponent(codigo)}`)
+    setLoading(true);
+    setFormDataLoaded(false);
+    setFormDefaultsReady(false);
+    fetch(`${API}/studies.php?action=get_form_data&invitation_id=${invitation.id}&code=${encodeURIComponent(codigo)}`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : {}))
       .then((data: FormDataBySection) => {
         if (data && typeof data === 'object') setFormData(data);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        setFormDataLoaded(true);
+        setLoading(false);
+      });
   }, [privacyAccepted, invitation?.id, codigo]);
 
   useEffect(() => {
-    if (!privacyAccepted || !invitation) return;
+    if (!privacyAccepted || !invitation || !formDataLoaded) return;
     const day = new Date().toISOString().slice(0, 10);
     const s1 = 'Datos Personales y de Contacto';
     const s2 = 'Autorización Actualización';
@@ -468,7 +469,8 @@ export default function EstudioPage() {
       next[s2] = c2;
       return next;
     });
-  }, [privacyAccepted, invitation?.id, invitation?.candidate_name, invitation?.candidate_email, invitation?.candidate_phone, invitation?.study?.company_name]);
+    setFormDefaultsReady(true);
+  }, [privacyAccepted, invitation?.id, invitation?.candidate_name, invitation?.candidate_email, invitation?.candidate_phone, invitation?.study?.company_name, formDataLoaded]);
 
   const updateField = useCallback((section: string, key: string, value: string) => {
     setFormData((prev) => ({
@@ -859,6 +861,15 @@ export default function EstudioPage() {
     }
     return { filled, total, missing };
   };
+
+  useEffect(() => {
+    if (!privacyAccepted || !formDataLoaded || !formDefaultsReady || !invitation || invitation.status === 'completed') return;
+    if (hasSelectedResumeSectionRef.current) return;
+
+    const firstIncomplete = SECTIONS.findIndex((section) => countSectionProgress(section).missing.length > 0);
+    setSectionIndex(firstIncomplete >= 0 ? firstIncomplete : SECTIONS.length - 1);
+    hasSelectedResumeSectionRef.current = true;
+  }, [privacyAccepted, formDataLoaded, formDefaultsReady, invitation, formData, requiresAddressVerification, requiresCriminalRecordLetter]);
 
   const showCurrentSectionValidation = () => {
     const currentSection = SECTIONS[sectionIndex];

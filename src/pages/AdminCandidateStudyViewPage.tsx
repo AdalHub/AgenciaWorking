@@ -68,6 +68,10 @@ const FIELD_OPTIONS: Record<string, FieldOption[]> = {
     { value: 'si', label: 'Sí' },
     { value: 'no', label: 'No' },
   ],
+  dom_visita: [
+    { value: 'autorizo', label: 'Autorizo la visita domiciliaria' },
+    { value: 'no_autorizo', label: 'No autorizo la visita domiciliaria' },
+  ],
   esc_documentacion: [
     { value: 'si', label: 'Sí' },
     { value: 'no', label: 'No' },
@@ -238,6 +242,53 @@ function getSectionNameByNormalizedName(formData: FormDataBySection, normalizedN
   return match || null;
 }
 
+function ensureConfigurableStudyFields(formData: FormDataBySection, study: Record<string, unknown>): FormDataBySection {
+  const next: FormDataBySection = Object.fromEntries(
+    Object.entries(formData || {}).map(([section, fields]) => [section, { ...(fields || {}) }]),
+  );
+  const ensureFields = (normalizedSection: string, fallbackSection: string, keys: string[]) => {
+    const sectionName = getSectionNameByNormalizedName(next, normalizedSection) || fallbackSection;
+    const section = { ...(next[sectionName] || {}) };
+    keys.forEach((key) => {
+      if (!(key in section)) section[key] = '';
+    });
+    next[sectionName] = section;
+  };
+
+  if (Number(study.require_address_verification ?? 1) === 1) {
+    ensureFields('domicilio', 'Domicilio', [
+      'dom_visita',
+      'dom_visita_op1_fecha',
+      'dom_visita_op1_hora',
+      'dom_visita_op2_fecha',
+      'dom_visita_op2_hora',
+      'dom_senas_opcional',
+    ]);
+  } else {
+    const sectionName = getSectionNameByNormalizedName(next, 'domicilio');
+    if (sectionName) {
+      next[sectionName] = Object.fromEntries(
+        Object.entries(next[sectionName]).filter(([key]) => !/^dom_(visita(?:_|$)|senas_opcional$)/.test(key)),
+      );
+    }
+  }
+  if (Number(study.require_criminal_record_letter ?? 1) === 1) {
+    ensureFields(
+      'informacion_legal_y_tramite_de_carta_de_no_antecedentes_penales',
+      'Información Legal y Trámite de Carta de No Antecedentes Penales',
+      ['cap_tramite', 'cap_doc_acta', 'cap_doc_ine', 'cap_doc_foto'],
+    );
+  } else {
+    const sectionName = getSectionNameByNormalizedName(next, 'informacion_legal_y_tramite_de_carta_de_no_antecedentes_penales');
+    if (sectionName) {
+      next[sectionName] = Object.fromEntries(
+        Object.entries(next[sectionName]).filter(([key]) => !/^cap_(tramite$|doc_)/.test(key)),
+      );
+    }
+  }
+  return next;
+}
+
 function displaySectionTitle(sectionName: string): string {
   if (normalizeLooseKey(sectionName) === 'autorizacion_actualizacion') {
     return 'Autorizacion del estudio';
@@ -287,6 +338,12 @@ function formatFieldLabel(key: string): string {
     dp_constancia_situacion_fiscal_pdf: 'Constancia de Situacion Fiscal Actualizada',
     dom_comprobante_domicilio_pdf: 'Comprobante de domicilio (no mayor a 3 meses)',
     dom_comprobante_domicilio_fecha: 'Fecha del comprobante de domicilio',
+    dom_visita: 'Autorización de visita domiciliaria',
+    dom_visita_op1_fecha: 'Opción 1 - Fecha',
+    dom_visita_op1_hora: 'Opción 1 - Horario',
+    dom_visita_op2_fecha: 'Opción 2 - Fecha',
+    dom_visita_op2_hora: 'Opción 2 - Horario',
+    dom_senas_opcional: 'Referencias o señas del domicilio',
     auth_firma_imagen: 'Firma',
     hl_constancia_imss_pdf: 'Constancia de semanas cotizadas (IMSS)',
     hl_documentacion_adicional_pdf: 'Documentacion adicional',
@@ -491,7 +548,7 @@ function isMultilineField(key: string, value: string): boolean {
 }
 
 function isDateField(key: string, value: string): boolean {
-  return /fecha|periodo_(de|a)$/i.test(key) && /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
+  return /fecha|periodo_(de|a)$/i.test(key) && (value.trim() === '' || /^\d{4}-\d{2}-\d{2}$/.test(value.trim()));
 }
 
 function sectionsEqual(a: Record<string, string>, b: Record<string, string>): boolean {
@@ -1204,14 +1261,16 @@ export default function AdminCandidateStudyViewPage() {
       fetch(studyUrl, { credentials: 'include' }).then(async (r) => (r.ok ? r.json().catch(() => ({})) : {})),
     ])
       .then(([formRes, concRes, domRes, studyRes]) => {
-        setFormData(typeof formRes === 'object' && formRes !== null && !formRes.error ? formRes : {});
+        const loadedForm = typeof formRes === 'object' && formRes !== null && !formRes.error ? formRes as FormDataBySection : {};
+        const configuredForm = ensureConfigurableStudyFields(loadedForm, studyRes && typeof studyRes === 'object' ? studyRes : {});
+        setFormData(configuredForm);
         setEditingTab(null);
         setPageDrafts({});
 
         const referenceSection =
-          formRes && typeof formRes === 'object' && formRes !== null
-            ? (getSectionNameByNormalizedName(formRes as FormDataBySection, 'referencias_personales')
-              ? (formRes as FormDataBySection)[getSectionNameByNormalizedName(formRes as FormDataBySection, 'referencias_personales') as string]
+          configuredForm && typeof configuredForm === 'object'
+            ? (getSectionNameByNormalizedName(configuredForm, 'referencias_personales')
+              ? configuredForm[getSectionNameByNormalizedName(configuredForm, 'referencias_personales') as string]
               : null)
             : null;
         setPersonalReferenceComments({
