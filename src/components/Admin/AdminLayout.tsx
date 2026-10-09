@@ -1,9 +1,17 @@
 // Shared admin layout: auth check, side menu (desktop) / hamburger (mobile), Outlet for child routes.
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 import Header from '../header/header';
 import Footer from '../Footer/Footer';
 import ForgotPassword from './ForgotPassword';
+import {
+  adminCan,
+  adminPermissionForPath,
+  adminScopeLabels,
+  defaultAdminPath,
+  type AdminPermission,
+  type AdminUser,
+} from '../../lib/adminAccess';
 
 const SIDEBAR_WIDTH = 220;
 const MOBILE_BREAK = 768;
@@ -19,15 +27,15 @@ function useIsMobile() {
   return isMobile;
 }
 
-const navItems: { to: string; label: string }[] = [
-  { to: '/admin/jobs', label: 'Job postings' },
-  { to: '/admin/services', label: 'Services & scheduling' },
-  { to: '/admin/calendar', label: 'Calendar' },
-  { to: '/admin/blogs', label: 'Post Blog' },
-  { to: '/admin/studies', label: 'Estudios' },
-  { to: '/admin/clients', label: 'Clientes portal' },
-  { to: '/admin/service-inquiries', label: 'Solicitudes portal' },
-  { to: '/admin/email-queue', label: 'Cola de correo' },
+const navItems: { to: string; label: string; permission: AdminPermission }[] = [
+  { to: '/admin/jobs', label: 'Vacantes', permission: 'jobs' },
+  { to: '/admin/services', label: 'Servicios y agenda', permission: 'services' },
+  { to: '/admin/calendar', label: 'Calendario', permission: 'calendar' },
+  { to: '/admin/blogs', label: 'Publicar blog', permission: 'blogs' },
+  { to: '/admin/studies', label: 'Estudios', permission: 'studies' },
+  { to: '/admin/clients', label: 'Clientes portal', permission: 'client_portal' },
+  { to: '/admin/service-inquiries', label: 'Solicitudes portal', permission: 'client_portal' },
+  { to: '/admin/email-queue', label: 'Cola de correo', permission: 'email_queue' },
 ];
 
 const linkStyle = (isActive: boolean) => ({
@@ -43,7 +51,7 @@ const linkStyle = (isActive: boolean) => ({
 
 export default function AdminLayout() {
   const [checking, setChecking] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const isMobile = useIsMobile();
@@ -53,9 +61,9 @@ export default function AdminLayout() {
     try {
       const res = await fetch('/api/auth.php?action=me', { credentials: 'include' });
       const data = await res.json();
-      setIsAdmin(!!(res.ok && (data.user || data.username)));
+      setAdminUser(res.ok && data.user ? data.user as AdminUser : null);
     } catch {
-      setIsAdmin(false);
+      setAdminUser(null);
     } finally {
       setChecking(false);
     }
@@ -83,7 +91,7 @@ export default function AdminLayout() {
     );
   }
 
-  if (!isAdmin) {
+  if (!adminUser) {
     return (
       <>
         <Header />
@@ -188,9 +196,16 @@ export default function AdminLayout() {
     );
   }
 
+  const requiredPermission = adminPermissionForPath(location.pathname);
+  if (requiredPermission && !adminCan(adminUser, requiredPermission)) {
+    return <Navigate to={defaultAdminPath(adminUser)} replace />;
+  }
+
+  const allowedNavItems = navItems.filter((item) => adminCan(adminUser, item.permission));
+
   const sidebarContent = (
     <nav style={{ padding: '12px 0' }}>
-      {navItems.map(({ to, label }) => (
+      {allowedNavItems.map(({ to, label }) => (
         <NavLink
           key={to}
           to={to}
@@ -239,6 +254,10 @@ export default function AdminLayout() {
               }}
             >
               <h2 style={{ marginBottom: 12, fontSize: '1.25rem' }}>Admin</h2>
+              <div style={{ marginBottom: 14, color: '#64748b', fontSize: 12, lineHeight: 1.45 }}>
+                <strong style={{ display: 'block', color: '#334155' }}>{adminUser.display_name || adminUser.username}</strong>
+                {adminScopeLabels[adminUser.access_scope || 'full']}
+              </div>
               {sidebarContent}
             </aside>
           )}
@@ -296,6 +315,10 @@ export default function AdminLayout() {
                     }}
                   >
                     <h2 style={{ marginBottom: 12, fontSize: '1.25rem' }}>Admin</h2>
+                    <div style={{ marginBottom: 14, color: '#64748b', fontSize: 12, lineHeight: 1.45 }}>
+                      <strong style={{ display: 'block', color: '#334155' }}>{adminUser.display_name || adminUser.username}</strong>
+                      {adminScopeLabels[adminUser.access_scope || 'full']}
+                    </div>
                     {sidebarContent}
                   </aside>
                 </>
