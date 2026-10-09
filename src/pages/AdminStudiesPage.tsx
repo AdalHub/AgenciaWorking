@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminNewStudyModal from '../components/Admin/AdminNewStudyModal';
 
@@ -18,6 +18,21 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   cancelado: { bg: '#fee2e2', text: '#991b1b' },
 };
 
+const CANDIDATE_STATUS_LABELS: Record<string, string> = {
+  pending: 'Invitación pendiente',
+  in_progress: 'Captura en proceso',
+  completed: 'Captura completada',
+};
+
+type StudyCandidate = {
+  id: number;
+  candidate_name?: string | null;
+  candidate_email?: string | null;
+  status?: string | null;
+  is_cancelled?: number | string | boolean | null;
+  completed_at?: string | null;
+};
+
 type Study = {
   id: number;
   company_name: string;
@@ -28,7 +43,15 @@ type Study = {
   total_invitations?: number;
   completed_count?: number;
   concluded_at?: string | null;
+  candidates?: StudyCandidate[];
 };
+
+const normalizeSearch = (value: string | null | undefined) =>
+  String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es-MX')
+    .trim();
 
 export default function AdminStudiesPage() {
   const navigate = useNavigate();
@@ -39,11 +62,13 @@ export default function AdminStudiesPage() {
   const [toast, setToast] = useState<string | null>(null);
 
   // Filters (Todos tab)
-  const [search, setSearch] = useState('');
+  const [companySearch, setCompanySearch] = useState('');
+  const [candidateSearch, setCandidateSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [createdFrom, setCreatedFrom] = useState('');
   const [createdTo, setCreatedTo] = useState('');
+  const [expandedStudyIds, setExpandedStudyIds] = useState<Set<number>>(() => new Set());
 
   // PDF drawer
   const [drawerStudyId, setDrawerStudyId] = useState<number | null>(null);
@@ -92,8 +117,25 @@ export default function AdminStudiesPage() {
     }
   }, [drawerStudyId]);
 
+  useEffect(() => {
+    const candidateQuery = normalizeSearch(candidateSearch);
+    if (!candidateQuery) return;
+    setExpandedStudyIds((current) => {
+      const next = new Set(current);
+      studies.forEach((study) => {
+        if ((study.candidates ?? []).some((candidate) => normalizeSearch(candidate.candidate_name).includes(candidateQuery))) {
+          next.add(study.id);
+        }
+      });
+      return next;
+    });
+  }, [candidateSearch, studies]);
+
   const filteredAll = studies.filter((s) => {
-    if (search && !s.company_name.toLowerCase().includes(search.toLowerCase())) return false;
+    const companyQuery = normalizeSearch(companySearch);
+    const candidateQuery = normalizeSearch(candidateSearch);
+    if (companyQuery && !normalizeSearch(s.company_name).includes(companyQuery)) return false;
+    if (candidateQuery && !(s.candidates ?? []).some((candidate) => normalizeSearch(candidate.candidate_name).includes(candidateQuery))) return false;
     if (statusFilter !== 'all' && s.status !== statusFilter) return false;
     if (typeFilter !== 'all' && s.study_type !== typeFilter) return false;
     if (createdFrom && s.created_at < createdFrom) return false;
@@ -105,11 +147,21 @@ export default function AdminStudiesPage() {
   const completedStudies = studies.filter((s) => s.status === 'concluido' || !!s.concluded_at);
 
   const clearFilters = () => {
-    setSearch('');
+    setCompanySearch('');
+    setCandidateSearch('');
     setStatusFilter('all');
     setTypeFilter('all');
     setCreatedFrom('');
     setCreatedTo('');
+  };
+
+  const toggleStudyCandidates = (studyId: number) => {
+    setExpandedStudyIds((current) => {
+      const next = new Set(current);
+      if (next.has(studyId)) next.delete(studyId);
+      else next.add(studyId);
+      return next;
+    });
   };
 
   const formatDate = (d: string | null | undefined) => {
@@ -153,7 +205,8 @@ export default function AdminStudiesPage() {
             <>
               {/* Filter bar */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16, alignItems: 'center' }}>
-                <input type="text" placeholder="Buscar por empresa" value={search} onChange={(e) => setSearch(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: 6, minWidth: 180 }} />
+                <input type="text" placeholder="Buscar por empresa" value={companySearch} onChange={(e) => setCompanySearch(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: 6, minWidth: 180 }} />
+                <input type="text" placeholder="Buscar por candidato" value={candidateSearch} onChange={(e) => setCandidateSearch(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: 6, minWidth: 190 }} />
                 <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: 6 }}>
                   <option value="all">Todos los estados</option>
                   {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -172,6 +225,7 @@ export default function AdminStudiesPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                   <thead>
                     <tr style={{ background: '#f9fafb' }}>
+                      <th aria-label="Mostrar candidatos" style={{ width: 42, padding: 8, borderBottom: '1px solid #e5e7eb' }} />
                       <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid #e5e7eb' }}>ID</th>
                       <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid #e5e7eb' }}>Empresa</th>
                       <th style={{ textAlign: 'left', padding: 12, borderBottom: '1px solid #e5e7eb' }}>Tipo</th>
@@ -184,41 +238,115 @@ export default function AdminStudiesPage() {
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan={8} style={{ padding: 24, textAlign: 'center' }}>Cargando…</td></tr>
+                      <tr><td colSpan={9} style={{ padding: 24, textAlign: 'center' }}>Cargando…</td></tr>
                     ) : (
-                      filteredAll.map((s) => {
+                      filteredAll.length === 0 ? (
+                        <tr><td colSpan={9} style={{ padding: 24, textAlign: 'center', color: '#64748b' }}>No se encontraron estudios con estos filtros.</td></tr>
+                      ) : filteredAll.map((s) => {
                         const colors = STATUS_COLORS[s.status] || { bg: '#f3f4f6', text: '#374151' };
+                        const candidateQuery = normalizeSearch(candidateSearch);
+                        const candidates = s.candidates ?? [];
+                        const visibleCandidates = candidateQuery
+                          ? candidates.filter((candidate) => normalizeSearch(candidate.candidate_name).includes(candidateQuery))
+                          : candidates;
+                        const isExpanded = expandedStudyIds.has(s.id);
                         return (
-                          <tr key={s.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                            <td style={{ padding: 12 }}>{s.id}</td>
-                            <td style={{ padding: 12 }}>{s.company_name}</td>
-                            <td style={{ padding: 12 }}>
-                              <span style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid', ...(s.study_type === 'private' ? { borderColor: '#3b82f6', color: '#1d4ed8', background: 'transparent' } : { borderColor: '#16a34a', color: '#16a34a', background: 'transparent' } ) }}>{s.study_type === 'private' ? 'Private' : 'Public'}</span>
-                            </td>
-                            <td style={{ padding: 12 }}>
-                              <span style={{ padding: '4px 8px', borderRadius: 6, background: colors.bg, color: colors.text }}>{STATUS_LABELS[s.status] || s.status}</span>
-                            </td>
-                            <td style={{ padding: 12 }}>{Number(s.completed_count) ?? 0} / {Number(s.total_invitations) ?? 0} completados</td>
-                            <td style={{ padding: 12 }}>{formatDate(s.created_at)}</td>
-                            <td style={{ padding: 12 }}>{formatDate(s.deletion_scheduled_at)}</td>
-                            <td style={{ padding: 12 }}>
-                              <button
-                                onClick={() => navigate(`/admin/studies/${s.id}`)}
-                                style={{
-                                  padding: '6px 12px',
-                                  background: '#f3f4f6',
-                                  color: '#0f172a',
-                                  border: '1px solid #e5e7eb',
-                                  borderRadius: 6,
-                                  cursor: 'pointer',
-                                  marginRight: 8,
-                                  fontWeight: 700,
-                                }}
-                              >
-                                Ver
-                              </button>
-                            </td>
-                          </tr>
+                          <Fragment key={s.id}>
+                            <tr style={{ borderBottom: isExpanded ? 'none' : '1px solid #e5e7eb' }}>
+                              <td style={{ padding: 8, textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleStudyCandidates(s.id)}
+                                  aria-label={`${isExpanded ? 'Ocultar' : 'Mostrar'} candidatos de ${s.company_name}`}
+                                  aria-expanded={isExpanded}
+                                  style={{
+                                    width: 28,
+                                    height: 28,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: 0,
+                                    border: '1px solid #cbd5e1',
+                                    borderRadius: 6,
+                                    background: isExpanded ? '#eff6ff' : '#fff',
+                                    color: '#1d4ed8',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  <span aria-hidden="true" style={{ display: 'inline-block', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 160ms ease', fontSize: 14 }}>▶</span>
+                                </button>
+                              </td>
+                              <td style={{ padding: 12 }}>{s.id}</td>
+                              <td style={{ padding: 12 }}>{s.company_name}</td>
+                              <td style={{ padding: 12 }}>
+                                <span style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid', ...(s.study_type === 'private' ? { borderColor: '#3b82f6', color: '#1d4ed8', background: 'transparent' } : { borderColor: '#16a34a', color: '#16a34a', background: 'transparent' } ) }}>{s.study_type === 'private' ? 'Private' : 'Public'}</span>
+                              </td>
+                              <td style={{ padding: 12 }}>
+                                <span style={{ padding: '4px 8px', borderRadius: 6, background: colors.bg, color: colors.text }}>{STATUS_LABELS[s.status] || s.status}</span>
+                              </td>
+                              <td style={{ padding: 12 }}>{Number(s.completed_count) || 0} / {Number(s.total_invitations) || 0} completados</td>
+                              <td style={{ padding: 12 }}>{formatDate(s.created_at)}</td>
+                              <td style={{ padding: 12 }}>{formatDate(s.deletion_scheduled_at)}</td>
+                              <td style={{ padding: 12 }}>
+                                <button
+                                  onClick={() => navigate(`/admin/studies/${s.id}`)}
+                                  style={{
+                                    padding: '6px 12px',
+                                    background: '#f3f4f6',
+                                    color: '#0f172a',
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: 6,
+                                    cursor: 'pointer',
+                                    marginRight: 8,
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  Ver
+                                </button>
+                              </td>
+                            </tr>
+                            {isExpanded && (
+                              <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                                <td colSpan={9} style={{ padding: '0 12px 14px 48px', background: '#f8fafc' }}>
+                                  <div style={{ borderLeft: '3px solid #3b82f6', padding: '12px 14px' }}>
+                                    <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>Candidatos del estudio</div>
+                                    {visibleCandidates.length === 0 ? (
+                                      <div style={{ color: '#64748b', padding: '6px 0' }}>
+                                        {candidateQuery ? 'No hay candidatos que coincidan con la búsqueda.' : 'Este estudio no tiene candidatos registrados.'}
+                                      </div>
+                                    ) : visibleCandidates.map((candidate) => {
+                                      const isCancelled = candidate.is_cancelled === true || Number(candidate.is_cancelled) === 1;
+                                      const statusLabel = isCancelled ? 'Cancelado' : CANDIDATE_STATUS_LABELS[String(candidate.status ?? '')] || candidate.status || 'Pendiente';
+                                      return (
+                                        <div
+                                          key={candidate.id}
+                                          style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: 'minmax(180px, 1.2fr) minmax(210px, 1.4fr) minmax(150px, 1fr) auto',
+                                            gap: 12,
+                                            alignItems: 'center',
+                                            padding: '9px 0',
+                                            borderTop: '1px solid #e2e8f0',
+                                          }}
+                                        >
+                                          <strong>{candidate.candidate_name || 'Sin nombre'}</strong>
+                                          <span style={{ color: '#475569', overflowWrap: 'anywhere' }}>{candidate.candidate_email || 'Sin correo'}</span>
+                                          <span style={{ color: isCancelled ? '#991b1b' : '#334155', fontWeight: 600 }}>{statusLabel}</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => navigate(`/admin/studies/${s.id}/candidates/${candidate.id}/view`)}
+                                            style={{ padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: 6, background: '#fff', color: '#1d4ed8', cursor: 'pointer', fontWeight: 700 }}
+                                          >
+                                            Ver candidato
+                                          </button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
                         );
                       })
                     )}
